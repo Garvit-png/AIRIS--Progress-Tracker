@@ -1,0 +1,200 @@
+@import "tailwindcss";
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  :root {
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    --font-display: 'Inter', sans-serif;
+
+    /* Dark Theme (Default) */
+    --bg: #0d0d0d;
+    --bg-rgb: 13, 13, 13;
+    --panel-bg: #161616;
+    --text: #e8e8e8;
+    --text-rgb: 232, 232, 232;
+    --text-muted: rgba(232, 232, 232, 0.4);
+    --border: rgba(255, 255, 255, 0.10);
+    --border-subtle: rgba(255, 255, 255, 0.05);
+    --accent: #e8e8e8;
+    --accent-rgb: 232, 232, 232;
+    --sidebar-bg: #111111;
+  }
+
+  [data-theme='light'] {
+    /* Light Theme */
+    --bg: #ffffff;
+    --bg-rgb: 255, 255, 255;
+    --panel-bg: #f5f5f5;
+    --text: #000000;
+    --text-rgb: 0, 0, 0;
+    --text-muted: rgba(0, 0, 0, 0.5);
+    --border: rgba(0, 0, 0, 0.08);
+    --accent: #000000;
+    --accent-rgb: 0, 0, 0;
+    --sidebar-bg: #f9f9f9;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.4s ease, color 0.4s ease;
+  }
+
+  ::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+  }
+
+  .font-mono {
+    font-family: var(--font-mono) !important;
+  }
+}
+
+/* ── SAFARI BACKDROP-FILTER FIX ── */
+/*
+  Safari requires -webkit-backdrop-filter for blur effects.
+  This mirrors every backdrop-filter usage for Safari 9+ compatibility.
+*/
+@layer utilities {
+  .backdrop-blur-sm {
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+
+  .backdrop-blur {
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+
+  .backdrop-blur-md {
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+
+  .backdrop-blur-lg {
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+  }
+
+  .backdrop-blur-xl {
+    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px);
+  }
+
+  .backdrop-blur-2xl {
+    -webkit-backdrop-filter: blur(40px);
+    backdrop-filter: blur(40px);
+  }
+
+  .backdrop-blur-3xl {
+    -webkit-backdrop-filter: blur(64px);
+    backdrop-filter: blur(64px);
+  }
+
+  .backdrop-blur-none {
+    -webkit-backdrop-filter: blur(0);
+    backdrop-filter: blur(0);
+  }
+}
+
+/* ── LOADER TYPING CURSOR ── */
+@keyframes blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+.cursor-blink {
+  animation: blink 0.7s step-end infinite;
+}
+
+/* ── PANEL GRID STAGGER (Windows fly-in) ── */
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: scale(0.88) translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.panel-in {
+  animation: panelIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── PULSE RING ── */
+@keyframes ringPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.ring-pulse {
+  animation: ringPulse 1.5s ease-out infinite;
+}
+
+/* ── PROGRESS BAR ── */
+@keyframes progressFill {
+  from {
+    width: 0%;
+  }
+}
+
+.progress-fill {
+  animation: progressFill 0.6s ease both;
+}
+
+/* ── LOADER BAR SWEEP ── */
+@keyframes barSweep {
+  0% {
+    width: 0%;
+  }
+
+  100% {
+    width: 100%;
+  }
+}
+
+/* ── STREAK NUM ── */
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
