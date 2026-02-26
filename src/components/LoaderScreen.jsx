@@ -69,24 +69,55 @@ export default function LoaderScreen({ onComplete, user }) {
                     exit={{ opacity: 0 }}
                     className="fixed inset-0 bg-black flex flex-col items-center justify-center z-[60]"
                 >
-                    <Waves strokeColor="rgba(255,255,255,0.1)" />
+                    <Waves strokeColor="rgba(255,255,255,0.3)" />
 
-                    <motion.button
-                        onClick={handleBoot}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="group relative px-10 py-4 border rounded-full overflow-hidden transition-all duration-500 z-10"
-                        style={{ borderColor: 'rgba(255,255,255,0.2)' }}
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="relative z-10 flex flex-col items-center"
                     >
-                        <span className="relative z-10 font-mono text-[10px] tracking-[0.4em] text-white uppercase group-hover:text-white transition-colors">
-                            Initialize Link
-                        </span>
-                        <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <div className="absolute -inset-4 bg-white/10 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </motion.button>
-                    <p className="mt-6 font-mono text-[8px] text-white/20 tracking-[0.2em] uppercase">
-                        Acoustic environment required for operation
-                    </p>
+                        {/* Outer Glow Pulse */}
+                        <motion.div
+                            animate={{
+                                scale: [1, 1.2, 1],
+                                opacity: [0.3, 0.6, 0.3]
+                            }}
+                            transition={{
+                                duration: 3,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                            }}
+                            className="absolute inset-0 bg-white/10 blur-3xl rounded-full"
+                        />
+
+                        <motion.button
+                            onClick={handleBoot}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="group relative px-12 py-5 border rounded-full overflow-hidden transition-all duration-500 backdrop-blur-xl bg-white/5"
+                            style={{ borderColor: 'rgba(255,255,255,0.4)' }}
+                        >
+                            <span className="relative z-10 font-mono text-[11px] tracking-[0.5em] text-white uppercase group-hover:text-white transition-colors duration-300">
+                                Initialize Link
+                            </span>
+
+                            {/* Hover Fill */}
+                            <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
+
+                            {/* Inner Shine */}
+                            <div className="absolute -inset-4 bg-white/5 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                        </motion.button>
+
+                        <motion.h1
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="mt-10 font-mono text-2xl tracking-[1.5em] text-white/40 uppercase pl-[1.5em]"
+                        >
+                            A I R I S
+                        </motion.h1>
+
+                    </motion.div>
                 </motion.div>
             ) : !exiting ? (
                 <motion.div

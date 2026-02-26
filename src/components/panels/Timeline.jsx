@@ -1,5 +1,4 @@
 import React from 'react'
-import { motion } from 'framer-motion'
 
 export default function Timeline() {
     return (
@@ -16,19 +15,8 @@ export default function Timeline() {
                 <h2 className="text-sm font-semibold uppercase tracking-tight">Timeline</h2>
             </div>
 
-            <div className="flex-1 flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-1">
-                {[1, 2, 3].map((_, i) => (
-                    <div key={i} className="flex gap-4">
-                        <div className="flex flex-col items-center">
-                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--text-muted)', opacity: 0.4 }} />
-                            <div className="w-[1px] flex-1 my-1" style={{ backgroundColor: 'var(--border)' }} />
-                        </div>
-                        <div className="pb-4">
-                            <p className="font-mono text-[10px]" style={{ color: 'var(--text-muted)', opacity: 0.4 }}>09:00 AM</p>
-                            <p className="text-xs font-medium uppercase tracking-tight" style={{ color: 'var(--text)', opacity: 0.7 }}>System Initialization {i}</p>
-                        </div>
-                    </div>
-                ))}
+            <div className="flex-1 flex items-center justify-center border-2 border-dashed border-white/5 rounded-lg">
+                <p className="font-mono text-[10px] uppercase tracking-widest opacity-20">No Timeline Data</p>
             </div>
         </div>
     )

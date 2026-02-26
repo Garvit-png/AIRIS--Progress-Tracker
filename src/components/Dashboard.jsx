@@ -1,16 +1,16 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Sidebar from './Sidebar'
-import TaskCards from './panels/TaskCards'
-import StatPanel from './panels/StatPanel'
-import Timeline from './panels/Timeline'
-import SkillPanel from './panels/SkillPanel'
-import ActivityLog from './panels/ActivityLog'
+import WorkCalendar from './panels/WorkCalendar'
+import DayDetail from './panels/DayDetail'
+import MonthlySummary from './panels/MonthlySummary'
 import { AuthService } from '../services/authService'
 
 export default function Dashboard({ user, theme, toggleTheme }) {
     const [headerVisible, setHeaderVisible] = useState(false)
     const [activeView, setActiveView] = useState('Dashboard')
+    const [selectedDate, setSelectedDate] = useState(new Date())
+    const [currentMonth, setCurrentMonth] = useState(new Date())
 
     React.useEffect(() => {
         setTimeout(() => setHeaderVisible(true), 80)
@@ -25,7 +25,7 @@ export default function Dashboard({ user, theme, toggleTheme }) {
         if (activeView === 'Settings') {
             return (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                    className="rounded-xl p-6 text-sm" style={{ backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+                    className="rounded-xl p-6 text-sm max-w-2xl mx-auto" style={{ backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
                     <p className="font-mono text-[9px] tracking-widest uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Configuration</p>
                     <h2 className="text-base font-semibold mb-4">Account Settings</h2>
                     <div className="space-y-4">
@@ -44,23 +44,25 @@ export default function Dashboard({ user, theme, toggleTheme }) {
             )
         }
 
-        // Default: Pure local dashboard without GitHub dependency
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-auto">
-                <div className="col-span-1 lg:col-span-2">
-                    <TaskCards />
-                </div>
-                <div className="col-span-1">
-                    <StatPanel stats={{ streak: 12, ranking: '92nd' }} />
-                </div>
-                <div className="col-span-1">
-                    <Timeline />
-                </div>
-                <div className="col-span-1">
-                    <SkillPanel />
-                </div>
-                <div className="col-span-1 md:col-span-1 lg:col-span-1">
-                    <ActivityLog events={[]} />
+            <div className="flex flex-col gap-6 max-w-7xl mx-auto">
+                <MonthlySummary currentMonth={currentMonth} />
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    {/* Left: Calendar */}
+                    <div className="lg:col-span-5 xl:col-span-4 sticky top-0">
+                        <WorkCalendar
+                            selectedDate={selectedDate}
+                            onDateSelect={setSelectedDate}
+                            currentMonth={currentMonth}
+                            setCurrentMonth={setCurrentMonth}
+                        />
+                    </div>
+
+                    {/* Right: Day Detail */}
+                    <div className="lg:col-span-7 xl:col-span-8 min-h-[600px]">
+                        <DayDetail selectedDate={selectedDate} />
+                    </div>
                 </div>
             </div>
         )

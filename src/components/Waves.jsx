@@ -117,7 +117,7 @@ export function Waves({
             path.classList.add('js-line')
             path.setAttribute('fill', 'none')
             path.setAttribute('stroke', strokeColor)
-            path.setAttribute('stroke-width', '1')
+            path.setAttribute('stroke-width', '1.5')
 
             svgRef.current.appendChild(path)
             pathsRef.current.push(path)
