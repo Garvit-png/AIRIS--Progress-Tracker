@@ -7,7 +7,8 @@ const APPROVED_EMAILS = [
     'admin@airis.tech',
     'garvit@airis.tech',
     'test@user.com',
-    'garvitgandhi0313@gmail.com'
+    'garvitgandhi0313@gmail.com',
+    'test@gmail.com'
 ];
 
 export const AuthService = {
@@ -73,5 +74,17 @@ export const AuthService = {
 
     logout: () => {
         localStorage.removeItem('airis_session');
+    },
+
+    clearUser: (email) => {
+        const users = JSON.parse(localStorage.getItem('airis_users') || '{}');
+        delete users[email.toLowerCase().trim()];
+        localStorage.setItem('airis_users', JSON.stringify(users));
+        localStorage.removeItem('airis_session');
     }
 };
+
+if (typeof window !== 'undefined') {
+    window.AuthService = AuthService;
+}
+
