@@ -53,9 +53,8 @@ export default function App() {
   }, [])
 
   if (phase === 'loading') {
-    const lastUser = AuthService.getLastUser()
     const sessionUser = AuthService.getSession()
-    return <LoaderScreen onComplete={() => setPhase('app')} user={sessionUser || lastUser} />
+    return <LoaderScreen onComplete={() => setPhase('app')} user={sessionUser} />
   }
 
   return (

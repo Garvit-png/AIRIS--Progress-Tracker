@@ -21,7 +21,7 @@ export default function RegisterPage() {
         }
     }, [initialEmail, navigate])
 
-    const handleRegister = (e) => {
+    const handleRegister = async (e) => {
         e.preventDefault()
         setError('')
 
@@ -31,13 +31,16 @@ export default function RegisterPage() {
         }
 
         setIsLoading(true)
-
-        // Simulate network delay
-        setTimeout(() => {
-            AuthService.registerUser(email, { password, name, year })
-            AuthService.setSession(email)
+        try {
+            await AuthService.register(name, email, password, year)
+            // Log in immediately after registration
+            await AuthService.login(email, password)
             navigate('/dashboard', { replace: true })
-        }, 800)
+        } catch (err) {
+            setError(err.message.toUpperCase())
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     return (
@@ -91,6 +94,14 @@ export default function RegisterPage() {
                         className="w-full py-3 bg-white text-black font-bold text-[10px] uppercase tracking-widest rounded-lg hover:invert transition-all disabled:opacity-50"
                     >
                         {isLoading ? 'Initializing...' : 'Complete Registration'}
+                    </button>
+                    
+                    <button
+                        type="button"
+                        onClick={() => navigate('/login')}
+                        className="w-full py-2 font-mono text-[9px] uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
+                    >
+                        Back to Login
                     </button>
                 </form>
 

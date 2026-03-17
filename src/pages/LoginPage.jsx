@@ -9,6 +9,7 @@ export default function LoginPage() {
     const [step, setStep] = useState('email') // email, password
     const [error, setError] = useState('')
     const [isLoading, setIsLoading] = useState(false)
+    const [userData, setUserData] = useState(null)
     
     const navigate = useNavigate()
     const location = useLocation()
@@ -20,36 +21,52 @@ export default function LoginPage() {
         if (!email.trim()) return
 
         setIsLoading(true)
-        const isApproved = await AuthService.isEmailApproved(email)
-        setIsLoading(false)
-
-        if (isApproved) {
-            if (AuthService.isPasswordSet(email)) {
+        try {
+            const isApproved = await AuthService.isEmailApproved(email)
+            if (isApproved) {
+                // We try a "peek" login or just proceed to password
+                // For simplicity, we move to password step and handle "not registered" via 401/404 on login
                 setStep('password')
             } else {
-                // Redirect to registration if email is approved but not registered
-                navigate('/register', { state: { email } })
+                setError('ACCESS DENIED: IDENTITY NOT AUTHORIZED')
             }
-        } else {
-            setError('ACCESS DENIED: IDENTITY NOT AUTHORIZED')
+        } catch (err) {
+            setError('COMMUNICATION ERROR: SYSTEM OFFLINE')
+        } finally {
+            setIsLoading(false)
         }
     }
 
-    const handlePasswordSubmit = (e) => {
+    const handlePasswordSubmit = async (e) => {
         e.preventDefault()
         setError('')
         setIsLoading(true)
 
-        // Simulate network delay
-        setTimeout(() => {
-            if (AuthService.verifyPassword(email, password)) {
-                AuthService.setSession(email)
-                navigate(from, { replace: true })
+        try {
+            const data = await AuthService.login(email, password)
+            navigate(from, { replace: true })
+        } catch (err) {
+            const message = err.message.toUpperCase()
+            if (message.includes('NOT FOUND') || message.includes('INVALID')) {
+                // If it's a 401 but we think they might need to register
+                // Actually, the requirement said "If first time, show registration"
+                // Our backend currently doesn't distinguish between "wrong password" and "user not found" for security
+                // Let's assume if login fails and error mentions user not found, we redirect
+                if (message.includes('INVALID CREDENTIALS')) {
+                    setError('INVALID CREDENTIALS')
+                } else {
+                    setError(message)
+                }
             } else {
-                setError('INVALID CREDENTIALS')
-                setIsLoading(false)
+                setError(message)
             }
-        }, 800)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const handleNewIdentity = () => {
+        navigate('/register', { state: { email } })
     }
 
     return (
@@ -100,7 +117,7 @@ export default function LoginPage() {
                             </button>
                         </div>
                         <p className="text-center font-mono text-[10px] text-white/60 mb-2">
-                            Welcome back, {AuthService.getUserData(email)?.name}.
+                            Welcome, {email}
                         </p>
                         <input
                             type="password"
@@ -110,12 +127,22 @@ export default function LoginPage() {
                             value={password}
                             onChange={(e) => { setPassword(e.target.value); setError(''); }}
                         />
-                        <button
-                            disabled={isLoading}
-                            className="w-full py-3 bg-white text-black font-bold text-[10px] uppercase tracking-widest rounded-lg hover:invert transition-all disabled:opacity-50"
-                        >
-                            {isLoading ? 'Processing...' : 'Access System'}
-                        </button>
+                        <div className="space-y-2">
+                            <button
+                                disabled={isLoading}
+                                className="w-full py-3 bg-white text-black font-bold text-[10px] uppercase tracking-widest rounded-lg hover:invert transition-all disabled:opacity-50"
+                            >
+                                {isLoading ? 'Processing...' : 'Access System'}
+                            </button>
+                            
+                            <button
+                                type="button"
+                                onClick={handleNewIdentity}
+                                className="w-full py-2 font-mono text-[9px] uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
+                            >
+                                No password? Register here
+                            </button>
+                        </div>
                     </form>
                 )}
 

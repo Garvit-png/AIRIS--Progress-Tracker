@@ -4,13 +4,10 @@ import { AuthService } from '../services/authService'
 
 export default function ProtectedRoute({ children }) {
     const user = AuthService.getSession()
+    const token = AuthService.getToken()
     const location = useLocation()
 
-    if (!user) {
-        // Redirect them to the /login page, but save the current location they were
-        // trying to go to when they were redirected. This allows us to send them
-        // along to that page after they login, which is a nicer user experience
-        // than dropping them off on the home page.
+    if (!user || !token) {
         return <Navigate to="/login" state={{ from: location }} replace />
     }
 
