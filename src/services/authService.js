@@ -3,9 +3,8 @@
  * Handles restricted email login, registration, and session persistence
  */
 
-const APPROVED_EMAILS = [
-    'admin@airis.tech'
-];
+// Mock API endpoint for approved emails
+const APPROVED_EMAILS_API = 'https://api.airis.tech/approved-emails';
 
 let _usersCache = null;
 let _sessionCache = null;
@@ -27,8 +26,29 @@ const saveUsers = (users) => {
 };
 
 export const AuthService = {
-    isEmailApproved: (email) => {
-        return APPROVED_EMAILS.includes(email.toLowerCase().trim());
+    // In a real app, this would be an async call to an API
+    getApprovedEmails: async () => {
+        try {
+            // Simulating API call
+            // const response = await fetch(APPROVED_EMAILS_API);
+            // const data = await response.json();
+            // return data.emails;
+            
+            // For now, returning a mock list
+            return [
+                'admin@airis.tech',
+                'garvitgandhi0313@gmail.com',
+                'member@airis.tech'
+            ];
+        } catch (error) {
+            console.error('Failed to fetch approved emails:', error);
+            return [];
+        }
+    },
+
+    isEmailApproved: async (email) => {
+        const approvedEmails = await AuthService.getApprovedEmails();
+        return approvedEmails.some(e => e.toLowerCase() === email.toLowerCase().trim());
     },
 
     // Saves user profile: { password, name, year }
@@ -70,14 +90,14 @@ export const AuthService = {
     setSession: (email) => {
         const cleanEmail = email.toLowerCase().trim();
         _sessionCache = cleanEmail;
-        localStorage.setItem('airis_session', cleanEmail);
+        localStorage.setItem('current_user', cleanEmail);
         const data = AuthService.getUserData(cleanEmail);
         if (data) localStorage.setItem('airis_last_user', JSON.stringify(data));
     },
 
     getSession: () => {
         if (_sessionCache === null) {
-            _sessionCache = localStorage.getItem('airis_session');
+            _sessionCache = localStorage.getItem('current_user');
         }
         if (!_sessionCache) return null;
         return AuthService.getUserData(_sessionCache);
@@ -94,7 +114,7 @@ export const AuthService = {
 
     logout: () => {
         _sessionCache = '';
-        localStorage.removeItem('airis_session');
+        localStorage.removeItem('current_user');
     },
 
     clearUser: (email) => {

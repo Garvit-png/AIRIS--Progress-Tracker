@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
+import { AuthService } from '../services/authService'
 
 const NAV = [
     {
@@ -57,11 +59,17 @@ const NAV = [
 
 export default function Sidebar({ user, activeView, setActiveView }) {
     const [collapsed, setCollapsed] = useState(false)
+    const navigate = useNavigate()
 
     // Helper for avatar initials
     const initials = user?.name 
         ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() 
         : user?.email ? user.email[0].toUpperCase() : '??';
+
+    const handleLogout = () => {
+        AuthService.logout()
+        navigate('/login', { replace: true })
+    }
 
     return (
         <motion.aside
@@ -136,14 +144,23 @@ export default function Sidebar({ user, activeView, setActiveView }) {
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: 'var(--text)', color: 'var(--bg)' }}>
                     {initials}
                 </div>
-                <motion.div
-                    animate={{ opacity: collapsed ? 0 : 1, width: collapsed ? 0 : 'auto' }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden whitespace-nowrap"
+                {!collapsed && (
+                    <div className="flex-1 overflow-hidden whitespace-nowrap">
+                        <p className="text-xs font-semibold">{user?.name || 'Authorized User'}</p>
+                        <p className="text-[10px] font-mono opacity-35 truncate">{user?.year ? `YEAR ${user.year}` : 'Access Node'}</p>
+                    </div>
+                )}
+                <button 
+                    onClick={handleLogout}
+                    className="opacity-30 hover:opacity-100 transition-opacity"
+                    title="Logout"
                 >
-                    <p className="text-xs font-semibold">{user?.name || 'Authorized User'}</p>
-                    <p className="text-[10px] font-mono opacity-35">{user?.year ? `STUDENT YEAR ${user.year}` : 'Access Node'}</p>
-                </motion.div>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                        <polyline points="16 17 21 12 16 7" />
+                        <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                </button>
             </div>
         </motion.aside>
     )

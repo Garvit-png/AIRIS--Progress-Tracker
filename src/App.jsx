@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import './index.css'
 import LoaderScreen from './components/LoaderScreen'
 import Dashboard from './components/Dashboard'
-import LoginGate from './components/LoginGate'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
+import ProtectedRoute from './components/ProtectedRoute'
 
 import { AuthService } from './services/authService'
 
@@ -43,40 +46,48 @@ function ErrorBoundary({ children }) {
 
 export default function App() {
   const [phase, setPhase] = useState('loading') // loading -> app
-  const [user, setUser] = useState(() => AuthService.getSession())
-
+  
   useEffect(() => {
     // Force permanent dark mode
     document.documentElement.setAttribute('data-theme', 'dark')
   }, [])
 
-
-  const lastUser = AuthService.getLastUser()
-  const displayUser = user || lastUser
-
-  const handleLogin = (userData) => {
-    console.log('[App] User logged in:', userData)
-    setUser(userData)
+  if (phase === 'loading') {
+    const lastUser = AuthService.getLastUser()
+    const sessionUser = AuthService.getSession()
+    return <LoaderScreen onComplete={() => setPhase('app')} user={sessionUser || lastUser} />
   }
 
   return (
-    <div
-      className={`w-full h-full text-white overflow-hidden relative transition-colors duration-500`}
-      style={{ background: 'var(--bg)', color: 'var(--text)' }}
-    >
-      {phase === 'loading' ? (
-        <LoaderScreen onComplete={() => setPhase('app')} user={displayUser} />
-      ) : !user ? (
+    <Router>
+      <div
+        className={`w-full h-full text-white overflow-hidden relative transition-colors duration-500`}
+        style={{ background: 'var(--bg)', color: 'var(--text)' }}
+      >
         <ErrorBoundary>
-          <LoginGate onLogin={handleLogin} />
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <DashboardWrapper />
+                </ProtectedRoute>
+              } 
+            />
+            {/* Redirect root to dashboard (which will redirect to login if needed) */}
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            {/* Catch all redirect to dashboard */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
         </ErrorBoundary>
-      ) : (
-        <ErrorBoundary>
-          <Dashboard
-            user={user}
-          />
-        </ErrorBoundary>
-      )}
-    </div>
+      </div>
+    </Router>
   )
+}
+
+function DashboardWrapper() {
+  const user = AuthService.getSession()
+  return <Dashboard user={user} />
 }

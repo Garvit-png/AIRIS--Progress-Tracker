@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ShaderBackground from './ShaderBackground'
 import { SystemAudio } from '../services/audioService'
@@ -11,7 +11,7 @@ const BOOT_LINES = [
     { text: 'All systems operational.', delay: 600, bold: true },
 ]
 
-export default function LoaderScreen({ onComplete, user }) {
+const LoaderScreen = memo(({ onComplete, user }) => {
     const [isBooted, setIsBooted] = useState(false)
     const [lines, setLines] = useState([])
     const [progress, setProgress] = useState(0)
@@ -42,7 +42,12 @@ export default function LoaderScreen({ onComplete, user }) {
             const p = Math.min(elapsed / duration, 1);
             const currentProgress = Math.round(p * 100);
             
-            setProgress(currentProgress);
+            // Only update progress state at integer boundaries to minimize re-renders
+            setProgress(prev => {
+                if (prev === currentProgress) return prev;
+                return currentProgress;
+            });
+            
             SystemAudio.updateSweep(currentProgress);
             
             if (p < 1) requestAnimationFrame(tick);
@@ -239,4 +244,6 @@ export default function LoaderScreen({ onComplete, user }) {
             ) : null}
         </AnimatePresence>
     )
-}
+})
+
+export default LoaderScreen
