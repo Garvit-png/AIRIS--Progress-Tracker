@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React from 'react'
 
 // Base panel wrapper so all panels are visually consistent
 export default function Panel({ eyebrow, title, children, action, className = '' }) {

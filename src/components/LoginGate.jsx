@@ -57,6 +57,19 @@ export default function LoginGate({ onLogin }) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-[var(--bg)]">
+            {/* Top Left Logo */}
+            <div className="fixed top-8 left-8 z-[70]">
+                <motion.img 
+                    src="/logo.png" 
+                    alt="AIRIS Logo" 
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2, duration: 0.8 }}
+                    className="h-16 w-auto object-contain"
+                    style={{ mixBlendMode: 'screen' }}
+                />
+            </div>
+
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}

@@ -42,7 +42,7 @@ const ShaderBackground = ({
     const float offsetSpeed = 1.33 * overallSpeed;
     const float minOffsetSpread = 0.6;
     const float maxOffsetSpread = 2.0;
-    const int linesPerGroup = 8; // Reduced from 16 for better performance
+    const int linesPerGroup = 4; // Reduced for better performance
 
     #define drawCircle(pos, radius, coord) smoothstep(radius + gridSmoothWidth, radius, length(coord - (pos)))
     #define drawSmoothLine(pos, halfWidth, t) smoothstep(halfWidth, 0.0, abs(pos - (t)))
@@ -94,40 +94,40 @@ const ShaderBackground = ({
     }
   `;
 
-  // Helper function to compile shader
-  const loadShader = (gl, type, source) => {
-    const shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      console.error('Shader compile error: ', gl.getShaderInfoLog(shader));
-      gl.deleteShader(shader);
-      return null;
-    }
-
-    return shader;
-  };
-
-  // Initialize shader program
-  const initShaderProgram = (gl, vsSource, fsSource) => {
-    const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
-    const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
-
-    const shaderProgram = gl.createProgram();
-    gl.attachShader(shaderProgram, vertexShader);
-    gl.attachShader(shaderProgram, fragmentShader);
-    gl.linkProgram(shaderProgram);
-
-    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-      console.error('Shader program link error: ', gl.getProgramInfoLog(shaderProgram));
-      return null;
-    }
-
-    return shaderProgram;
-  };
-
   useEffect(() => {
+    // Helper function to compile shader
+    const loadShader = (gl, type, source) => {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error('Shader compile error: ', gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+      }
+
+      return shader;
+    };
+
+    // Initialize shader program
+    const initShaderProgram = (gl, vsSource, fsSource) => {
+      const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
+      const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
+
+      const shaderProgram = gl.createProgram();
+      gl.attachShader(shaderProgram, vertexShader);
+      gl.attachShader(shaderProgram, fragmentShader);
+      gl.linkProgram(shaderProgram);
+
+      if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+        console.error('Shader program link error: ', gl.getProgramInfoLog(shaderProgram));
+        return null;
+      }
+
+      return shaderProgram;
+    };
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -205,7 +205,7 @@ const ShaderBackground = ({
       window.removeEventListener('resize', resizeCanvas);
       cancelAnimationFrame(animationId);
     };
-  }, [lineColor, backgroundColor]);
+  }, [lineColor, backgroundColor, fsSource, vsSource]);
 
   return (
     <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full -z-10" />

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import {
     Plus,
@@ -37,7 +38,7 @@ export default function DayDetail({ selectedDate }) {
     const fileInputRef = useRef(null);
 
     useEffect(() => {
-        return workStore.subscribe((allData) => {
+        return workStore.subscribe(() => {
             setData(workStore.getDayData(dateStr));
         });
     }, [dateStr]);

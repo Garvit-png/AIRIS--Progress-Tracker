@@ -55,8 +55,13 @@ const NAV = [
     },
 ]
 
-export default function Sidebar({ activeView, setActiveView }) {
+export default function Sidebar({ user, activeView, setActiveView }) {
     const [collapsed, setCollapsed] = useState(false)
+
+    // Helper for avatar initials
+    const initials = user?.name 
+        ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() 
+        : user?.email ? user.email[0].toUpperCase() : '??';
 
     return (
         <motion.aside
@@ -129,15 +134,15 @@ export default function Sidebar({ activeView, setActiveView }) {
             {/* User */}
             <div className="px-3 py-3 border-t flex items-center gap-3 min-h-[60px]" style={{ borderColor: 'var(--border)' }}>
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: 'var(--text)', color: 'var(--bg)' }}>
-                    GG
+                    {initials}
                 </div>
                 <motion.div
                     animate={{ opacity: collapsed ? 0 : 1, width: collapsed ? 0 : 'auto' }}
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden whitespace-nowrap"
                 >
-                    <p className="text-xs font-semibold">Garvit Gandhi</p>
-                    <p className="text-[10px] font-mono opacity-35">Tech Lead</p>
+                    <p className="text-xs font-semibold">{user?.name || 'Authorized User'}</p>
+                    <p className="text-[10px] font-mono opacity-35">{user?.year ? `STUDENT YEAR ${user.year}` : 'Access Node'}</p>
                 </motion.div>
             </div>
         </motion.aside>

@@ -5,10 +5,10 @@ import { SystemAudio } from '../services/audioService'
 
 const BOOT_LINES = [
     { text: 'Mounting workspace...', delay: 0 },
-    { text: 'Syncing repositories...', delay: 350 },
-    { text: 'Loading modules...', delay: 680 },
-    { text: 'Authenticating session...', delay: 1000 },
-    { text: 'All systems operational.', delay: 1300, bold: true },
+    { text: 'Syncing repositories...', delay: 150 },
+    { text: 'Loading modules...', delay: 300 },
+    { text: 'Authenticating session...', delay: 450 },
+    { text: 'All systems operational.', delay: 600, bold: true },
 ]
 
 export default function LoaderScreen({ onComplete, user }) {
@@ -33,7 +33,7 @@ export default function LoaderScreen({ onComplete, user }) {
         const timers = [];
 
         // Progress bar and audio sweep logic
-        const duration = 1500;
+        const duration = 600;
         const startTime = Date.now();
         
         const tick = () => {
@@ -66,10 +66,10 @@ export default function LoaderScreen({ onComplete, user }) {
             if (active) {
                 setExiting(true);
                 SystemAudio.stopAmbience();
-                const completeTimer = setTimeout(onComplete, 500);
+                const completeTimer = setTimeout(onComplete, 400);
                 timers.push(completeTimer);
             }
-        }, 2200);
+        }, 1800);
         timers.push(exitTimer);
 
         return () => {
@@ -90,10 +90,23 @@ export default function LoaderScreen({ onComplete, user }) {
                 >
                     <ShaderBackground />
 
+                    {/* Top Left Logo */}
+                    <div className="fixed top-8 left-8 z-[70]">
+                        <motion.img 
+                            src="/logo.png" 
+                            alt="AIRIS Logo" 
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.5, duration: 0.8 }}
+                            className="h-16 w-auto object-contain"
+                            style={{ mixBlendMode: 'screen' }}
+                        />
+                    </div>
+
                     <motion.div
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="relative z-10 flex flex-col items-center translate-y-32"
+                        className="relative z-10 flex flex-col items-center translate-y-12"
                     >
                         {/* Outer Glow Pulse */}
                         <motion.div
@@ -113,10 +126,19 @@ export default function LoaderScreen({ onComplete, user }) {
                             initial={{ opacity: 0, y: 5 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2 }}
-                            className="mb-10 font-mono text-2xl tracking-[1.5em] text-white uppercase pl-[1.5em]"
+                            className="mb-1 font-mono text-2xl tracking-[1.5em] text-white uppercase pl-[1.5em]"
                         >
                             A I R I S
                         </motion.h1>
+
+                        <motion.p
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.3 }}
+                            className="mb-10 font-mono text-[9px] font-bold tracking-[1.2em] text-white uppercase pl-[1.2em]"
+                        >
+                            AI Research & Innovation Society
+                        </motion.p>
 
                         <motion.button
                             onClick={handleBoot}

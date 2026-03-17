@@ -31,12 +31,17 @@ export default function WorkCalendar({ selectedDate, onDateSelect, currentMonth,
     };
 
     // Calendar logic
-    const monthStart = startOfMonth(currentMonth);
-    const monthEnd = endOfMonth(monthStart);
-    const startDate = startOfWeek(monthStart);
-    const endDate = endOfWeek(monthEnd);
-
-    const calendarDays = eachDayOfInterval({ start: startDate, end: endDate });
+    const { monthStart, calendarDays } = React.useMemo(() => {
+        const start = startOfMonth(currentMonth);
+        const end = endOfMonth(start);
+        const startW = startOfWeek(start);
+        const endW = endOfWeek(end);
+        
+        return {
+            monthStart: start,
+            calendarDays: eachDayOfInterval({ start: startW, end: endW })
+        };
+    }, [currentMonth]);
 
     const years = [2026, 2027, 2028, 2029, 2030];
 

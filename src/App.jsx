@@ -43,21 +43,13 @@ function ErrorBoundary({ children }) {
 
 export default function App() {
   const [phase, setPhase] = useState('loading') // loading -> app
-  const [user, setUser] = useState(null)
-  const [theme, setTheme] = useState(() => localStorage.getItem('airis-theme') || 'dark')
+  const [user, setUser] = useState(() => AuthService.getSession())
 
   useEffect(() => {
-    localStorage.setItem('airis-theme', theme)
-    document.documentElement.setAttribute('data-theme', theme)
-  }, [theme])
-
-  useEffect(() => {
-    // Check for existing session
-    const sessionUser = AuthService.getSession()
-    if (sessionUser) {
-      setUser(sessionUser)
-    }
+    // Force permanent dark mode
+    document.documentElement.setAttribute('data-theme', 'dark')
   }, [])
+
 
   const lastUser = AuthService.getLastUser()
   const displayUser = user || lastUser
@@ -82,8 +74,6 @@ export default function App() {
         <ErrorBoundary>
           <Dashboard
             user={user}
-            theme={theme}
-            toggleTheme={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
           />
         </ErrorBoundary>
       )}

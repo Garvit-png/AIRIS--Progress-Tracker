@@ -6,7 +6,7 @@ import DayDetail from './panels/DayDetail'
 import MonthlySummary from './panels/MonthlySummary'
 import { AuthService } from '../services/authService'
 
-export default function Dashboard({ user, theme, toggleTheme }) {
+export default function Dashboard({ user }) {
     const [headerVisible, setHeaderVisible] = useState(false)
     const [activeView, setActiveView] = useState('Dashboard')
     const [selectedDate, setSelectedDate] = useState(new Date())
@@ -70,7 +70,7 @@ export default function Dashboard({ user, theme, toggleTheme }) {
 
     return (
         <div className="flex h-full w-full overflow-hidden transition-colors duration-500" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
-            <Sidebar activeView={activeView} setActiveView={setActiveView} />
+            <Sidebar user={user} activeView={activeView} setActiveView={setActiveView} />
 
             <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
                 <motion.header
@@ -86,18 +86,6 @@ export default function Dashboard({ user, theme, toggleTheme }) {
                     </div>
 
                     <div className="flex items-center gap-3 sm:gap-5 flex-shrink-0">
-                        <button
-                            onClick={toggleTheme}
-                            className="p-2 rounded-full border hover:scale-110 active:scale-95 transition-all duration-300"
-                            style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
-                        >
-                            {theme === 'dark' ? (
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" /></svg>
-                            ) : (
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></svg>
-                            )}
-                        </button>
-
                         <div className="flex items-center gap-3 pl-3 border-l" style={{ borderColor: 'var(--border)' }}>
                             <div className="text-right hidden sm:block">
                                 <p className="text-[10px] font-bold uppercase leading-none">{user?.email.split('@')[0]}</p>
