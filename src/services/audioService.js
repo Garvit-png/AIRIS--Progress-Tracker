@@ -48,7 +48,7 @@ class AudioEngine {
     }
 
     // No sweeps or pitch shifts for the simple version
-    updateSweep(progress) {
+    updateSweep() {
         // Keeping the interface consistent but logic empty for simplicity
         // This ensures the LoaderScreen.jsx doesn't break
     }

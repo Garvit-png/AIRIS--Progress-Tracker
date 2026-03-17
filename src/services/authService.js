@@ -11,6 +11,25 @@ const APPROVED_EMAILS = [
     'test@gmail.com'
 ];
 
+let _usersCache = null;
+let _sessionCache = null;
+
+const getCachedUsers = () => {
+    if (!_usersCache) {
+        try {
+            _usersCache = JSON.parse(localStorage.getItem('airis_users') || '{}');
+        } catch {
+            _usersCache = {};
+        }
+    }
+    return _usersCache;
+};
+
+const saveUsers = (users) => {
+    _usersCache = users;
+    localStorage.setItem('airis_users', JSON.stringify(users));
+};
+
 export const AuthService = {
     isEmailApproved: (email) => {
         return APPROVED_EMAILS.includes(email.toLowerCase().trim());
@@ -18,30 +37,31 @@ export const AuthService = {
 
     // Saves user profile: { password, name, year }
     registerUser: (email, data) => {
-        const users = JSON.parse(localStorage.getItem('airis_users') || '{}');
+        const users = getCachedUsers();
         users[email.toLowerCase().trim()] = {
             password: data.password,
             name: data.name,
             year: data.year,
             registeredAt: new Date().toISOString()
         };
-        localStorage.setItem('airis_users', JSON.stringify(users));
+        saveUsers(users);
     },
 
     verifyPassword: (email, password) => {
-        const users = JSON.parse(localStorage.getItem('airis_users') || '{}');
+        const users = getCachedUsers();
         const user = users[email.toLowerCase().trim()];
         return user && user.password === password;
     },
 
     isPasswordSet: (email) => {
-        const users = JSON.parse(localStorage.getItem('airis_users') || '{}');
+        const users = getCachedUsers();
         return !!users[email.toLowerCase().trim()];
     },
 
     // Returns { name, year, email }
     getUserData: (email) => {
-        const users = JSON.parse(localStorage.getItem('airis_users') || '{}');
+        if (!email) return null;
+        const users = getCachedUsers();
         const user = users[email.toLowerCase().trim()];
         if (!user) return null;
         return {
@@ -52,35 +72,40 @@ export const AuthService = {
     },
 
     setSession: (email) => {
-        localStorage.setItem('airis_session', email.toLowerCase().trim());
-        const data = AuthService.getUserData(email);
+        const cleanEmail = email.toLowerCase().trim();
+        _sessionCache = cleanEmail;
+        localStorage.setItem('airis_session', cleanEmail);
+        const data = AuthService.getUserData(cleanEmail);
         if (data) localStorage.setItem('airis_last_user', JSON.stringify(data));
     },
 
     getSession: () => {
-        const email = localStorage.getItem('airis_session');
-        if (!email) return null;
-        return AuthService.getUserData(email);
+        if (_sessionCache === null) {
+            _sessionCache = localStorage.getItem('airis_session');
+        }
+        if (!_sessionCache) return null;
+        return AuthService.getUserData(_sessionCache);
     },
 
     getLastUser: () => {
         try {
             const data = localStorage.getItem('airis_last_user');
             return data ? JSON.parse(data) : null;
-        } catch (e) {
+        } catch {
             return null;
         }
     },
 
     logout: () => {
+        _sessionCache = '';
         localStorage.removeItem('airis_session');
     },
 
     clearUser: (email) => {
-        const users = JSON.parse(localStorage.getItem('airis_users') || '{}');
+        const users = getCachedUsers();
         delete users[email.toLowerCase().trim()];
-        localStorage.setItem('airis_users', JSON.stringify(users));
-        localStorage.removeItem('airis_session');
+        saveUsers(users);
+        AuthService.logout();
     }
 };
 

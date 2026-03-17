@@ -13,8 +13,8 @@ export default function Dashboard({ user, theme, toggleTheme }) {
     const [currentMonth, setCurrentMonth] = useState(new Date())
 
     React.useEffect(() => {
-        setTimeout(() => setHeaderVisible(true), 80)
-    }, [])
+        setHeaderVisible(true);
+    }, []);
 
     const handleLogout = () => {
         AuthService.logout()
@@ -82,7 +82,7 @@ export default function Dashboard({ user, theme, toggleTheme }) {
                 >
                     <div className="flex items-baseline gap-2 min-w-0">
                         <h1 className="text-sm font-semibold tracking-widest uppercase truncate" style={{ color: 'var(--text)' }}>{activeView}</h1>
-                        <span className="font-mono text-[10px] hidden sm:inline" style={{ color: 'var(--text-muted)' }}>/ {user?.email.split('@')[0]}</span>
+                        <span className="font-mono text-[10px] hidden sm:inline opacity-40" style={{ color: 'var(--text)' }}>/ {user?.name || user?.email.split('@')[0]}</span>
                     </div>
 
                     <div className="flex items-center gap-3 sm:gap-5 flex-shrink-0">

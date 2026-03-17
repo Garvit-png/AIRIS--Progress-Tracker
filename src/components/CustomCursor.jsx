@@ -9,8 +9,8 @@ export default function CustomCursor() {
     const mouseX = useMotionValue(-100);
     const mouseY = useMotionValue(-100);
 
-    // Smooth springs for tracking
-    const springConfig = { damping: 28, stiffness: 500, mass: 0.5 };
+    // Higher stiffness and lower mass for faster response with less lag
+    const springConfig = { damping: 30, stiffness: 800, mass: 0.35 };
     const cursorX = useSpring(mouseX, springConfig);
     const cursorY = useSpring(mouseY, springConfig);
 
@@ -29,25 +29,36 @@ export default function CustomCursor() {
             const isInteractive =
                 target.tagName === 'BUTTON' ||
                 target.tagName === 'A' ||
+                target.tagName === 'INPUT' ||
+                target.tagName === 'SELECT' ||
+                target.tagName === 'TEXTAREA' ||
                 target.getAttribute('role') === 'button' ||
                 target.closest('button') ||
-                target.closest('a');
+                target.closest('a') ||
+                target.closest('.interactive');
 
             setIsHovering(!!isInteractive);
         };
+
+        const handleMouseLeaveWindow = () => setIsVisible(false);
+        const handleMouseEnterWindow = () => setIsVisible(true);
 
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('mousedown', handleMouseDown);
         window.addEventListener('mouseup', handleMouseUp);
         window.addEventListener('mouseover', handleMouseOver);
+        document.addEventListener('mouseleave', handleMouseLeaveWindow);
+        document.addEventListener('mouseenter', handleMouseEnterWindow);
 
         return () => {
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mousedown', handleMouseDown);
             window.removeEventListener('mouseup', handleMouseUp);
             window.removeEventListener('mouseover', handleMouseOver);
+            document.removeEventListener('mouseleave', handleMouseLeaveWindow);
+            document.removeEventListener('mouseenter', handleMouseEnterWindow);
         };
-    }, [isVisible]);
+    }, [isVisible, mouseX, mouseY]);
 
     if (!isVisible) return null;
 

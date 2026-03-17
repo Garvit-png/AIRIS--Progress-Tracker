@@ -1,0 +1,114 @@
+import React from 'react';
+import { Plus, CheckCircle2, Circle, Trash2, Trophy, Clock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { format } from 'date-fns';
+
+export default function TaskSection({ 
+    tasks, 
+    isToday, 
+    isPast, 
+    isSyncingTasks, 
+    selectedDate, 
+    newTaskTitle, 
+    setNewTaskTitle, 
+    addTask, 
+    handleToggleTask, 
+    deleteTask 
+}) {
+    return (
+        <div className="flex flex-col gap-4 bg-white/5 border border-white/5 rounded-2xl p-5 overflow-hidden">
+            <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-1">
+                    <h3 className="text-sm font-bold uppercase tracking-widest">Active To-Do</h3>
+                    <div className="flex items-center gap-2 h-4">
+                        <AnimatePresence mode="wait">
+                            {isSyncingTasks ? (
+                                <motion.div
+                                    key="syncing"
+                                    initial={{ opacity: 0, y: 5 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -5 }}
+                                    className="flex items-center gap-1.5"
+                                >
+                                    <div className="w-1 h-1 rounded-full bg-green-400 animate-pulse" />
+                                    <span className="text-[9px] font-mono text-green-400 uppercase tracking-tighter">Syncing Status...</span>
+                                </motion.div>
+                            ) : (
+                                <motion.span
+                                    key="date"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 0.4 }}
+                                    className="font-mono text-[9px] uppercase italic"
+                                >
+                                    {format(selectedDate, 'MMM dd, yyyy')}
+                                </motion.span>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                </div>
+            </div>
+
+            {isToday ? (
+                <form onSubmit={addTask} className="relative">
+                    <input
+                        type="text"
+                        value={newTaskTitle}
+                        onChange={(e) => setNewTaskTitle(e.target.value)}
+                        placeholder="Add a mission objective..."
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-white/20 transition-colors pr-12"
+                    />
+                    <button type="submit" className="absolute right-2 top-2 p-1.5 bg-white/10 rounded-lg hover:bg-white/20 transition-all">
+                        <Plus size={16} />
+                    </button>
+                </form>
+            ) : isPast ? (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-white/5 border border-white/5 opacity-50">
+                    <Clock size={14} className="text-white/40" />
+                    <span className="text-[10px] uppercase tracking-widest font-mono text-white/40">Work Archive Locked (Read Only)</span>
+                </div>
+            ) : null}
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
+                <AnimatePresence mode="popLayout">
+                    {tasks.map((task) => (
+                        <motion.div
+                            layout
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            key={task.id}
+                            className={`group flex items-center justify-between p-3 rounded-xl border transition-all duration-300 ${task.completed ? 'bg-green-500/5 border-green-500/10' : 'bg-white/5 border-white/5 hover:border-white/10'
+                                }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => handleToggleTask(task.id)}
+                                    className={`transition-colors duration-300 ${task.completed ? 'text-green-500' : 'text-white/20 hover:text-white/40'}`}
+                                >
+                                    {task.completed ? <CheckCircle2 size={18} /> : <Circle size={18} />}
+                                </button>
+                                <span className={`text-xs transition-all duration-300 ${task.completed ? 'text-white/40 line-through' : 'text-white'}`}>
+                                    {task.title}
+                                </span>
+                            </div>
+                            {isToday && (
+                                <button
+                                    onClick={() => deleteTask(task.id)}
+                                    className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-500/10 text-red-500/40 hover:text-red-500 rounded-lg transition-all"
+                                >
+                                    <Trash2 size={14} />
+                                </button>
+                            )}
+                        </motion.div>
+                    ))}
+                    {tasks.length === 0 && (
+                        <div className="h-full flex flex-col items-center justify-center opacity-20 py-10">
+                            <Trophy size={32} className="mb-2" />
+                            <p className="text-[10px] uppercase tracking-widest">No objectives for this cycle</p>
+                        </div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </div>
+    );
+}

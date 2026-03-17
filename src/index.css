@@ -39,35 +39,6 @@
     --sidebar-bg: #f9f9f9;
   }
 
-  *,
-  html,
-  body,
-  #root {
-    cursor: none !important;
-  }
-
-  html,
-  body,
-  #root {
-    height: 100%;
-    width: 100%;
-    overflow: hidden;
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-display);
-    -webkit-font-smoothing: antialiased;
-    transition: background-color 0.4s ease, color 0.4s ease;
-  }
-
-  button,
-  a,
-  [role="button"],
-  input,
-  select,
-  textarea {
-    cursor: none !important;
-  }
-
   ::-webkit-scrollbar {
     width: 3px;
   }

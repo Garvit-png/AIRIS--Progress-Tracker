@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Waves } from './Waves'
+import ShaderBackground from './ShaderBackground'
 import { SystemAudio } from '../services/audioService'
 
 const BOOT_LINES = [
@@ -25,39 +25,58 @@ export default function LoaderScreen({ onComplete, user }) {
         SystemAudio.startAmbience()
     }
 
-    // Show boot lines one by one
+    // Unified boot sequence
     useEffect(() => {
-        if (!isBooted) return
+        if (!isBooted) return;
 
-        BOOT_LINES.forEach((line, i) => {
-            setTimeout(() => {
-                setLines(prev => [...prev, line])
-                SystemAudio.playDataTick()
-            }, line.delay)
-        })
+        let active = true;
+        const timers = [];
 
-        // Progress bar fills over 1.5s
-        const start = Date.now()
-        const duration = 1500
+        // Progress bar and audio sweep logic
+        const duration = 1500;
+        const startTime = Date.now();
+        
         const tick = () => {
-            const p = Math.min((Date.now() - start) / duration, 1)
-            const currentProgress = Math.round(p * 100)
-            setProgress(currentProgress)
-            SystemAudio.updateSweep(currentProgress)
-            if (p < 1) requestAnimationFrame(tick)
-        }
-        requestAnimationFrame(tick)
+            if (!active) return;
+            const elapsed = Date.now() - startTime;
+            const p = Math.min(elapsed / duration, 1);
+            const currentProgress = Math.round(p * 100);
+            
+            setProgress(currentProgress);
+            SystemAudio.updateSweep(currentProgress);
+            
+            if (p < 1) requestAnimationFrame(tick);
+            else setShowSystem(true);
+        };
+        requestAnimationFrame(tick);
 
-        // Show "SYSTEM ONLINE" at 1.5s
-        setTimeout(() => setShowSystem(true), 1500)
+        // Boot lines sequence
+        BOOT_LINES.forEach((line) => {
+            const t = setTimeout(() => {
+                if (active) {
+                    setLines(prev => [...prev, line]);
+                    SystemAudio.playDataTick();
+                }
+            }, line.delay);
+            timers.push(t);
+        });
 
-        // Start exit at 2.2s
-        setTimeout(() => {
-            setExiting(true)
-            SystemAudio.stopAmbience() // Stop sound as we exit
-            setTimeout(onComplete, 500)
-        }, 2200)
-    }, [isBooted, onComplete])
+        // Exit sequence
+        const exitTimer = setTimeout(() => {
+            if (active) {
+                setExiting(true);
+                SystemAudio.stopAmbience();
+                const completeTimer = setTimeout(onComplete, 500);
+                timers.push(completeTimer);
+            }
+        }, 2200);
+        timers.push(exitTimer);
+
+        return () => {
+            active = false;
+            timers.forEach(clearTimeout);
+        };
+    }, [isBooted, onComplete]);
 
     return (
         <AnimatePresence mode="wait">
@@ -69,12 +88,12 @@ export default function LoaderScreen({ onComplete, user }) {
                     exit={{ opacity: 0 }}
                     className="fixed inset-0 bg-black flex flex-col items-center justify-center z-[60]"
                 >
-                    <Waves strokeColor="rgba(255,255,255,0.3)" />
+                    <ShaderBackground />
 
                     <motion.div
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="relative z-10 flex flex-col items-center"
+                        className="relative z-10 flex flex-col items-center translate-y-32"
                     >
                         {/* Outer Glow Pulse */}
                         <motion.div
@@ -87,35 +106,35 @@ export default function LoaderScreen({ onComplete, user }) {
                                 repeat: Infinity,
                                 ease: "easeInOut"
                             }}
-                            className="absolute inset-0 bg-white/10 blur-3xl rounded-full"
+                            className="absolute inset-0 bg-[#FF0D99]/10 blur-3xl rounded-full"
                         />
-
-                        <motion.button
-                            onClick={handleBoot}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="group relative px-12 py-5 border rounded-full overflow-hidden transition-all duration-500 backdrop-blur-xl bg-white/5"
-                            style={{ borderColor: 'rgba(255,255,255,0.4)' }}
-                        >
-                            <span className="relative z-10 font-mono text-[11px] tracking-[0.5em] text-white uppercase group-hover:text-white transition-colors duration-300">
-                                Initialize Link
-                            </span>
-
-                            {/* Hover Fill */}
-                            <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
-
-                            {/* Inner Shine */}
-                            <div className="absolute -inset-4 bg-white/5 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                        </motion.button>
 
                         <motion.h1
                             initial={{ opacity: 0, y: 5 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2 }}
-                            className="mt-10 font-mono text-2xl tracking-[1.5em] text-white/40 uppercase pl-[1.5em]"
+                            className="mb-10 font-mono text-2xl tracking-[1.5em] text-white uppercase pl-[1.5em]"
                         >
                             A I R I S
                         </motion.h1>
+
+                        <motion.button
+                            onClick={handleBoot}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                            className="group relative px-12 py-5 border border-white/20 hover:border-[#FF0D99] rounded-full overflow-hidden transition-all duration-100 backdrop-blur-xl bg-black/40"
+                        >
+                            <span className="relative z-10 font-mono text-[11px] font-bold tracking-[0.5em] text-white uppercase transition-colors duration-300">
+                                INITIALISE LINK
+                            </span>
+
+                            {/* Hover Fill */}
+                            <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-5 transition-opacity duration-100" />
+
+                            {/* Inner Shine */}
+                            <div className="absolute -inset-4 bg-white/10 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
+                        </motion.button>
 
                     </motion.div>
                 </motion.div>
@@ -154,7 +173,7 @@ export default function LoaderScreen({ onComplete, user }) {
                     <div className="w-[340px] mb-3">
                         <div className="h-[1px] bg-white/10 rounded-full overflow-hidden">
                             <motion.div
-                                className="h-full bg-white"
+                                className="h-full bg-[#FF0D99]"
                                 animate={{ width: `${progress}%` }}
                                 transition={{ ease: 'linear', duration: 0.05 }}
                             />
@@ -187,7 +206,7 @@ export default function LoaderScreen({ onComplete, user }) {
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.15, duration: 0.35 }}
-                                    className="text-3xl font-bold text-white tracking-tight"
+                                    className="text-3xl font-bold text-[#FF0D99] tracking-tight"
                                 >
                                     Welcome, {welcomeName}.
                                 </motion.h2>

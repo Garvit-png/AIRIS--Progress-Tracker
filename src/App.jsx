@@ -3,7 +3,7 @@ import './index.css'
 import LoaderScreen from './components/LoaderScreen'
 import Dashboard from './components/Dashboard'
 import LoginGate from './components/LoginGate'
-import CustomCursor from './components/CustomCursor'
+
 import { AuthService } from './services/authService'
 
 // Simple render-crash catcher
@@ -87,7 +87,6 @@ export default function App() {
           />
         </ErrorBoundary>
       )}
-      <CustomCursor />
     </div>
   )
 }

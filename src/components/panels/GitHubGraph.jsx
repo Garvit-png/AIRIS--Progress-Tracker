@@ -106,7 +106,7 @@ export default function GitHubGraph({ username, activityData = {} }) {
                                 <div
                                     key={i}
                                     title={`${day.count} contributions on ${day.key}`}
-                                    className="rounded-[2px] transition-all hover:ring-2 cursor-pointer"
+                                    className="rounded-[2px] transition-all hover:ring-2"
 
                                     style={{
                                         width: 11,

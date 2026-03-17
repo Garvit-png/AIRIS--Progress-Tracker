@@ -52,7 +52,7 @@ export default function WorkCalendar({ selectedDate, onDateSelect, currentMonth,
                         <select
                             value={currentMonth.getFullYear()}
                             onChange={(e) => setYear(parseInt(e.target.value))}
-                            className="appearance-none bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 font-mono text-[11px] text-white/60 focus:text-white focus:outline-none focus:border-white/20 transition-all cursor-pointer pr-8 group-hover:bg-white/10"
+                            className="appearance-none bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 font-mono text-[11px] text-white/60 focus:text-white focus:outline-none focus:border-white/20 transition-all pr-8 group-hover:bg-white/10"
                         >
                             {years.map(y => (
                                 <option key={y} value={y} className="bg-[#121212] tracking-widest">{y}</option>
