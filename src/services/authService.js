@@ -106,6 +106,89 @@ export const AuthService = {
         localStorage.removeItem('token');
         localStorage.removeItem('current_user');
         window.location.href = '/login';
+    },
+
+    // ADMIN METHODS
+    getApprovedEmails: async () => {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5001/api/admin/approved', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        return data.success ? data.data : [];
+    },
+
+    approveEmail: async (email) => {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5001/api/admin/approve', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ email })
+        });
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message);
+        return data.data;
+    },
+
+    revokeEmail: async (email) => {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:5001/api/admin/approve/${email}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message);
+        return true;
+    },
+
+    forgotPassword: async (email) => {
+        const response = await fetch(`${API_URL}/forgotpassword`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Failed to send reset email');
+        return data;
+    },
+
+    resetPassword: async (token, password) => {
+        const response = await fetch(`${API_URL}/resetpassword/${token}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Failed to reset password');
+        return data;
+    },
+
+    verifyEmail: async (token) => {
+        const response = await fetch(`${API_URL}/verify/${token}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Verification failed');
+        return data;
+    },
+
+    googleLogin: async (idToken) => {
+        const response = await fetch(`${API_URL}/google`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || 'Google login failed');
+        }
+
+        // Store token and user
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('current_user', JSON.stringify(data.user));
+        return data;
     }
 };
 

@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { GoogleLogin } from '@react-oauth/google'
 import { AuthService } from '../services/authService'
+import Logo from '../components/Logo'
 
 export default function LoginPage() {
     const [email, setEmail] = useState('')
@@ -10,6 +12,8 @@ export default function LoginPage() {
     const [error, setError] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [userData, setUserData] = useState(null)
+    const [resetSent, setResetSent] = useState(false)
+    const [forgotMode, setForgotMode] = useState(false)
     
     const navigate = useNavigate()
     const location = useLocation()
@@ -65,6 +69,40 @@ export default function LoginPage() {
         }
     }
 
+    const handleGoogleSuccess = async (credentialResponse) => {
+        console.log('Google Auth Triggered on Frontend');
+        setIsLoading(true)
+        setError('')
+        try {
+            console.log('Sending token to backend...');
+            await AuthService.googleLogin(credentialResponse.credential)
+            console.log('Backend Login Successful');
+            navigate(from, { replace: true })
+        } catch (err) {
+            console.error('Frontend Google Login Error:', err);
+            setError(err.message.toUpperCase())
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const handleForgotPassword = async (e) => {
+        e.preventDefault()
+        if (!email) {
+            setError('EMAIL REQUIRED FOR RESET')
+            return
+        }
+        setIsLoading(true)
+        try {
+            await AuthService.forgotPassword(email)
+            setResetSent(true)
+        } catch (err) {
+            setError(err.message.toUpperCase())
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
     const handleNewIdentity = () => {
         navigate('/register', { state: { email } })
     }
@@ -76,9 +114,8 @@ export default function LoginPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="w-full max-w-sm"
             >
-                <div className="mb-8 space-y-2 text-center">
-                    <p className="font-mono text-[9px] tracking-[0.3em] uppercase opacity-40">System Restricted Access</p>
-                    <h1 className="text-2xl font-bold tracking-tight">AIRIS TERMINAL</h1>
+                <div className="mb-10 text-center">
+                    <Logo size="md" />
                 </div>
 
                 {step === 'email' ? (
@@ -144,6 +181,57 @@ export default function LoginPage() {
                             </button>
                         </div>
                     </form>
+                )}
+
+                {forgotMode ? (
+                    <div className="mt-8 pt-8 border-t border-white/5 text-center transition-all">
+                        {resetSent ? (
+                            <p className="font-mono text-[9px] text-green-500 uppercase tracking-widest">
+                                Reset link sent to your inbox
+                            </p>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={handleForgotPassword}
+                                disabled={isLoading}
+                                className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
+                            >
+                                {isLoading ? 'Sending...' : 'Request Password Reset'}
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            onClick={() => { setForgotMode(false); setResetSent(false); }}
+                            className="block w-full mt-4 font-mono text-[8px] uppercase opacity-20 hover:opacity-100"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                ) : (
+                    <div className="mt-8 pt-8 border-t border-white/5 space-y-4">
+                        <button
+                            type="button"
+                            onClick={() => setForgotMode(true)}
+                            className="w-full font-mono text-[9px] uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
+                        >
+                            Forgot Password?
+                        </button>
+                        
+                        <div className="relative flex items-center justify-center">
+                            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5" /></div>
+                            <span className="relative px-2 bg-[var(--bg)] font-mono text-[8px] uppercase opacity-20">or</span>
+                        </div>
+
+                        <div className="flex justify-center">
+                            <GoogleLogin
+                                onSuccess={handleGoogleSuccess}
+                                onError={() => setError('GOOGLE AUTHENTICATION FAILED')}
+                                theme="filled_black"
+                                shape="pill"
+                                text="continue_with"
+                            />
+                        </div>
+                    </div>
                 )}
 
                 {error && (

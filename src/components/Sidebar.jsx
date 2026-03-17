@@ -137,6 +137,32 @@ export default function Sidebar({ user, activeView, setActiveView }) {
                         </motion.span>
                     </button>
                 ))}
+
+                {/* Admin Specific */}
+                {user?.role === 'admin' && (
+                    <div className="pt-4 mt-4 border-t border-white/5">
+                        <p className={`px-4 mb-2 font-mono text-[8px] uppercase tracking-[0.3em] opacity-30 ${collapsed ? 'hidden' : 'block'}`}>
+                            System Admin
+                        </p>
+                        <button
+                            onClick={() => navigate('/admin')}
+                            className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-left transition-all duration-150 group relative opacity-40 hover:opacity-100 hover:bg-white/5"
+                        >
+                            <span className="flex-shrink-0 text-[#FF0D99]">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                </svg>
+                            </span>
+                            <motion.span
+                                animate={{ opacity: collapsed ? 0 : 1, width: collapsed ? 0 : 'auto' }}
+                                transition={{ duration: 0.2 }}
+                                className="text-sm font-medium overflow-hidden whitespace-nowrap text-[#FF0D99]"
+                            >
+                                Admin Portal
+                            </motion.span>
+                        </button>
+                    </div>
+                )}
             </nav>
 
             {/* User */}
