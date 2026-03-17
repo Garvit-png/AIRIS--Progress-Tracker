@@ -4,11 +4,7 @@
  */
 
 const APPROVED_EMAILS = [
-    'admin@airis.tech',
-    'garvit@airis.tech',
-    'test@user.com',
-    'garvitgandhi0313@gmail.com',
-    'test@gmail.com'
+    'admin@airis.tech'
 ];
 
 let _usersCache = null;
