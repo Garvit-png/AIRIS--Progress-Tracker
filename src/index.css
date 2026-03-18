@@ -7,7 +7,7 @@
     min-height: 100vh;
     width: 100%;
     background: #0d0d0d;
-    color: #e8e8e8;
+    color: #ffffff;
   }
 
   * {
@@ -26,9 +26,10 @@
     --panel-bg: #161616;
     --text: #ffffff;
     --text-rgb: 255, 255, 255;
-    --text-muted: rgba(255, 255, 255, 0.65);
-    --border: rgba(236, 72, 153, 0.2);
-    --border-subtle: rgba(236, 72, 153, 0.1);
+    --text-muted: rgba(255, 255, 255, 0.85);
+    --border: rgba(255, 13, 153, 0.3);
+    --border-subtle: rgba(255, 13, 153, 0.15);
+    --electric-pink: #FF0D99;
     --accent: #e8e8e8;
     --accent-rgb: 232, 232, 232;
     --sidebar-bg: #111111;

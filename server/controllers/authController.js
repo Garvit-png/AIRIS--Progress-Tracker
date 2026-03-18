@@ -109,7 +109,7 @@ exports.googleLogin = async (req, res, next) => {
         });
         const { name, email, sub: googleId } = ticket.getPayload();
 
-        let user = await User.findOne({ email }).select('+profilePicture');
+        let user = await User.findOne({ email });
 
         if (user) {
             // Link googleId if not linked
@@ -178,7 +178,7 @@ exports.login = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Please provide an email and password' });
         }
 
-        const user = await User.findOne({ email }).select('+password +profilePicture');
+        const user = await User.findOne({ email }).select('+password');
         if (!user) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
@@ -229,7 +229,7 @@ exports.login = async (req, res, next) => {
 // @access  Private
 exports.getMe = async (req, res, next) => {
     try {
-        const user = await User.findById(req.user.id).select('+profilePicture');
+        const user = await User.findById(req.user.id);
         res.status(200).json({ success: true, user });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });

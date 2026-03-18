@@ -86,11 +86,11 @@ export default function DayDetail({ selectedDate }) {
     return (
         <div className="flex flex-col gap-6 h-full p-2 relative">
             {isFuture && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center backdrop-blur-[2px] bg-black/40 rounded-3xl border border-white/5 m-2">
+                <div className="absolute inset-0 z-50 flex items-center justify-center backdrop-blur-[2px] bg-black/40 rounded-3xl border border-pink-500/10 m-2">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="p-8 rounded-2xl bg-[#121212] border border-white/10 shadow-2xl flex flex-col items-center text-center max-w-sm"
+                        className="p-8 rounded-2xl bg-[#121212] border border-pink-500/20 shadow-2xl flex flex-col items-center text-center max-w-sm"
                     >
                         <div className="w-16 h-16 rounded-full bg-pink-500/10 flex items-center justify-center mb-6 border border-pink-500/20">
                             <Clock className="text-pink-400" size={32} />

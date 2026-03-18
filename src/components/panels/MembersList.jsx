@@ -15,65 +15,17 @@ export default function MembersList() {
     const [editData, setEditData] = useState({ name: '', role: '', isAdmin: false });
     const [actionLoading, setActionLoading] = useState(false);
     const currentUser = AuthService.getSession();
-    const [userPhotos, setUserPhotos] = useState(() => {
-        try {
-            const cached = localStorage.getItem('airis_pfp_cache');
-            return cached ? JSON.parse(cached) : {};
-        } catch (e) {
-            return {};
-        }
-    });
-    
-    // Ref to track pending fetches and avoid duplicate requests
-    const pendingFetches = React.useRef(new Set());
-
-    // Debounced persistence to localStorage
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (Object.keys(userPhotos).length > 0) {
-                try {
-                    localStorage.setItem('airis_pfp_cache', JSON.stringify(userPhotos));
-                } catch (e) {
-                    console.warn('Cache quota exceeded, clearing...');
-                    localStorage.removeItem('airis_pfp_cache');
-                }
-            }
-        }, 2000);
-        return () => clearTimeout(timer);
-    }, [userPhotos]);
-
-    const fetchUserPhoto = async (userId) => {
-        if (userPhotos[userId] || pendingFetches.current.has(userId)) return;
-        
-        pendingFetches.current.add(userId);
-        try {
-            const photoData = await AuthService.getUserPhoto(userId);
-            if (photoData) {
-                setUserPhotos(prev => ({ ...prev, [userId]: photoData }));
-            }
-        } catch (err) {
-            console.error('Failed to fetch photo:', err);
-        } finally {
-            pendingFetches.current.delete(userId);
-        }
-    };
-
-    useEffect(() => {
-        if (selectedUser && !userPhotos[selectedUser._id]) {
-            fetchUserPhoto(selectedUser._id);
-        }
-    }, [selectedUser, userPhotos]);
-
-    useEffect(() => {
-        fetchUsers();
-    }, []);
-
-    // Ref for component mount status
+    // Ref to track component mount status
     const isMounted = React.useRef(true);
     useEffect(() => {
         isMounted.current = true;
         return () => { isMounted.current = false; };
     }, []);
+
+    useEffect(() => {
+        fetchUsers();
+    }, []);
+
 
     const fetchUsers = async () => {
         setIsLoading(true);
@@ -82,15 +34,6 @@ export default function MembersList() {
             if (!isMounted.current) return;
             setUsers(data);
 
-            // Staggered background fetch for the first few users to populate cache
-            const topUsers = data.slice(0, 10);
-            topUsers.forEach((u, index) => {
-                setTimeout(() => {
-                    if (isMounted.current && !userPhotos[u._id]) {
-                        fetchUserPhoto(u._id);
-                    }
-                }, index * 300);
-            });
         } catch (error) {
             console.error('Failed to load members:', error);
         } finally {
@@ -174,8 +117,8 @@ export default function MembersList() {
                             <p className="font-mono text-[9px] uppercase tracking-[0.4em] text-pink-400 font-bold">Registry Database</p>
                         </div>
                         <div>
-                            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">Member <span className="text-white/85 font-light italic text-lg sm:text-xl">Directory</span></h1>
-                            <p className="text-white/70 text-[9px] mt-1 font-mono uppercase tracking-widest flex items-center gap-2">
+                            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">Member <span className="text-white/95 font-light italic text-lg sm:text-xl">Directory</span></h1>
+                            <p className="text-white/90 text-[9px] mt-1 font-mono uppercase tracking-widest flex items-center gap-2">
                                 <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
                                 Synchronized with Mainframe
                             </p>
@@ -196,11 +139,11 @@ export default function MembersList() {
             {/* Control Bar */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
                 <div className="relative flex-1 group max-w-md">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 group-focus-within:text-pink-400 transition-colors" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/80 group-focus-within:text-pink-400 transition-colors" />
                     <input 
                         type="text" 
                         placeholder="Search identities..."
-                        className="w-full bg-white/[0.03] border border-pink-500/20 rounded-2xl py-3 pl-12 pr-6 text-sm outline-none focus:border-pink-500/40 focus:bg-white/[0.05] transition-all font-mono text-white/80 placeholder:text-white/25"
+                        className="w-full bg-white/[0.03] border border-pink-500/20 rounded-2xl py-3 pl-12 pr-6 text-sm outline-none focus:border-pink-500/40 focus:bg-white/[0.05] transition-all font-mono text-white/90 placeholder:text-white/40"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -213,7 +156,7 @@ export default function MembersList() {
                             className={`flex items-center gap-3 px-5 py-3.5 rounded-2xl text-[9px] font-bold uppercase tracking-[0.2em] transition-all border backdrop-blur-xl ${
                                 filterYear !== 'All' 
                                 ? 'bg-pink-500/10 border-pink-500/40 text-pink-400 shadow-lg shadow-pink-500/10' 
-                                : 'bg-white/5 border-white/15 text-white/50 hover:border-pink-500/30'
+                                : 'bg-white/5 border-pink-500/20 text-white/80 hover:border-pink-500/30'
                             }`}
                         >
                             <ListFilter size={14} />
@@ -229,10 +172,10 @@ export default function MembersList() {
                                         initial={{ opacity: 0, y: 15, scale: 0.95 }}
                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                         exit={{ opacity: 0, y: 15, scale: 0.95 }}
-                                        className="absolute right-0 mt-3 w-56 bg-[#0a0a0a]/90 border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-20 overflow-hidden backdrop-blur-2xl"
+                                        className="absolute right-0 mt-3 w-56 bg-[#0a0a0a]/90 border border-pink-500/30 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-20 overflow-hidden backdrop-blur-2xl"
                                     >
-                                        <div className="p-4 border-b border-white/5 bg-white/5">
-                                            <p className="text-[9px] font-mono uppercase tracking-[0.3em] text-white/70">Year Filter</p>
+                                        <div className="p-4 border-b border-pink-500/10 bg-white/5">
+                                            <p className="text-[9px] font-mono uppercase tracking-[0.3em] text-white/90">Year Filter</p>
                                         </div>
                                         <div className="p-2">
                                             {yearOptions.map((opt) => (
@@ -240,7 +183,7 @@ export default function MembersList() {
                                                     key={opt.value}
                                                     onClick={() => { setFilterYear(opt.value); setIsFilterOpen(false); }}
                                                     className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
-                                                        filterYear === opt.value ? 'bg-blue-500/10 text-blue-400' : 'text-white/85 hover:bg-white/5'
+                                                        filterYear === opt.value ? 'bg-blue-500/10 text-blue-400' : 'text-white/95 hover:bg-white/5'
                                                     }`}
                                                 >
                                                     {opt.label}
@@ -248,8 +191,8 @@ export default function MembersList() {
                                                 </button>
                                             ))}
                                         </div>
-                                        <div className="p-2 border-t border-white/5">
-                                            <p className="px-4 py-3 text-[9px] font-mono uppercase tracking-[0.3em] text-white/70">Organization</p>
+                                        <div className="p-2 border-t border-pink-500/10">
+                                            <p className="px-4 py-3 text-[9px] font-mono uppercase tracking-[0.3em] text-white/90">Organization</p>
                                             <button 
                                                 onClick={() => { setSortKey('name'); setIsFilterOpen(false); }}
                                                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
@@ -281,11 +224,11 @@ export default function MembersList() {
             <div className="bg-[#0a0a0a]/40 border border-pink-500/20 rounded-[2rem] overflow-hidden backdrop-blur-xl shadow-2xl">
                 {/* Table Header - Visible on desktop */}
                 <div className="hidden md:grid grid-cols-12 gap-4 px-8 py-4 border-b border-pink-500/15 bg-white/[0.02]">
-                    <div className="col-span-4 text-[9px] font-mono uppercase tracking-[0.3em] text-white/50">Identity / Name</div>
-                    <div className="col-span-3 text-[9px] font-mono uppercase tracking-[0.3em] text-white/50">Email Address</div>
-                    <div className="col-span-2 text-[9px] font-mono uppercase tracking-[0.3em] text-white/50">Designation</div>
-                    <div className="col-span-2 text-[9px] font-mono uppercase tracking-[0.3em] text-white/50">Registry Batch</div>
-                    <div className="col-span-1 text-right text-[9px] font-mono uppercase tracking-[0.3em] text-white/50">Status</div>
+                    <div className="col-span-4 text-[9px] font-mono uppercase tracking-[0.3em] text-white/80">Identity / Name</div>
+                    <div className="col-span-3 text-[9px] font-mono uppercase tracking-[0.3em] text-white/80">Email Address</div>
+                    <div className="col-span-2 text-[9px] font-mono uppercase tracking-[0.3em] text-white/80">Designation</div>
+                    <div className="col-span-2 text-[9px] font-mono uppercase tracking-[0.3em] text-white/80">Registry Batch</div>
+                    <div className="col-span-1 text-right text-[9px] font-mono uppercase tracking-[0.3em] text-white/80">Status</div>
                 </div>
 
                 <div className="divide-y divide-pink-500/10">
@@ -320,9 +263,9 @@ export default function MembersList() {
                     <motion.div 
                         initial={{ opacity: 0 }} 
                         animate={{ opacity: 1 }}
-                        className="col-span-full py-24 flex flex-col items-center justify-center border border-dashed border-white/5 rounded-[2rem]"
+                        className="col-span-full py-24 flex flex-col items-center justify-center border border-dashed border-pink-500/20 rounded-[2rem]"
                     >
-                        <div className="p-6 bg-white/[0.02] rounded-full border border-white/5 mb-6">
+                        <div className="p-6 bg-white/[0.02] rounded-full border border-pink-500/20 mb-6">
                             <Users size={32} strokeWidth={1} className="text-white/50" />
                         </div>
                         <p className="font-mono text-[9px] uppercase tracking-[0.5em] text-white/50">Zero spectral matches</p>
@@ -342,13 +285,13 @@ export default function MembersList() {
                                     setEditData({ name: user.name, role: user.role || 'Member', isAdmin: !!user.isAdmin });
                                     setEditMode(false);
                                 }}
-                                className="group relative grid grid-cols-1 md:grid-cols-12 items-center gap-4 px-6 md:px-8 py-4 hover:bg-white/[0.04] transition-all cursor-pointer border-l-2 border-transparent hover:border-pink-500/40 hover:bg-pink-500/[0.02]"
+                                className="group relative grid grid-cols-1 md:grid-cols-12 items-center gap-4 px-6 md:px-8 py-4 bg-transparent border border-transparent hover:border-pink-500/30 hover:bg-pink-500/[0.02] transition-all cursor-pointer rounded-2xl mx-1"
                             >
                                 {/* Name/Identity Sector */}
                                 <div className="col-span-4 flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-white/[0.03] border border-pink-500/20 flex items-center justify-center font-bold text-sm text-white/85 group-hover:border-pink-500/40 transition-all flex-shrink-0 overflow-hidden">
-                                        {(userPhotos[user._id] || user.profilePicture) ? (
-                                            <img src={userPhotos[user._id] || user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
+                                    <div className="w-10 h-10 rounded-xl bg-white/[0.03] border border-pink-500/20 flex items-center justify-center font-bold text-sm text-white/95 group-hover:border-pink-500/40 transition-all flex-shrink-0 overflow-hidden">
+                                        {user.profilePicture ? (
+                                            <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
                                         ) : (
                                             user.name.charAt(0).toUpperCase()
                                         )}
@@ -357,14 +300,14 @@ export default function MembersList() {
                                         <h3 className="text-sm font-semibold text-white/90 group-hover:text-white truncate">
                                             {user.name}
                                         </h3>
-                                        <p className="text-[10px] font-mono text-white/50 uppercase tracking-widest hidden md:block">Identity Confirmed</p>
-                                        <p className="text-[10px] text-white/85 md:hidden">{user.email}</p>
+                                        <p className="text-[10px] font-mono text-white/80 uppercase tracking-widest hidden md:block">Identity Confirmed</p>
+                                        <p className="text-[10px] text-white/95 md:hidden">{user.email}</p>
                                     </div>
                                 </div>
 
                                 {/* Email Sector */}
                                 <div className="col-span-3 hidden md:flex items-center gap-2">
-                                    <div className="p-1.5 bg-white/[0.02] rounded-lg border border-white/5">
+                                    <div className="p-1.5 bg-white/[0.02] rounded-lg border border-pink-500/10">
                                         <Mail size={12} className="text-white/50 group-hover:text-blue-500/50" />
                                     </div>
                                     <span className="text-[11px] font-mono text-white/85 group-hover:text-white/60 truncate">
@@ -378,7 +321,7 @@ export default function MembersList() {
                                         <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] border ${
                                             user.isAdmin 
                                             ? 'bg-pink-500/10 border-pink-500/20 text-pink-400' 
-                                            : 'bg-white/5 border-white/10 text-white/70'
+                                            : 'bg-white/5 border-pink-500/20 text-white/90'
                                         }`}>
                                             {user.role || 'Member'}
                                         </span>
@@ -388,7 +331,7 @@ export default function MembersList() {
 
                                 {/* Batch Sector */}
                                 <div className="col-span-2 hidden md:flex items-center gap-2">
-                                    <div className="p-1.5 bg-white/[0.02] rounded-lg border border-white/5">
+                                    <div className="p-1.5 bg-white/[0.02] rounded-lg border border-pink-500/10">
                                         <GraduationCap size={12} className="text-white/50 group-hover:text-amber-500/50" />
                                     </div>
                                     <span className="text-[10px] font-mono font-bold text-white/85 uppercase tracking-widest">
@@ -429,15 +372,15 @@ export default function MembersList() {
                             <div className="h-32 bg-gradient-to-br from-pink-600/20 via-pink-600/20 to-transparent relative">
                                 <button 
                                     onClick={() => setSelectedUser(null)}
-                                    className="absolute top-6 right-6 w-8 h-8 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-white/85 hover:text-white hover:bg-black/60 transition-all z-20"
+                                    className="absolute top-6 right-6 w-8 h-8 rounded-full bg-black/40 border border-pink-500/20 flex items-center justify-center text-white/95 hover:text-white hover:bg-black/60 transition-all z-20"
                                 >
                                     ×
                                 </button>
                                 <div className="absolute -bottom-10 left-8">
                                     <div className="w-24 h-24 rounded-3xl bg-[#0a0a0a] border-4 border-[#0a0a0a] p-1">
                                         <div className="w-full h-full rounded-2xl bg-gradient-to-br from-pink-500 to-pink-500 flex items-center justify-center text-3xl font-bold text-white shadow-2xl overflow-hidden">
-                                            {(userPhotos[selectedUser._id] || selectedUser.profilePicture) ? (
-                                                <img src={userPhotos[selectedUser._id] || selectedUser.profilePicture} alt={selectedUser.name} className="w-full h-full object-cover" />
+                                            {selectedUser.profilePicture ? (
+                                                <img src={selectedUser.profilePicture} alt={selectedUser.name} className="w-full h-full object-cover" />
                                             ) : (
                                                 selectedUser.name.charAt(0).toUpperCase()
                                             )}
@@ -453,13 +396,13 @@ export default function MembersList() {
                                         <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] border ${
                                             selectedUser.isAdmin 
                                             ? 'bg-pink-500/10 border-pink-500/20 text-pink-400' 
-                                            : 'bg-white/5 border-white/10 text-white/85'
+                                            : 'bg-white/5 border-pink-500/20 text-white/95'
                                         }`}>
                                             {selectedUser.role || 'Member'}
                                         </span>
                                         {selectedUser.isAdmin && <Shield size={12} className="text-pink-500" />}
                                     </div>
-                                    <p className="text-white/70 text-[11px] font-mono uppercase tracking-[0.3em] mt-1">Registry Identity #{selectedUser._id?.slice(-12)}</p>
+                                    <p className="text-white/90 text-[11px] font-mono uppercase tracking-[0.3em] mt-1">Registry Identity #{selectedUser._id?.slice(-12)}</p>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
@@ -471,12 +414,12 @@ export default function MembersList() {
 
                                 {/* Identity Management Suite (Admin Only) */}
                                 {currentUser?.isAdmin && (
-                                    <div className="space-y-4 p-5 bg-white/[0.02] border border-white/5 rounded-[2rem]">
+                                    <div className="space-y-4 p-5 bg-white/[0.02] border border-pink-500/10 rounded-[2rem]">
                                         <div className="flex items-center justify-between mb-2">
                                             <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-pink-500/80 font-bold">Identity Configuration</p>
                                             <button 
                                                 onClick={() => setEditMode(!editMode)}
-                                                className="text-[9px] font-bold uppercase tracking-widest text-white/40 hover:text-white transition-colors"
+                                                className="text-[9px] font-bold uppercase tracking-widest text-white/75 hover:text-white transition-colors"
                                             >
                                                 {editMode ? 'CANCEL' : 'OVERRIDE'}
                                             </button>
@@ -485,28 +428,28 @@ export default function MembersList() {
                                         {editMode ? (
                                             <div className="space-y-4">
                                                 <div className="space-y-1.5">
-                                                    <label className="text-[8px] font-mono uppercase tracking-widest text-white/30 ml-2">Public Identity</label>
+                                                    <label className="text-[8px] font-mono uppercase tracking-widest text-white/70 ml-2">Public Identity</label>
                                                     <input 
                                                         type="text"
                                                         value={editData.name}
                                                         onChange={(e) => setEditData({...editData, name: e.target.value})}
-                                                        className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-xs outline-none focus:border-pink-500/50 transition-all font-mono"
+                                                        className="w-full bg-white/[0.03] border border-pink-500/20 rounded-xl py-3 px-4 text-xs outline-none focus:border-pink-500/50 transition-all font-mono"
                                                     />
                                                 </div>
                                                 <div className="space-y-1.5">
-                                                    <label className="text-[8px] font-mono uppercase tracking-widest text-white/30 ml-2">Designation / Title</label>
+                                                    <label className="text-[8px] font-mono uppercase tracking-widest text-white/70 ml-2">Designation / Title</label>
                                                     <input 
                                                         type="text"
                                                         value={editData.role}
                                                         placeholder="President, Gen Sec, etc."
                                                         onChange={(e) => setEditData({...editData, role: e.target.value})}
-                                                        className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-xs outline-none focus:border-pink-500/50 transition-all font-mono"
+                                                        className="w-full bg-white/[0.03] border border-pink-500/20 rounded-xl py-3 px-4 text-xs outline-none focus:border-pink-500/50 transition-all font-mono"
                                                     />
                                                 </div>
-                                                <div className="flex items-center justify-between p-3 bg-white/[0.03] border border-white/5 rounded-xl">
+                                                <div className="flex items-center justify-between p-3 bg-white/[0.03] border border-pink-500/10 rounded-xl">
                                                     <div className="flex items-center gap-2">
                                                         <Shield size={14} className="text-pink-500" />
-                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-white/70">Admin Permissions</span>
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-white/90">Admin Permissions</span>
                                                     </div>
                                                     <input 
                                                         type="checkbox"
@@ -537,7 +480,7 @@ export default function MembersList() {
                                                 </button>
                                             </div>
                                         ) : (
-                                            <div className="flex items-center justify-between text-white/60">
+                                            <div className="flex items-center justify-between text-white/80">
                                                 <div className="flex items-center gap-3">
                                                     <div className="p-2 bg-white/5 rounded-lg">
                                                         <Users size={14} className="text-white/40" />
@@ -570,7 +513,7 @@ export default function MembersList() {
                                     )}
                                     <button 
                                         onClick={() => setSelectedUser(null)}
-                                        className="flex-1 py-4 bg-white/5 border border-white/10 text-white/85 font-bold text-[11px] uppercase tracking-[0.2em] rounded-2xl hover:bg-white/10 hover:text-white transition-all"
+                                        className="flex-1 py-4 bg-white/5 border border-pink-500/20 text-white/95 font-bold text-[11px] uppercase tracking-[0.2em] rounded-2xl hover:bg-white/10 hover:text-white transition-all"
                                     >
                                         Close Portal
                                     </button>
@@ -597,8 +540,8 @@ function StatBox({ label, value, highlight }) {
         <div className={`px-4 sm:px-5 py-2 sm:py-3 rounded-xl bg-white/[0.02] border transition-all ${
             highlight ? 'border-pink-500/30 bg-pink-500/5' : 'border-pink-500/15'
         }`}>
-            <p className="text-[8px] font-mono uppercase tracking-[0.3em] text-white/50 mb-0.5">{label}</p>
-            <p className={`text-sm sm:text-base font-bold ${highlight ? 'text-pink-400' : 'text-white/80'}`}>{value}</p>
+            <p className="text-[8px] font-mono uppercase tracking-[0.3em] text-white/80 mb-0.5">{label}</p>
+            <p className={`text-sm sm:text-base font-bold ${highlight ? 'text-pink-400' : 'text-white/90'}`}>{value}</p>
         </div>
     );
 }
@@ -608,9 +551,9 @@ function DetailItem({ label, value, icon }) {
         <div className="p-4 bg-white/[0.02] border border-pink-500/15 rounded-2xl space-y-2">
             <div className="flex items-center gap-2">
                 {icon}
-                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-white/50">{label}</p>
+                <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-white/80">{label}</p>
             </div>
-            <p className="text-xs font-semibold text-white/80 truncate">{value}</p>
+            <p className="text-xs font-semibold text-white/90 truncate">{value}</p>
         </div>
     );
 }

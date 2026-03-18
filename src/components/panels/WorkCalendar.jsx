@@ -49,30 +49,30 @@ export default function WorkCalendar({ selectedDate, onDateSelect, currentMonth,
         <div className="flex flex-col gap-4 mb-6 px-1">
             <div className="flex items-center justify-between">
                 <div className="flex flex-col">
-                    <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/30">Work Cycle</p>
-                    <h2 className="text-xl font-bold tracking-tight text-white/90">{format(currentMonth, 'MMMM')}</h2>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/70">Work Cycle</p>
+                    <h2 className="text-xl font-bold tracking-tight text-white">{format(currentMonth, 'MMMM')}</h2>
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="relative group">
                         <select
                             value={currentMonth.getFullYear()}
                             onChange={(e) => setYear(parseInt(e.target.value))}
-                            className="appearance-none bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 font-mono text-[11px] text-white/60 focus:text-white focus:outline-none focus:border-white/20 transition-all pr-8 group-hover:bg-white/10"
+                            className="appearance-none bg-white/5 border border-pink-500/20 rounded-lg px-3 py-1.5 font-mono text-[11px] text-white/85 focus:text-white focus:outline-none focus:border-pink-500/40 transition-all pr-8 group-hover:bg-white/10"
                         >
                             {years.map(y => (
                                 <option key={y} value={y} className="bg-[#121212] tracking-widest">{y}</option>
                             ))}
                         </select>
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-white/60">
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-white/85">
                             <ChevronRight size={12} className="rotate-90" />
                         </div>
                     </div>
 
                     <div className="flex gap-1">
-                        <button onClick={prevMonth} className="p-2 hover:bg-white/5 rounded-lg transition-colors border border-white/5 text-white/85 hover:text-white">
+                        <button onClick={prevMonth} className="p-2 hover:bg-white/5 rounded-lg transition-colors border border-pink-500/10 text-white/95 hover:text-white">
                             <ChevronLeft size={16} />
                         </button>
-                        <button onClick={nextMonth} className="p-2 hover:bg-white/5 rounded-lg transition-colors border border-white/5 text-white/85 hover:text-white">
+                        <button onClick={nextMonth} className="p-2 hover:bg-white/5 rounded-lg transition-colors border border-pink-500/10 text-white/95 hover:text-white">
                             <ChevronRight size={16} />
                         </button>
                     </div>
@@ -84,7 +84,7 @@ export default function WorkCalendar({ selectedDate, onDateSelect, currentMonth,
     const renderDays = () => (
         <div className="grid grid-cols-7 mb-2">
             {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((day) => (
-                <div key={day} className="text-center font-mono text-[9px] font-bold text-white/60 py-2">
+                <div key={day} className="text-center font-mono text-[9px] font-bold text-white/80 py-2">
                     {day}
                 </div>
             ))}
@@ -112,7 +112,7 @@ export default function WorkCalendar({ selectedDate, onDateSelect, currentMonth,
                         className={`
               relative h-16 flex flex-col items-center justify-center rounded-xl transition-all duration-300 group
               ${!isCurrentMonth ? 'opacity-20 hover:opacity-40' : 'opacity-100'}
-              ${isSelected ? 'bg-white/10 scale-95 ring-1 ring-white/20' : 'hover:bg-white/5'}
+              ${isSelected ? 'bg-white/10 scale-95 ring-1 ring-pink-500/30' : 'hover:bg-white/5'}
             `}
                     >
                         {isToday && (
@@ -128,7 +128,7 @@ export default function WorkCalendar({ selectedDate, onDateSelect, currentMonth,
                                         fill="transparent"
                                         stroke="currentColor"
                                         strokeWidth="2"
-                                        className="text-white/5"
+                                        className="text-pink-500/10"
                                     />
                                     <motion.circle
                                         cx="16" cy="16" r="14"
@@ -138,11 +138,11 @@ export default function WorkCalendar({ selectedDate, onDateSelect, currentMonth,
                                         strokeDasharray={88}
                                         initial={{ strokeDashoffset: 88 }}
                                         animate={{ strokeDashoffset: 88 - (88 * progress) / 100 }}
-                                        className={progress === 100 ? "text-green-500" : "text-white/85"}
+                                        className={progress === 100 ? "text-green-500" : "text-white/95"}
                                     />
                                 </svg>
                             )}
-                            <span className={`text-xs font-mono relative z-10 ${isSelected ? 'text-white font-bold' : 'text-white/60'}`}>
+                            <span className={`text-xs font-mono relative z-10 ${isSelected ? 'text-white font-bold' : 'text-white/80'}`}>
                                 {format(day, 'd')}
                             </span>
                         </div>
@@ -163,7 +163,7 @@ export default function WorkCalendar({ selectedDate, onDateSelect, currentMonth,
     );
 
     return (
-        <div className="p-6 rounded-2xl bg-[#121212]/50 border border-white/5 backdrop-blur-xl h-fit">
+        <div className="p-6 rounded-2xl bg-[#121212]/50 border border-pink-500/10 backdrop-blur-xl h-fit">
             {renderHeader()}
             {renderDays()}
             {renderCells()}

@@ -157,14 +157,14 @@ const AdminPanel = ({ isEmbedded = false }) => {
 
             <div className={`relative z-10 mx-auto ${isEmbedded ? '' : 'max-w-7xl px-6 py-8 md:py-12'}`}>
                 {/* Header Section */}
-                <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-8 border-b border-white/5 pb-10">
+                <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-8 border-b border-pink-500/10 pb-10">
                     <div className="space-y-4">
                         <Logo size="sm" showSubtitle={false} className="!items-start opacity-90" />
                         <div>
                             <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-white">
-                                Approvals <span className="text-white/70 font-normal">Portal</span>
+                                Approvals <span className="text-white/90 font-normal">Portal</span>
                             </h1>
-                            <p className="text-white/70 text-sm mt-1 font-mono uppercase tracking-wider">Access Rights Management System</p>
+                            <p className="text-white/90 text-sm mt-1 font-mono uppercase tracking-wider">Access Rights Management System</p>
                         </div>
                     </div>
 
@@ -173,9 +173,9 @@ const AdminPanel = ({ isEmbedded = false }) => {
                         <motion.div 
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl backdrop-blur-md min-w-[140px]"
+                            className="px-6 py-4 bg-white/[0.03] border border-pink-500/10 rounded-2xl backdrop-blur-md min-w-[140px]"
                         >
-                            <p className="text-[10px] font-mono text-white/50 uppercase tracking-widest mb-1">
+                            <p className="text-[10px] font-mono text-white/80 uppercase tracking-widest mb-1">
                                 {activeTab === 'pending' ? 'Pending' : (activeTab === 'history' ? 'Approved' : 'Pre-Auth')}
                             </p>
                             <p className="text-2xl font-bold text-white tracking-tight">{stats.total}</p>
@@ -187,18 +187,18 @@ const AdminPanel = ({ isEmbedded = false }) => {
                             transition={{ delay: 0.1 }}
                             className="px-6 py-4 bg-pink-500/5 border border-pink-500/10 rounded-2xl backdrop-blur-md min-w-[140px]"
                         >
-                            <p className="text-[10px] font-mono text-pink-400/70 uppercase tracking-widest mb-1">Total Members</p>
+                            <p className="text-[10px] font-mono text-pink-400/90 uppercase tracking-widest mb-1">Total Members</p>
                             <p className="text-2xl font-bold text-pink-500 tracking-tight">{stats.totalOverall}</p>
                         </motion.div>
                     </div>
                 </header>
 
                 {/* Tab Switcher */}
-                <div className="flex gap-2 mb-8 p-1.5 bg-white/5 rounded-2xl w-fit border border-white/10 backdrop-blur-xl">
+                <div className="flex gap-2 mb-8 p-1.5 bg-pink-500/5 rounded-2xl w-fit border border-pink-500/20 backdrop-blur-xl">
                     <button 
                         onClick={() => setActiveTab('pending')}
                         className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
-                            activeTab === 'pending' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/40 hover:text-white/70'
+                            activeTab === 'pending' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/75 hover:text-white/90'
                         }`}
                     >
                         Pending
@@ -206,7 +206,7 @@ const AdminPanel = ({ isEmbedded = false }) => {
                     <button 
                         onClick={() => setActiveTab('whitelist')}
                         className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
-                            activeTab === 'whitelist' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/40 hover:text-white/70'
+                            activeTab === 'whitelist' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/75 hover:text-white/90'
                         }`}
                     >
                         Pre-Auth
@@ -214,7 +214,7 @@ const AdminPanel = ({ isEmbedded = false }) => {
                     <button 
                         onClick={() => setActiveTab('history')}
                         className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
-                            activeTab === 'history' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/40 hover:text-white/70'
+                            activeTab === 'history' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/75 hover:text-white/90'
                         }`}
                     >
                         History
@@ -230,7 +230,7 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                 
                                 <div className="relative z-10 space-y-8">
                                     <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-white/5 rounded-lg border border-white/10">
+                                        <div className="p-2 bg-pink-500/5 rounded-lg border border-pink-500/20">
                                             {activeTab === 'pending' ? <Clock className="w-4 h-4 text-amber-400" /> : (activeTab === 'history' ? <ShieldCheck className="w-4 h-4 text-emerald-400" /> : <UserPlus className="w-4 h-4 text-pink-400" />)}
                                         </div>
                                         <h2 className="text-sm font-semibold text-white tracking-wide">
@@ -247,7 +247,7 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                                         type="button"
                                                         onClick={() => setUseCollegeDomain(!useCollegeDomain)}
                                                         className={`flex items-center gap-2 px-2 py-1 rounded-md transition-all border ${
-                                                            useCollegeDomain ? 'bg-pink-500/10 border-pink-500/20 text-pink-400' : 'bg-white/5 border-white/10 text-white/70'
+                                                            useCollegeDomain ? 'bg-pink-500/10 border-pink-500/20 text-pink-400' : 'bg-white/5 border-white/10 text-white/90'
                                                         }`}
                                                     >
                                                         <GraduationCap className="w-3 h-3" />
@@ -259,7 +259,7 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                                         type="text"
                                                         placeholder={useCollegeDomain ? "username" : "full-email@domain.com"}
                                                         className={`w-full bg-black/60 border rounded-xl px-5 py-4 text-sm font-mono outline-none transition-all text-white placeholder:text-slate-700 ${
-                                                            useCollegeDomain ? 'border-pink-500/30 focus:border-pink-500/60 pr-32' : 'border-white/10 focus:border-white/30'
+                                                            useCollegeDomain ? 'border-pink-500/30 focus:border-pink-500/60 pr-32' : 'border-pink-500/10 focus:border-pink-500/30'
                                                         }`}
                                                         value={newEmail}
                                                         onChange={(e) => setNewEmail(e.target.value)}
@@ -279,13 +279,13 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                             </button>
                                         </form>
                                     ) : activeTab === 'history' ? (
-                                        <div className="space-y-4 font-mono text-[10px] text-white/80 leading-relaxed">
+                                        <div className="space-y-4 font-mono text-[10px] text-white/95 leading-relaxed">
                                             <p>// AUDIT LOG:</p>
                                             <p>All finalized entries are logged here for verification.</p>
                                             <p className="text-emerald-500/60">Status: ALL SYSTEMS NOMINAL</p>
                                         </div>
                                     ) : (
-                                        <div className="py-12 flex flex-col items-center justify-center border border-dashed border-white/5 rounded-2xl">
+                                        <div className="py-12 flex flex-col items-center justify-center border border-dashed border-pink-500/10 rounded-2xl">
                                             <ShieldAlert className="w-8 h-8 text-white/5 mb-2" />
                                             <p className="text-[10px] font-mono text-white/20 uppercase tracking-[0.2em]">Queue Active</p>
                                         </div>
@@ -314,14 +314,14 @@ const AdminPanel = ({ isEmbedded = false }) => {
                     {/* Request List (Right) */}
                     <div className="lg:col-span-8 space-y-6">
                         <div className="relative group">
-                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70 group-focus-within:text-white transition-colors" />
+                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/90 group-focus-within:text-white transition-colors" />
                             <input 
                                 type="text"
                                 placeholder={
                                     activeTab === 'pending' ? "Search pending requests..." : 
                                     (activeTab === 'history' ? "Search approval history..." : "Filter pre-authorized identities...")
                                 }
-                                className="w-full bg-[#0a0a0a]/80 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-sm outline-none focus:border-white/10 focus:bg-white/[0.05] transition-all font-sans backdrop-blur-xl placeholder:text-slate-700"
+                                className="w-full bg-[#0a0a0a]/80 border border-pink-500/10 rounded-2xl py-4 pl-14 pr-6 text-sm outline-none focus:border-pink-500/30 focus:bg-pink-500/[0.02] transition-all font-sans backdrop-blur-xl placeholder:text-slate-700"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -331,14 +331,14 @@ const AdminPanel = ({ isEmbedded = false }) => {
                             {isLoading ? (
                                 <div className="space-y-4">
                                     {[1, 2, 3].map(i => (
-                                        <div key={i} className="h-24 bg-white/[0.02] border border-white/5 rounded-2xl animate-pulse" />
+                                        <div key={i} className="h-24 bg-white/[0.02] border border-pink-500/10 rounded-2xl animate-pulse" />
                                     ))}
                                 </div>
                             ) : (activeTab === 'pending' ? filteredPending : (activeTab === 'history' ? filteredApproved : filteredEmails)).length === 0 ? (
                                 <motion.div 
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    className="flex flex-col items-center justify-center py-32 space-y-4 rounded-3xl border border-dashed border-white/5"
+                                    className="flex flex-col items-center justify-center py-32 space-y-4 rounded-3xl border border-dashed border-pink-500/10"
                                 >
                                     <div className="p-4 bg-white/5 rounded-full border border-white/5">
                                         <ShieldCheck className="w-8 h-8 text-slate-800" />
@@ -354,10 +354,10 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                             animate={{ opacity: 1, scale: 1 }}
                                             exit={{ opacity: 0, scale: 0.98 }}
                                             key={item._id || item.email}
-                                            className="group relative flex items-center justify-between p-5 bg-[#0a0a0a] border border-white/5 rounded-2xl hover:border-white/10 transition-all duration-300"
+                                            className="group relative flex items-center justify-between p-5 bg-[#0a0a0a] border border-pink-500/10 rounded-2xl hover:border-pink-500/30 transition-all duration-300"
                                         >
                                             <div className="flex items-center gap-5">
-                                                <div className="hidden sm:flex items-center justify-center w-12 h-12 bg-white/[0.03] rounded-xl border border-white/5 group-hover:border-pink-500/30 transition-colors">
+                                                <div className="hidden sm:flex items-center justify-center w-12 h-12 bg-white/[0.03] rounded-xl border border-pink-500/10 group-hover:border-pink-500/40 transition-colors">
                                                     {activeTab === 'pending' ? (
                                                         <UserAlert className="w-5 h-5 text-amber-500/50 group-hover:text-amber-400" />
                                                     ) : (
@@ -396,21 +396,21 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                                     <>
                                                         <button
                                                             onClick={() => handleUserApproval(item._id, 'approved', 'Member', false)}
-                                                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-bold uppercase tracking-widest hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all"
+                                                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-pink-500/5 border border-pink-500/10 text-[9px] font-bold uppercase tracking-widest hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all"
                                                         >
                                                             <UserCheck className="w-3.5 h-3.5" />
                                                             Approve Member
                                                         </button>
                                                         <button
                                                             onClick={() => handleUserApproval(item._id, 'approved', 'Admin', true)}
-                                                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-bold uppercase tracking-widest hover:bg-pink-600 hover:text-white hover:border-pink-600 transition-all"
+                                                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-pink-500/5 border border-pink-500/10 text-[9px] font-bold uppercase tracking-widest hover:bg-pink-600 hover:text-white hover:border-pink-600 transition-all"
                                                         >
                                                             <ShieldCheck className="w-3.5 h-3.5" />
                                                             Approve Admin
                                                         </button>
                                                         <button
                                                             onClick={() => handleUserApproval(item._id, 'rejected')}
-                                                            className="p-2 rounded-xl bg-white/5 border border-white/10 text-white/70 hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/20 transition-all"
+                                                            className="p-2 rounded-xl bg-pink-500/5 border border-pink-500/10 text-white/70 hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/20 transition-all"
                                                         >
                                                             <X className="w-4 h-4" />
                                                         </button>
@@ -418,12 +418,12 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                                 ) : activeTab === 'history' ? (
                                                     <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
                                                         <Check className="w-3.5 h-3.5 text-emerald-500" />
-                                                        <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500/80">Approved {item.role}</span>
+                                                        <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500/95">Approved {item.role}</span>
                                                     </div>
                                                 ) : (
                                                     <button
                                                         onClick={() => handleRevokeEmail(item.email)}
-                                                        className="p-2.5 rounded-xl border border-white/5 text-slate-600 hover:text-red-400 hover:bg-red-400/5 hover:border-red-400/20 transition-all opacity-0 group-hover:opacity-100"
+                                                        className="p-2.5 rounded-xl border border-pink-500/10 text-slate-600 hover:text-red-400 hover:bg-red-400/5 hover:border-red-400/20 transition-all opacity-0 group-hover:opacity-100"
                                                     >
                                                         <X className="w-4 h-4" />
                                                     </button>

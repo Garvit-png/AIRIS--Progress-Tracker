@@ -52,19 +52,19 @@ export default function RegisterPage() {
                     className="w-full max-w-sm text-center space-y-6"
                 >
                     <div className="space-y-2">
-                        <p className="font-mono text-[9px] tracking-[0.3em] uppercase opacity-40">Registration Pending</p>
+                        <p className="font-mono text-[9px] tracking-[0.3em] uppercase opacity-70">Registration Pending</p>
                         <h1 className="text-2xl font-bold tracking-tight uppercase">Verify Email</h1>
                     </div>
 
                     <div className="p-8 border border-white/10 rounded-2xl bg-white/5 backdrop-blur-sm space-y-4">
                         <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto">
-                            <svg className="w-6 h-6 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="w-6 h-6 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
                         </div>
-                        <p className="font-mono text-[10px] uppercase tracking-widest text-white/60">Verification Link Sent</p>
-                        <p className="font-mono text-[9px] text-white/30 leading-relaxed uppercase">
-                            We've sent a secure link to <span className="text-white/60">{email}</span>. Click the link to complete your initialization.
+                        <p className="font-mono text-[10px] uppercase tracking-widest text-white/90">Verification Link Sent</p>
+                        <p className="font-mono text-[9px] text-white/60 leading-relaxed uppercase">
+                            We've sent a secure link to <span className="text-white/90">{email}</span>. Click the link to complete your initialization.
                         </p>
                         <button
                             onClick={() => navigate('/login')}
@@ -91,7 +91,7 @@ export default function RegisterPage() {
 
                 <form onSubmit={handleRegister} className="space-y-4">
                     <div className="space-y-4">
-                        <label className="font-mono text-[9px] uppercase tracking-widest opacity-30 block -mb-2">Account Setup</label>
+                        <label className="font-mono text-[9px] uppercase tracking-widest opacity-60 block -mb-2">Account Setup</label>
                         
                         <input
                             type="text"
@@ -105,7 +105,7 @@ export default function RegisterPage() {
                             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm outline-none focus:border-white/30 transition-all appearance-none font-mono"
                             value={year}
                             onChange={(e) => { setYear(e.target.value); setError(''); }}
-                            style={{ color: year ? 'white' : 'rgba(255,255,255,0.3)' }}
+                            style={{ color: year ? 'white' : 'rgba(255,255,255,0.6)' }}
                         >
                             <option value="" disabled>Select Year</option>
                             <option value="1">Year 1</option>
@@ -133,7 +133,7 @@ export default function RegisterPage() {
                     <button
                         type="button"
                         onClick={() => navigate('/login')}
-                        className="w-full py-2 font-mono text-[9px] uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
+                        className="w-full py-2 font-mono text-[9px] uppercase tracking-[0.2em] text-white/70 hover:text-white transition-colors"
                     >
                         Back to Login
                     </button>

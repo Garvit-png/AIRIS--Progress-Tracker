@@ -174,7 +174,7 @@ const LoaderScreen = memo(({ onComplete, user }) => {
                     className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50 select-none"
                 >
                     <div className="mb-10 text-center">
-                        <p className="font-mono text-[10px] tracking-[0.3em] text-white/30 uppercase mb-1">
+                        <p className="font-mono text-[10px] tracking-[0.3em] text-white/70 uppercase mb-1">
                             Tech Club Portal
                         </p>
                         <h1 className="text-4xl font-bold tracking-tight text-white">
@@ -189,9 +189,9 @@ const LoaderScreen = memo(({ onComplete, user }) => {
                                 initial={{ opacity: 0, x: -6 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ duration: 0.2 }}
-                                className={`font-mono text-[11px] tracking-wider ${line.bold ? 'text-white font-semibold' : 'text-white/40'}`}
+                                className={`font-mono text-[11px] tracking-wider ${line.bold ? 'text-white font-semibold' : 'text-white/85'}`}
                             >
-                                <span className="text-white/20 mr-2">›</span>
+                                <span className="text-white/60 mr-2">›</span>
                                 {line.text}
                             </motion.p>
                         ))}
@@ -207,7 +207,7 @@ const LoaderScreen = memo(({ onComplete, user }) => {
                         </div>
                     </div>
 
-                    <p className="font-mono text-[10px] text-white/25 tracking-widest">
+                    <p className="font-mono text-[10px] text-white/75 tracking-widest">
                         {progress}%
                     </p>
 
@@ -225,7 +225,7 @@ const LoaderScreen = memo(({ onComplete, user }) => {
                                     initial={{ opacity: 0, y: 8 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.05, duration: 0.3 }}
-                                    className="font-mono text-[10px] tracking-[0.35em] text-white/40 uppercase mb-2"
+                                    className="font-mono text-[10px] tracking-[0.35em] text-white/85 uppercase mb-2"
                                 >
                                     System Online
                                 </motion.p>

@@ -12,7 +12,7 @@ export default function ProofSection({
     handleFileUpload 
 }) {
     return (
-        <div className="flex flex-col gap-4 bg-white/5 border border-white/5 rounded-2xl p-5 overflow-hidden relative">
+        <div className="flex flex-col gap-4 bg-white/5 border border-pink-500/10 rounded-2xl p-5 overflow-hidden relative">
             <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-1">
                     <h3 className="text-sm font-bold uppercase tracking-widest">Verifiable Proof</h3>
@@ -43,7 +43,7 @@ export default function ProofSection({
                                 <motion.div
                                     key="idle"
                                     initial={{ opacity: 0 }}
-                                    animate={{ opacity: 0.4 }}
+                                    animate={{ opacity: 0.8 }}
                                     className="text-[9px] font-mono uppercase tracking-tighter"
                                 >
                                     System Ready
@@ -80,15 +80,15 @@ export default function ProofSection({
 
             <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-1">
                 {proofs.map((proof) => (
-                    <div key={proof.id} className="flex flex-col gap-2 p-3 rounded-xl bg-white/5 border border-white/5 group">
+                    <div key={proof.id} className="flex flex-col gap-2 p-3 rounded-xl bg-white/5 border border-pink-500/10 group">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-white/5 text-white/85">
+                                <div className="p-2 rounded-lg bg-white/5 text-white/95">
                                     {proof.type.includes('image') ? <ImageIcon size={16} /> : <FileText size={16} />}
                                 </div>
                                 <div>
                                     <p className="text-xs truncate max-w-[150px]">{proof.name}</p>
-                                    <div className="flex items-center gap-1.5 opacity-40">
+                                    <div className="flex items-center gap-1.5 opacity-70">
                                         <Clock size={10} />
                                         <span className="text-[10px] font-mono">{format(new Date(proof.timestamp), 'HH:mm')}</span>
                                     </div>
@@ -107,14 +107,14 @@ export default function ProofSection({
                         </div>
                         {/* Micro Preview for images */}
                         {proof.type.includes('image') && (
-                            <div className="mt-1 h-32 w-full rounded-lg overflow-hidden border border-white/10 bg-black/20">
-                                <img src={proof.url} alt={proof.name} className="w-full h-full object-cover opacity-60 hover:opacity-100 transition-opacity" />
+                            <div className="mt-1 h-32 w-full rounded-lg overflow-hidden border border-pink-500/20 bg-black/20">
+                                <img src={proof.url} alt={proof.name} className="w-full h-full object-cover opacity-85 hover:opacity-100 transition-opacity" />
                             </div>
                         )}
                     </div>
                 ))}
                 {proofs.length === 0 && (
-                    <div className="h-full flex flex-col items-center justify-center opacity-20 py-10">
+                    <div className="h-full flex flex-col items-center justify-center opacity-60 py-10">
                         <FileCheck size={32} className="mb-2" />
                         <p className="text-[10px] uppercase tracking-widest">No evidence recorded</p>
                     </div>

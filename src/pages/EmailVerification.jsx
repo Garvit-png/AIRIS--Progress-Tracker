@@ -38,7 +38,7 @@ export default function EmailVerification() {
                 className="w-full max-w-sm text-center space-y-6"
             >
                 <div className="space-y-2">
-                    <p className="font-mono text-[9px] tracking-[0.3em] uppercase opacity-40">Security Protocol</p>
+                    <p className="font-mono text-[9px] tracking-[0.3em] uppercase opacity-80">Security Protocol</p>
                     <h1 className="text-2xl font-bold tracking-tight uppercase">Identity Verification</h1>
                 </div>
 
@@ -46,7 +46,7 @@ export default function EmailVerification() {
                     {status === 'verifying' && (
                         <div className="space-y-4">
                             <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto" />
-                            <p className="font-mono text-[10px] uppercase tracking-widest text-white/60">Decrypting Verification Token...</p>
+                            <p className="font-mono text-[10px] uppercase tracking-widest text-white/90">Decrypting Verification Token...</p>
                         </div>
                     )}
 
@@ -58,7 +58,7 @@ export default function EmailVerification() {
                                 </svg>
                             </div>
                             <p className="font-mono text-[11px] uppercase tracking-widest text-white">Verification Complete</p>
-                            <p className="font-mono text-[9px] text-white/40 leading-relaxed uppercase">
+                            <p className="font-mono text-[9px] text-white/80 leading-relaxed uppercase">
                                 Your identity has been confirmed. Redirecting to terminal...
                             </p>
                         </div>
@@ -72,7 +72,7 @@ export default function EmailVerification() {
                                 </svg>
                             </div>
                             <p className="font-mono text-[11px] uppercase tracking-widest text-red-500">Access Denied</p>
-                            <p className="font-mono text-[9px] text-white/40 leading-relaxed uppercase">
+                            <p className="font-mono text-[9px] text-white/80 leading-relaxed uppercase">
                                 {message}
                             </p>
                             <Link 

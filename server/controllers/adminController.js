@@ -135,7 +135,7 @@ exports.updateUserStatus = async (req, res) => {
 // @access  Private/Admin
 exports.getUserPhoto = async (req, res) => {
     try {
-        const user = await User.findById(req.params.id).select('profilePicture');
+        const user = await User.findById(req.params.id);
 
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });

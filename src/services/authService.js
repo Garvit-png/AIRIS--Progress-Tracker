@@ -150,14 +150,6 @@ export const AuthService = {
         return data.success ? data.data : [];
     },
 
-    getUserPhoto: async (userId) => {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${ADMIN_API_URL}/users/${userId}/photo`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await response.json();
-        return data.success ? data.data : null;
-    },
 
     getPendingUsers: async () => {
         const token = localStorage.getItem('token');

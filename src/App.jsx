@@ -10,13 +10,15 @@ import ProtectedRoute from './components/ProtectedRoute'
 import AdminPanel from './pages/AdminPanel'
 import EmailVerification from './pages/EmailVerification'
 import ResetPassword from './pages/ResetPassword'
+import SecurityShield from './components/SecurityShield'
 
 import { AuthService } from './services/authService'
 
 // Admin route protector
 function AdminRoute({ children }) {
   const user = AuthService.getSession()
-  if (!user?.isAdmin) return <Navigate to="/dashboard" replace />
+  const hasAccess = user?.isAdmin || user?.role?.toLowerCase() === 'admin'
+  if (!hasAccess) return <Navigate to="/dashboard" replace />
   return children
 }
 
@@ -84,43 +86,45 @@ export default function App() {
 
   return (
     <GoogleOAuthProvider clientId="532663388476-7iiiepabt72281qja5vehie0qd5egc2q.apps.googleusercontent.com">
-      <Router>
-        <div
-          className={`w-full h-full text-white overflow-hidden relative transition-colors duration-500`}
-          style={{ background: 'var(--bg)', color: 'var(--text)' }}
-        >
-          <ErrorBoundary>
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/verify-email/:token" element={<EmailVerification />} />
-              <Route path="/reset-password/:token" element={<ResetPassword />} />
-              <Route 
-                path="/dashboard" 
-                element={
-                  <ProtectedRoute>
-                    <DashboardWrapper />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin" 
-                element={
-                  <ProtectedRoute>
-                    <AdminRoute>
-                      <AdminPanel />
-                    </AdminRoute>
-                  </ProtectedRoute>
-                } 
-              />
-              {/* Redirect root to dashboard (which will redirect to login if needed) */}
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              {/* Catch all redirect to dashboard */}
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </ErrorBoundary>
-        </div>
-      </Router>
+      <SecurityShield>
+        <Router>
+          <div
+            className={`w-full h-full text-white overflow-hidden relative transition-colors duration-500`}
+            style={{ background: 'var(--bg)', color: 'var(--text)' }}
+          >
+            <ErrorBoundary>
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/verify-email/:token" element={<EmailVerification />} />
+                <Route path="/reset-password/:token" element={<ResetPassword />} />
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    <ProtectedRoute>
+                      <DashboardWrapper />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin" 
+                  element={
+                    <ProtectedRoute>
+                      <AdminRoute>
+                        <AdminPanel />
+                      </AdminRoute>
+                    </ProtectedRoute>
+                  } 
+                />
+                {/* Redirect root to dashboard (which will redirect to login if needed) */}
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                {/* Catch all redirect to dashboard */}
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </ErrorBoundary>
+          </div>
+        </Router>
+      </SecurityShield>
     </GoogleOAuthProvider>
   )
 }

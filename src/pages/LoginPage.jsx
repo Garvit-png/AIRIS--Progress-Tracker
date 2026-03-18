@@ -115,7 +115,7 @@ export default function LoginPage() {
                 {step === 'email' ? (
                     <form onSubmit={handleEmailSubmit} className="space-y-4">
                         <div>
-                            <label className="font-mono text-[9px] uppercase tracking-widest opacity-30 mb-1.5 block">Approved Identifier</label>
+                            <label className="font-mono text-[9px] uppercase tracking-widest opacity-70 mb-1.5 block">Approved Identifier</label>
                             <input
                                 type="email"
                                 autoFocus
@@ -124,7 +124,7 @@ export default function LoginPage() {
                                 value={email}
                                 onChange={(e) => { setEmail(e.target.value); setError(''); }}
                             />
-                            <p className="mt-2 font-mono text-[8px] opacity-20 uppercase text-center">
+                            <p className="mt-2 font-mono text-[8px] opacity-60 uppercase text-center">
                                 Use an approved email to proceed
                             </p>
                         </div>
@@ -138,16 +138,16 @@ export default function LoginPage() {
                 ) : (
                     <form onSubmit={handlePasswordSubmit} className="space-y-4">
                         <div className="flex justify-between items-baseline mb-1.5">
-                            <label className="font-mono text-[9px] uppercase tracking-widest opacity-30">Identity Verification</label>
+                            <label className="font-mono text-[9px] uppercase tracking-widest opacity-70">Identity Verification</label>
                             <button
                                 type="button"
                                 onClick={() => setStep('email')}
-                                className="font-mono text-[8px] uppercase opacity-40 hover:opacity-100"
+                                className="font-mono text-[8px] uppercase opacity-80 hover:opacity-100"
                             >
                                 Change Email
                             </button>
                         </div>
-                        <p className="text-center font-mono text-[10px] text-white/60 mb-2">
+                        <p className="text-center font-mono text-[10px] text-white/90 mb-2">
                             Welcome, {email}
                         </p>
                         <input
@@ -169,7 +169,7 @@ export default function LoginPage() {
                             <button
                                 type="button"
                                 onClick={handleNewIdentity}
-                                className="w-full py-2 font-mono text-[9px] uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
+                                className="w-full py-2 font-mono text-[9px] uppercase tracking-[0.2em] text-white/80 hover:text-white transition-colors"
                             >
                                 No password? Register here
                             </button>
@@ -188,7 +188,7 @@ export default function LoginPage() {
                                 type="button"
                                 onClick={handleForgotPassword}
                                 disabled={isLoading}
-                                className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
+                                className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/80 hover:text-white transition-colors"
                             >
                                 {isLoading ? 'Sending...' : 'Request Password Reset'}
                             </button>
@@ -206,14 +206,14 @@ export default function LoginPage() {
                         <button
                             type="button"
                             onClick={() => setForgotMode(true)}
-                            className="w-full font-mono text-[9px] uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
+                            className="w-full font-mono text-[9px] uppercase tracking-[0.2em] text-white/80 hover:text-white transition-colors"
                         >
                             Forgot Password?
                         </button>
                         
                         <div className="relative flex items-center justify-center">
                             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5" /></div>
-                            <span className="relative px-2 bg-[var(--bg)] font-mono text-[8px] uppercase opacity-20">or</span>
+                            <span className="relative px-2 bg-[var(--bg)] font-mono text-[8px] uppercase opacity-60">or</span>
                         </div>
 
                         <div className="flex justify-center">

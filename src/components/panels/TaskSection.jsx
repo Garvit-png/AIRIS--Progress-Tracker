@@ -37,7 +37,7 @@ export default function TaskSection({
                                 <motion.span
                                     key="date"
                                     initial={{ opacity: 0 }}
-                                    animate={{ opacity: 0.4 }}
+                                    animate={{ opacity: 0.8 }}
                                     className="font-mono text-[9px] uppercase italic"
                                 >
                                     {format(selectedDate, 'MMM dd, yyyy')}
@@ -62,9 +62,9 @@ export default function TaskSection({
                     </button>
                 </form>
             ) : isPast ? (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-white/5 border border-pink-500/10 opacity-50">
-                    <Clock size={14} className="text-white/85" />
-                    <span className="text-[10px] uppercase tracking-widest font-mono text-white/85">Work Archive Locked (Read Only)</span>
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-white/5 border border-pink-500/10 opacity-80">
+                    <Clock size={14} className="text-white/95" />
+                    <span className="text-[10px] uppercase tracking-widest font-mono text-white/95">Work Archive Locked (Read Only)</span>
                 </div>
             ) : null}
 
@@ -83,11 +83,11 @@ export default function TaskSection({
                             <div className="flex items-center gap-3">
                                 <button
                                     onClick={() => handleToggleTask(task.id)}
-                                    className={`transition-colors duration-300 ${task.completed ? 'text-green-500' : 'text-white/20 hover:text-white/85'}`}
+                                    className={`transition-colors duration-300 ${task.completed ? 'text-green-500' : 'text-white/60 hover:text-white/95'}`}
                                 >
                                     {task.completed ? <CheckCircle2 size={18} /> : <Circle size={18} />}
                                 </button>
-                                <span className={`text-xs transition-all duration-300 ${task.completed ? 'text-white/85 line-through' : 'text-white'}`}>
+                                <span className={`text-xs transition-all duration-300 ${task.completed ? 'text-white/95 line-through' : 'text-white'}`}>
                                     {task.title}
                                 </span>
                             </div>

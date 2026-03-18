@@ -114,7 +114,7 @@ export default function Dashboard({ user: initialUser }) {
                         <div className="h-32 bg-gradient-to-br from-pink-600/20 to-transparent relative">
                             <button 
                                 onClick={() => setIsProfileModalOpen(false)}
-                                className="absolute top-6 right-6 w-8 h-8 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all"
+                                className="absolute top-6 right-6 w-8 h-8 rounded-full bg-black/40 border border-pink-500/20 flex items-center justify-center text-white/80 hover:text-white transition-all"
                             >
                                 <X size={16} />
                             </button>
@@ -127,7 +127,7 @@ export default function Dashboard({ user: initialUser }) {
                                         {editPfp ? (
                                             <img src={editPfp} alt="Preview" className="w-full h-full object-cover" />
                                         ) : (
-                                            <UserIcon size={40} className="text-white/20" />
+                                            <UserIcon size={40} className="text-white/50" />
                                         )}
                                     </div>
                                     <button 
@@ -153,14 +153,14 @@ export default function Dashboard({ user: initialUser }) {
                                             value={editName}
                                             onChange={(e) => setEditName(e.target.value)}
                                             placeholder="Enter full name"
-                                            className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-5 py-3.5 text-sm font-mono focus:border-pink-500/50 outline-none transition-all text-white"
+                                            className="w-full bg-white/[0.03] border border-pink-500/20 rounded-xl px-5 py-3.5 text-sm font-mono focus:border-pink-500/50 outline-none transition-all text-white"
                                         />
                                     </div>
 
                                     <div className="pt-4 flex gap-3">
                                         <button 
                                             onClick={() => setIsProfileModalOpen(false)}
-                                            className="flex-1 py-3.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/10 transition-all"
+                                            className="flex-1 py-3.5 bg-white/5 border border-pink-500/20 rounded-xl text-[10px] font-bold uppercase tracking-widest text-white/90 hover:text-white hover:bg-white/10 transition-all"
                                         >
                                             Cancel
                                         </button>
@@ -195,7 +195,7 @@ export default function Dashboard({ user: initialUser }) {
                     <h2 className="text-base font-semibold mb-4">Account Settings</h2>
                     <div className="space-y-4">
                         <div className="py-3 border-b" style={{ borderColor: 'var(--border)' }}>
-                            <p className="text-[10px] opacity-70 uppercase mb-1">Authenticated As</p>
+                            <p className="text-[10px] opacity-90 uppercase mb-1">Authenticated As</p>
                             <p className="font-mono text-sm">{user?.email}</p>
                         </div>
                         <button
@@ -274,12 +274,12 @@ export default function Dashboard({ user: initialUser }) {
                 >
                     <div className="flex items-baseline gap-2 min-w-0">
                         <h1 className="text-sm font-semibold tracking-widest uppercase truncate" style={{ color: 'var(--text)' }}>{activeView}</h1>
-                        <span className="font-mono text-[10px] hidden sm:inline opacity-70" style={{ color: 'var(--text)' }}>/ Workspace Console</span>
+                        <span className="font-mono text-[10px] hidden sm:inline opacity-90" style={{ color: 'var(--text)' }}>/ Workspace Console</span>
                     </div>
 
                     <div className="flex items-center gap-3 sm:gap-5 flex-shrink-0">
                         <div className="text-right hidden sm:block">
-                            <p className="text-[9px] font-mono uppercase opacity-50 tracking-widest">Active Session</p>
+                            <p className="text-[9px] font-mono uppercase opacity-80 tracking-widest">Active Session</p>
                         </div>
                     </div>
                 </motion.header>

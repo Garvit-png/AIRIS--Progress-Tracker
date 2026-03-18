@@ -81,7 +81,7 @@ export default function ResetPassword() {
 
                 <div className="space-y-6">
                     <div className="text-center space-y-2">
-                        <p className="font-mono text-[9px] tracking-[0.3em] uppercase opacity-40">Security Protocol</p>
+                        <p className="font-mono text-[9px] tracking-[0.3em] uppercase opacity-80">Security Protocol</p>
                         <h1 className="text-2xl font-bold tracking-tight uppercase text-white">Reset Password</h1>
                     </div>
 
@@ -90,7 +90,7 @@ export default function ResetPassword() {
                             <div className="space-y-4 text-center">
                                 <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto" />
                                 <p className="font-mono text-[11px] uppercase tracking-widest text-white">Already Open</p>
-                                <p className="font-mono text-[9px] text-white/40 leading-relaxed uppercase">
+                                <p className="font-mono text-[9px] text-white/80 leading-relaxed uppercase">
                                     Transferring session to your active terminal...
                                 </p>
                             </div>
@@ -102,14 +102,14 @@ export default function ResetPassword() {
                                     </svg>
                                 </div>
                                 <p className="font-mono text-[11px] uppercase tracking-widest text-white">Password Updated</p>
-                                <p className="font-mono text-[9px] text-white/40 leading-relaxed uppercase">
+                                <p className="font-mono text-[9px] text-white/80 leading-relaxed uppercase">
                                     Your password has been successfully reset. Redirecting to terminal...
                                 </p>
                             </div>
                         ) : (
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div>
-                                    <label className="font-mono text-[9px] uppercase tracking-widest opacity-30 mb-1.5 block">New Password</label>
+                                    <label className="font-mono text-[9px] uppercase tracking-widest opacity-80 mb-1.5 block">New Password</label>
                                     <input
                                         type="password"
                                         autoFocus
@@ -121,7 +121,7 @@ export default function ResetPassword() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="font-mono text-[9px] uppercase tracking-widest opacity-30 mb-1.5 block">Confirm Password</label>
+                                    <label className="font-mono text-[9px] uppercase tracking-widest opacity-80 mb-1.5 block">Confirm Password</label>
                                     <input
                                         type="password"
                                         placeholder="Repeat new password"
@@ -147,7 +147,7 @@ export default function ResetPassword() {
                                 
                                 <Link 
                                     to="/login" 
-                                    className="block text-center font-mono text-[9px] uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors mt-4"
+                                    className="block text-center font-mono text-[9px] uppercase tracking-[0.2em] text-white/75 hover:text-white transition-colors mt-4"
                                 >
                                     Return to Login
                                 </Link>

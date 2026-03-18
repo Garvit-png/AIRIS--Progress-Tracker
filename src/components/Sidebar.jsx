@@ -148,8 +148,8 @@ export default function Sidebar({ user, activeView, setActiveView, onProfileClic
                                 <p 
                                     className="text-[9px] font-mono uppercase tracking-[0.2em] truncate"
                                     style={{ 
-                                        color: user?.isAdmin ? '#FF0D99' : 'var(--text)',
-                                        opacity: user?.isAdmin ? 1 : 0.4 
+                                        color: (user?.isAdmin || user?.role?.toLowerCase() === 'admin') ? '#FF0D99' : 'var(--text)',
+                                        opacity: (user?.isAdmin || user?.role?.toLowerCase() === 'admin') ? 1 : 0.7 
                                     }}
                                 >
                                     {user?.role || 'Member'}
@@ -161,7 +161,7 @@ export default function Sidebar({ user, activeView, setActiveView, onProfileClic
 
                 <button
                     onClick={() => setCollapsed(!collapsed)}
-                    className="p-1 rounded-lg hover:bg-white/10 transition-all text-white/60 hover:text-white"
+                    className="p-1 rounded-lg hover:bg-white/10 transition-all text-white/90 hover:text-white"
                     title={collapsed ? "Expand" : "Collapse"}
                 >
                     <svg 
@@ -182,19 +182,11 @@ export default function Sidebar({ user, activeView, setActiveView, onProfileClic
                     <button
                         key={item.label}
                         onClick={() => setActiveView(item.label)}
-                        className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-left transition-all duration-150 group relative ${activeView === item.label
-                                ? 'opacity-100'
-                                : 'opacity-100'
+                        className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-left transition-all duration-150 group relative border shadow-lg shadow-pink-500/0 hover:shadow-pink-500/5 ${activeView === item.label
+                                ? 'bg-white/[0.08] border-white/20'
+                                : 'bg-transparent border-transparent hover:bg-white/[0.04] hover:border-white/10'
                             }`}
-                        style={
-                            activeView === item.label
-                                ? {
-                                    backgroundColor: 'rgba(255,255,255,0.08)',
-                                    color: 'var(--text)',
-                                    boxShadow: 'inset 2px 0 0 var(--text)'
-                                }
-                                : { color: 'var(--text)' }
-                        }
+                        style={{ color: 'var(--text)' }}
                     >
                         <span className="flex-shrink-0">{item.icon}</span>
                         <AnimatePresence mode="wait">
@@ -214,12 +206,12 @@ export default function Sidebar({ user, activeView, setActiveView, onProfileClic
                 ))}
 
                 {/* Admin Specific */}
-                {(user?.isAdmin) && (
-                    <div className="pt-4 mt-4 border-t border-white/5">
+                {(user?.isAdmin || user?.role?.toLowerCase() === 'admin') && (
+                    <div className="pt-4 mt-4 border-t border-pink-500/20">
                         {!collapsed && (
                             <motion.p 
                                 initial={{ opacity: 0 }}
-                                animate={{ opacity: 0.6 }}
+                                animate={{ opacity: 0.85 }}
                                 className="px-4 mb-2 font-mono text-[8px] uppercase tracking-[0.3em]"
                             >
                                 System Admin
@@ -227,16 +219,14 @@ export default function Sidebar({ user, activeView, setActiveView, onProfileClic
                         )}
                         <button
                             onClick={() => setActiveView('Approvals')}
-                            className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-left transition-all duration-150 group relative hover:bg-white/[0.05]"
-                            style={
-                                activeView === 'Approvals'
-                                    ? {
-                                        backgroundColor: 'rgba(255,255,255,0.08)',
-                                        color: '#FF0D99',
-                                        boxShadow: 'inset 2px 0 0 #FF0D99'
-                                    }
-                                    : { color: '#FF0D99', opacity: 0.6 }
-                            }
+                            className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-left transition-all duration-150 group relative border shadow-lg shadow-pink-500/0 hover:shadow-pink-500/5 ${activeView === 'Approvals'
+                                    ? 'bg-pink-500/[0.08] border-pink-500/30'
+                                    : 'bg-transparent border-transparent hover:bg-pink-500/[0.04] hover:border-pink-500/20'
+                                }`}
+                            style={{ 
+                                color: '#FF0D99', 
+                                opacity: activeView === 'Approvals' ? 1 : 0.6 
+                            }}
                         >
                             <span className="flex-shrink-0">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5">
@@ -262,16 +252,14 @@ export default function Sidebar({ user, activeView, setActiveView, onProfileClic
 
                         <button
                             onClick={() => setActiveView('Members')}
-                            className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-left transition-all duration-150 group relative"
-                            style={
-                                activeView === 'Members'
-                                    ? {
-                                        backgroundColor: 'rgba(255,255,255,0.08)',
-                                        color: '#FF0D99',
-                                        boxShadow: 'inset 2px 0 0 #FF0D99'
-                                    }
-                                    : { color: '#FF0D99', opacity: 0.6 }
-                            }
+                            className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-left transition-all duration-150 group relative border shadow-lg shadow-pink-500/0 hover:shadow-pink-500/5 ${activeView === 'Members'
+                                    ? 'bg-pink-500/[0.08] border-pink-500/30'
+                                    : 'bg-transparent border-transparent hover:bg-pink-500/[0.04] hover:border-pink-500/20'
+                                }`}
+                            style={{ 
+                                color: '#FF0D99', 
+                                opacity: activeView === 'Members' ? 1 : 0.6 
+                            }}
                         >
                             <span className="flex-shrink-0">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5">
@@ -301,7 +289,7 @@ export default function Sidebar({ user, activeView, setActiveView, onProfileClic
             <div className="px-4 py-4 border-t flex items-center justify-center" style={{ borderColor: 'var(--border)' }}>
                 <button 
                     onClick={handleLogout}
-                    className="w-full flex items-center justify-center gap-3 py-2 rounded-lg bg-red-500/5 border border-red-500/10 text-red-500/60 hover:text-red-500 hover:bg-red-500/10 transition-all text-[10px] font-bold uppercase tracking-widest"
+                    className="w-full flex items-center justify-center gap-3 py-2 rounded-lg bg-red-500/5 border border-red-500/10 text-red-500/85 hover:text-red-500 hover:bg-red-500/10 transition-all text-[10px] font-bold uppercase tracking-widest"
                     title="Logout"
                 >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
