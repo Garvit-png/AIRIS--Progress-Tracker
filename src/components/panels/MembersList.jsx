@@ -12,30 +12,45 @@ export default function MembersList() {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [userPhotos, setUserPhotos] = useState(() => {
-        const cached = localStorage.getItem('airis_pfp_cache');
-        return cached ? JSON.parse(cached) : {};
+        try {
+            const cached = localStorage.getItem('airis_pfp_cache');
+            return cached ? JSON.parse(cached) : {};
+        } catch (e) {
+            return {};
+        }
     });
+    
+    // Ref to track pending fetches and avoid duplicate requests
+    const pendingFetches = React.useRef(new Set());
+
+    // Debounced persistence to localStorage
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (Object.keys(userPhotos).length > 0) {
+                try {
+                    localStorage.setItem('airis_pfp_cache', JSON.stringify(userPhotos));
+                } catch (e) {
+                    console.warn('Cache quota exceeded, clearing...');
+                    localStorage.removeItem('airis_pfp_cache');
+                }
+            }
+        }, 2000);
+        return () => clearTimeout(timer);
+    }, [userPhotos]);
 
     const fetchUserPhoto = async (userId) => {
-        if (userPhotos[userId]) return;
+        if (userPhotos[userId] || pendingFetches.current.has(userId)) return;
+        
+        pendingFetches.current.add(userId);
         try {
             const photoData = await AuthService.getUserPhoto(userId);
             if (photoData) {
-                setUserPhotos(prev => {
-                    const next = { ...prev, [userId]: photoData };
-                    // Persist to local storage (optional: limit size)
-                    try {
-                        localStorage.setItem('airis_pfp_cache', JSON.stringify(next));
-                    } catch (e) {
-                        // If quota exceeded, clear and save current
-                        localStorage.removeItem('airis_pfp_cache');
-                        localStorage.setItem('airis_pfp_cache', JSON.stringify({ [userId]: photoData }));
-                    }
-                    return next;
-                });
+                setUserPhotos(prev => ({ ...prev, [userId]: photoData }));
             }
         } catch (err) {
             console.error('Failed to fetch photo:', err);
+        } finally {
+            pendingFetches.current.delete(userId);
         }
     };
 
@@ -43,29 +58,39 @@ export default function MembersList() {
         if (selectedUser && !userPhotos[selectedUser._id]) {
             fetchUserPhoto(selectedUser._id);
         }
-    }, [selectedUser]);
+    }, [selectedUser, userPhotos]);
 
     useEffect(() => {
         fetchUsers();
+    }, []);
+
+    // Ref for component mount status
+    const isMounted = React.useRef(true);
+    useEffect(() => {
+        isMounted.current = true;
+        return () => { isMounted.current = false; };
     }, []);
 
     const fetchUsers = async () => {
         setIsLoading(true);
         try {
             const data = await AuthService.getUsers();
+            if (!isMounted.current) return;
             setUsers(data);
 
             // Staggered background fetch for the first few users to populate cache
             const topUsers = data.slice(0, 10);
             topUsers.forEach((u, index) => {
-                if (!userPhotos[u._id]) {
-                    setTimeout(() => fetchUserPhoto(u._id), index * 300);
-                }
+                setTimeout(() => {
+                    if (isMounted.current && !userPhotos[u._id]) {
+                        fetchUserPhoto(u._id);
+                    }
+                }, index * 300);
             });
         } catch (error) {
             console.error('Failed to load members:', error);
         } finally {
-            setIsLoading(false);
+            if (isMounted.current) setIsLoading(false);
         }
     };
 
