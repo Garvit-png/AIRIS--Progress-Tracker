@@ -226,10 +226,10 @@ export default function Sidebar({ user, activeView, setActiveView, onProfileClic
                             </motion.p>
                         )}
                         <button
-                            onClick={() => setActiveView('Admin')}
+                            onClick={() => setActiveView('Approvals')}
                             className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-left transition-all duration-150 group relative hover:bg-white/[0.05]"
                             style={
-                                activeView === 'Admin'
+                                activeView === 'Approvals'
                                     ? {
                                         backgroundColor: 'rgba(255,255,255,0.08)',
                                         color: '#FF0D99',
@@ -252,7 +252,7 @@ export default function Sidebar({ user, activeView, setActiveView, onProfileClic
                                         transition={{ duration: 0.2 }}
                                         className="text-sm font-medium overflow-hidden whitespace-nowrap"
                                     >
-                                        Admin Portal
+                                        Approvals
                                     </motion.span>
                                 )}
                             </AnimatePresence>

@@ -144,7 +144,7 @@ const AdminPanel = ({ isEmbedded = false }) => {
                         <Logo size="sm" showSubtitle={false} className="!items-start opacity-90" />
                         <div>
                             <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-white">
-                                Governance <span className="text-white/70 font-normal">Console</span>
+                                Approvals <span className="text-white/70 font-normal">Portal</span>
                             </h1>
                             <p className="text-white/70 text-sm mt-1 font-mono uppercase tracking-wider">Access Rights Management System</p>
                         </div>
@@ -252,10 +252,9 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                             </button>
                                         </form>
                                     ) : (
-                                        <div className="space-y-4 font-mono text-[10px] text-white/80 leading-relaxed">
-                                            <p>// SYSTEM PROTOCOL:</p>
-                                            <p>All incoming registration requests are held in the queue until manual verification.</p>
-                                            <p className="text-slate-600">Selecting 'APPROVE' will grant immediate system access to the user.</p>
+                                        <div className="py-12 flex flex-col items-center justify-center border border-dashed border-white/5 rounded-2xl">
+                                            <ShieldAlert className="w-8 h-8 text-white/5 mb-2" />
+                                            <p className="text-[10px] font-mono text-white/20 uppercase tracking-[0.2em]">Queue Active</p>
                                         </div>
                                     )}
 
@@ -277,15 +276,6 @@ const AdminPanel = ({ isEmbedded = false }) => {
                             </div>
                         </section>
 
-                        <div className="p-6 border border-white/5 rounded-2xl bg-white/[0.01]">
-                            <div className="flex gap-3 mb-4">
-                                <Shield className="w-4 h-4 text-white/70" />
-                                <h3 className="text-[11px] font-semibold text-white/80 uppercase tracking-wider">Protocol Audit</h3>
-                            </div>
-                            <p className="text-[10px] text-slate-600 leading-relaxed font-mono">
-                                // NOTICE: Approval grants data ingestion privileges. Assign roles carefully.
-                            </p>
-                        </div>
                     </div>
 
                     {/* Request List (Right) */}
