@@ -11,6 +11,8 @@ export default function MembersList() {
     const [sortKey, setSortKey] = useState('name'); // name, year
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [actionLoading, setActionLoading] = useState(false);
+    const currentUser = AuthService.getSession();
     const [userPhotos, setUserPhotos] = useState(() => {
         try {
             const cached = localStorage.getItem('airis_pfp_cache');
@@ -91,6 +93,21 @@ export default function MembersList() {
             console.error('Failed to load members:', error);
         } finally {
             if (isMounted.current) setIsLoading(false);
+        }
+    };
+
+    const handleRevokeAccess = async (userToRevoke) => {
+        if (!window.confirm(`REVOKE ACCESS FOR ${userToRevoke.name.toUpperCase()}? THEY WILL NEED RE-APPROVAL.`)) return;
+        
+        setActionLoading(true);
+        try {
+            await AuthService.updateUserStatus(userToRevoke._id, 'pending', userToRevoke.role);
+            setSelectedUser(null);
+            fetchUsers();
+        } catch (error) {
+            alert('Failed to revoke access: ' + error.message);
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -439,9 +456,15 @@ export default function MembersList() {
                                 </div>
 
                                 <div className="pt-4 flex gap-3">
-                                    <button className="flex-1 py-4 bg-white text-black font-bold text-[11px] uppercase tracking-[0.2em] rounded-2xl hover:bg-blue-500 hover:text-white transition-all">
-                                        Action Protocols
-                                    </button>
+                                    {currentUser?.role === 'admin' && selectedUser?._id !== currentUser?.id && (
+                                        <button 
+                                            onClick={() => handleRevokeAccess(selectedUser)}
+                                            disabled={actionLoading}
+                                            className="flex-1 py-4 bg-red-600 text-white font-bold text-[11px] uppercase tracking-[0.2em] rounded-2xl hover:bg-red-700 transition-all disabled:opacity-50"
+                                        >
+                                            {actionLoading ? 'REVOKING...' : 'Revoke Access'}
+                                        </button>
+                                    )}
                                     <button 
                                         onClick={() => setSelectedUser(null)}
                                         className="flex-1 py-4 bg-white/5 border border-white/10 text-white/85 font-bold text-[11px] uppercase tracking-[0.2em] rounded-2xl hover:bg-white/10 hover:text-white transition-all"
