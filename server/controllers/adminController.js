@@ -147,3 +147,20 @@ exports.getUserPhoto = async (req, res) => {
         res.status(400).json({ success: false, message: error.message });
     }
 };
+
+// @desc    Get all users with approved status
+// @route   GET /api/admin/history
+// @access  Private/Admin
+exports.getApprovedUsers = async (req, res) => {
+    try {
+        const users = await User.find({ status: 'approved' }).select('-password');
+
+        res.status(200).json({
+            success: true,
+            count: users.length,
+            data: users
+        });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};

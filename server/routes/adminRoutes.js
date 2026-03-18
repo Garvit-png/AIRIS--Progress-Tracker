@@ -6,7 +6,8 @@ const {
     getUsers,
     getPendingUsers,
     updateUserStatus,
-    getUserPhoto
+    getUserPhoto,
+    getApprovedUsers
 } = require('../controllers/adminController');
 
 const router = express.Router();
@@ -36,5 +37,6 @@ router.get('/users', getUsers);
 router.get('/pending', getPendingUsers);
 router.get('/users/:id/photo', getUserPhoto);
 router.put('/users/:id/status', updateUserStatus);
+router.get('/history', getApprovedUsers);
 
 module.exports = router;

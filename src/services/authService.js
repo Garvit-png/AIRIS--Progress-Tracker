@@ -168,6 +168,15 @@ export const AuthService = {
         return data.success ? data.data : [];
     },
 
+    getApprovedUsers: async () => {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${ADMIN_API_URL}/history`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        return data.success ? data.data : [];
+    },
+
     updateUserStatus: async (userId, status, role) => {
         const token = localStorage.getItem('token');
         const response = await fetch(`${ADMIN_API_URL}/users/${userId}/status`, {

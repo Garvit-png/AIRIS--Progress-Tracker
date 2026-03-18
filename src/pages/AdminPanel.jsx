@@ -7,7 +7,8 @@ import Logo from '../components/Logo';
 const AdminPanel = ({ isEmbedded = false }) => {
     const [emails, setEmails] = useState([]);
     const [pendingUsers, setPendingUsers] = useState([]);
-    const [activeTab, setActiveTab] = useState('pending'); // pending, whitelist
+    const [approvedUsers, setApprovedUsers] = useState([]);
+    const [activeTab, setActiveTab] = useState('pending'); // pending, whitelist, history
     const [newEmail, setNewEmail] = useState('');
     const [useCollegeDomain, setUseCollegeDomain] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -20,6 +21,8 @@ const AdminPanel = ({ isEmbedded = false }) => {
     useEffect(() => {
         if (activeTab === 'whitelist') {
             fetchEmails();
+        } else if (activeTab === 'history') {
+            fetchApprovedUsers();
         } else {
             fetchPendingUsers();
         }
@@ -44,6 +47,18 @@ const AdminPanel = ({ isEmbedded = false }) => {
             setPendingUsers(data);
         } catch (error) {
             showMsg('Failed to load pending requests', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const fetchApprovedUsers = async () => {
+        setIsLoading(true);
+        try {
+            const data = await AuthService.getApprovedUsers();
+            setApprovedUsers(data);
+        } catch (error) {
+            showMsg('Failed to load approval history', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -117,13 +132,16 @@ const AdminPanel = ({ isEmbedded = false }) => {
         );
     }, [pendingUsers, searchQuery]);
 
+    const filteredApproved = useMemo(() => {
+        return approvedUsers.filter(user => 
+            user.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            user.email.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [approvedUsers, searchQuery]);
+
     const stats = {
-        total: activeTab === 'whitelist' ? emails.length : pendingUsers.length,
-        newToday: (activeTab === 'whitelist' ? emails : pendingUsers).filter(e => {
-            const date = new Date(e.createdAt);
-            const today = new Date();
-            return date.toDateString() === today.toDateString();
-        }).length
+        total: activeTab === 'whitelist' ? emails.length : (activeTab === 'history' ? approvedUsers.length : pendingUsers.length),
+        totalOverall: approvedUsers.length
     };
 
     return (
@@ -151,46 +169,55 @@ const AdminPanel = ({ isEmbedded = false }) => {
                     </div>
 
                     {/* Quick Stats Grid */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="flex gap-3">
                         <motion.div 
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="px-5 py-3.5 bg-white/[0.03] border border-white/5 rounded-xl backdrop-blur-md"
+                            className="px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl backdrop-blur-md min-w-[140px]"
                         >
-                            <p className="text-[10px] font-mono text-white/70 uppercase tracking-widest mb-1">
-                                {activeTab === 'pending' ? 'Pending Requests' : 'Pre-Authorized'}
+                            <p className="text-[10px] font-mono text-white/50 uppercase tracking-widest mb-1">
+                                {activeTab === 'pending' ? 'Pending' : (activeTab === 'history' ? 'Approved' : 'Pre-Auth')}
                             </p>
-                            <p className="text-xl font-bold text-white">{stats.total}</p>
+                            <p className="text-2xl font-bold text-white tracking-tight">{stats.total}</p>
                         </motion.div>
+                        
                         <motion.div 
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 }}
-                            className="px-5 py-3.5 bg-white/[0.03] border border-white/5 rounded-xl backdrop-blur-md"
+                            className="px-6 py-4 bg-pink-500/5 border border-pink-500/10 rounded-2xl backdrop-blur-md min-w-[140px]"
                         >
-                            <p className="text-[10px] font-mono text-pink-400 uppercase tracking-widest mb-1">Incoming</p>
-                            <p className="text-xl font-bold text-white">{stats.newToday || '0'}</p>
+                            <p className="text-[10px] font-mono text-pink-400/70 uppercase tracking-widest mb-1">Total Members</p>
+                            <p className="text-2xl font-bold text-pink-500 tracking-tight">{stats.totalOverall}</p>
                         </motion.div>
                     </div>
                 </header>
 
                 {/* Tab Switcher */}
-                <div className="flex gap-4 mb-8 p-1 bg-white/5 rounded-2xl w-fit border border-white/10 backdrop-blur-xl">
+                <div className="flex gap-2 mb-8 p-1.5 bg-white/5 rounded-2xl w-fit border border-white/10 backdrop-blur-xl">
                     <button 
                         onClick={() => setActiveTab('pending')}
-                        className={`px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
-                            activeTab === 'pending' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/70 hover:text-white'
+                        className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
+                            activeTab === 'pending' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/40 hover:text-white/70'
                         }`}
                     >
-                        Pending Requests
+                        Pending
                     </button>
                     <button 
                         onClick={() => setActiveTab('whitelist')}
-                        className={`px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
-                            activeTab === 'whitelist' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/70 hover:text-white'
+                        className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
+                            activeTab === 'whitelist' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/40 hover:text-white/70'
                         }`}
                     >
-                        Pre-Authorization
+                        Pre-Auth
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('history')}
+                        className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
+                            activeTab === 'history' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/40 hover:text-white/70'
+                        }`}
+                    >
+                        History
                     </button>
                 </div>
 
@@ -204,10 +231,10 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                 <div className="relative z-10 space-y-8">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-white/5 rounded-lg border border-white/10">
-                                            {activeTab === 'pending' ? <Clock className="w-4 h-4 text-amber-400" /> : <UserPlus className="w-4 h-4 text-pink-400" />}
+                                            {activeTab === 'pending' ? <Clock className="w-4 h-4 text-amber-400" /> : (activeTab === 'history' ? <ShieldCheck className="w-4 h-4 text-emerald-400" /> : <UserPlus className="w-4 h-4 text-pink-400" />)}
                                         </div>
                                         <h2 className="text-sm font-semibold text-white tracking-wide">
-                                            {activeTab === 'pending' ? 'Approval Queue' : 'Pre-Authorize Identity'}
+                                            {activeTab === 'pending' ? 'Approval Queue' : (activeTab === 'history' ? 'Audit History' : 'Pre-Authorize Identity')}
                                         </h2>
                                     </div>
 
@@ -251,6 +278,12 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                                 {actionLoading ? 'VERIFYING...' : 'GRANT PRE-AUTH'}
                                             </button>
                                         </form>
+                                    ) : activeTab === 'history' ? (
+                                        <div className="space-y-4 font-mono text-[10px] text-white/80 leading-relaxed">
+                                            <p>// AUDIT LOG:</p>
+                                            <p>All finalized entries are logged here for verification.</p>
+                                            <p className="text-emerald-500/60">Status: ALL SYSTEMS NOMINAL</p>
+                                        </div>
                                     ) : (
                                         <div className="py-12 flex flex-col items-center justify-center border border-dashed border-white/5 rounded-2xl">
                                             <ShieldAlert className="w-8 h-8 text-white/5 mb-2" />
@@ -284,7 +317,10 @@ const AdminPanel = ({ isEmbedded = false }) => {
                             <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70 group-focus-within:text-white transition-colors" />
                             <input 
                                 type="text"
-                                placeholder={activeTab === 'pending' ? "Search pending requests..." : "Filter pre-authorized identities..."}
+                                placeholder={
+                                    activeTab === 'pending' ? "Search pending requests..." : 
+                                    (activeTab === 'history' ? "Search approval history..." : "Filter pre-authorized identities...")
+                                }
                                 className="w-full bg-[#0a0a0a]/80 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-sm outline-none focus:border-white/10 focus:bg-white/[0.05] transition-all font-sans backdrop-blur-xl placeholder:text-slate-700"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -298,7 +334,7 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                         <div key={i} className="h-24 bg-white/[0.02] border border-white/5 rounded-2xl animate-pulse" />
                                     ))}
                                 </div>
-                            ) : (activeTab === 'pending' ? filteredPending : filteredEmails).length === 0 ? (
+                            ) : (activeTab === 'pending' ? filteredPending : (activeTab === 'history' ? filteredApproved : filteredEmails)).length === 0 ? (
                                 <motion.div 
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
@@ -311,7 +347,7 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                 </motion.div>
                             ) : (
                                 <AnimatePresence mode="popLayout">
-                                    {(activeTab === 'pending' ? filteredPending : filteredEmails).map((item) => (
+                                    {(activeTab === 'pending' ? filteredPending : (activeTab === 'history' ? filteredApproved : filteredEmails)).map((item) => (
                                         <motion.div
                                             layout
                                             initial={{ opacity: 0, scale: 0.95 }}
@@ -379,6 +415,11 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                                             <X className="w-4 h-4" />
                                                         </button>
                                                     </>
+                                                ) : activeTab === 'history' ? (
+                                                    <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                                                        <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                                        <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500/80">Approved {item.role}</span>
+                                                    </div>
                                                 ) : (
                                                     <button
                                                         onClick={() => handleRevokeEmail(item.email)}

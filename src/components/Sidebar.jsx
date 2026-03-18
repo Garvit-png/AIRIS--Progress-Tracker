@@ -240,7 +240,9 @@ export default function Sidebar({ user, activeView, setActiveView, onProfileClic
                         >
                             <span className="flex-shrink-0">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5">
-                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                                    <path d="m9 14 2 2 4-4" />
                                 </svg>
                             </span>
                             <AnimatePresence mode="wait">
