@@ -27,7 +27,11 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        default: 'member'
+        default: 'Member'
+    },
+    isAdmin: {
+        type: Boolean,
+        default: false
     },
     status: {
         type: String,

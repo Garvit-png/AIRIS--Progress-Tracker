@@ -107,7 +107,7 @@ exports.getPendingUsers = async (req, res) => {
 // @access  Private/Admin
 exports.updateUserStatus = async (req, res) => {
     try {
-        const { status, role } = req.body;
+        const { status, role, isAdmin, name } = req.body;
         
         const user = await User.findById(req.params.id);
 
@@ -117,6 +117,8 @@ exports.updateUserStatus = async (req, res) => {
 
         if (status) user.status = status;
         if (role) user.role = role;
+        if (isAdmin !== undefined) user.isAdmin = isAdmin;
+        if (name) user.name = name;
 
         await user.save();
 

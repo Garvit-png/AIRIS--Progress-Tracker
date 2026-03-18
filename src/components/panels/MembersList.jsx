@@ -11,6 +11,8 @@ export default function MembersList() {
     const [sortKey, setSortKey] = useState('name'); // name, year
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [editMode, setEditMode] = useState(false);
+    const [editData, setEditData] = useState({ name: '', role: '', isAdmin: false });
     const [actionLoading, setActionLoading] = useState(false);
     const currentUser = AuthService.getSession();
     const [userPhotos, setUserPhotos] = useState(() => {
@@ -129,6 +131,10 @@ export default function MembersList() {
 
         // Sorting
         result.sort((a, b) => {
+            // Prioritize System Admins
+            if (a.isAdmin !== b.isAdmin) {
+                return a.isAdmin ? -1 : 1;
+            }
             if (sortKey === 'name') {
                 return a.name.localeCompare(b.name);
             } else if (sortKey === 'year') {
@@ -331,7 +337,11 @@ export default function MembersList() {
                                 exit={{ opacity: 0, scale: 0.98 }}
                                 transition={{ delay: index * 0.01 }}
                                 key={user._id}
-                                onClick={() => setSelectedUser(user)}
+                                onClick={() => {
+                                    setSelectedUser(user);
+                                    setEditData({ name: user.name, role: user.role || 'Member', isAdmin: !!user.isAdmin });
+                                    setEditMode(false);
+                                }}
                                 className="group relative grid grid-cols-1 md:grid-cols-12 items-center gap-4 px-6 md:px-8 py-4 hover:bg-white/[0.04] transition-all cursor-pointer border-l-2 border-transparent hover:border-pink-500/40 hover:bg-pink-500/[0.02]"
                             >
                                 {/* Name/Identity Sector */}
@@ -364,13 +374,16 @@ export default function MembersList() {
 
                                 {/* Role Sector */}
                                 <div className="col-span-2 hidden md:block">
-                                    <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] border ${
-                                        user.role === 'admin' 
-                                        ? 'bg-pink-500/10 border-pink-500/20 text-pink-400' 
-                                        : 'bg-white/5 border-white/10 text-white/70'
-                                    }`}>
-                                        {user.role}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] border ${
+                                            user.isAdmin 
+                                            ? 'bg-pink-500/10 border-pink-500/20 text-pink-400' 
+                                            : 'bg-white/5 border-white/10 text-white/70'
+                                        }`}>
+                                            {user.role || 'Member'}
+                                        </span>
+                                        {user.isAdmin && <Shield size={10} className="text-pink-500/50" />}
+                                    </div>
                                 </div>
 
                                 {/* Batch Sector */}
@@ -438,12 +451,13 @@ export default function MembersList() {
                                     <div className="flex items-center gap-3">
                                         <h2 className="text-2xl font-bold text-white tracking-tight">{selectedUser.name}</h2>
                                         <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] border ${
-                                            selectedUser.role === 'admin' 
+                                            selectedUser.isAdmin 
                                             ? 'bg-pink-500/10 border-pink-500/20 text-pink-400' 
                                             : 'bg-white/5 border-white/10 text-white/85'
                                         }`}>
-                                            {selectedUser.role}
+                                            {selectedUser.role || 'Member'}
                                         </span>
+                                        {selectedUser.isAdmin && <Shield size={12} className="text-pink-500" />}
                                     </div>
                                     <p className="text-white/70 text-[11px] font-mono uppercase tracking-[0.3em] mt-1">Registry Identity #{selectedUser._id?.slice(-12)}</p>
                                 </div>
@@ -451,9 +465,98 @@ export default function MembersList() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <DetailItem label="Email Endpoint" value={selectedUser.email} icon={<Mail size={14} className="text-blue-400" />} />
                                     <DetailItem label="Assigned Batch" value={`BATCH 0${selectedUser.year || '?'}`} icon={<GraduationCap size={14} className="text-amber-400" />} />
-                                    <DetailItem label="Clearance Level" value={selectedUser.role === 'admin' ? 'LVL_01 (ADMIN)' : 'LVL_02 (MEMBER)'} icon={<Shield size={14} className="text-pink-400" />} />
+                                    <DetailItem label="Clearance Level" value={selectedUser.isAdmin ? 'S-CLASS (ADMIN)' : 'LEVEL-02 (MEMBER)'} icon={<Shield size={14} className="text-pink-400" />} />
                                     <DetailItem label="Join Date" value={new Date(selectedUser.createdAt).toLocaleDateString()} icon={<Clock size={14} className="text-emerald-400" />} />
                                 </div>
+
+                                {/* Identity Management Suite (Admin Only) */}
+                                {currentUser?.isAdmin && (
+                                    <div className="space-y-4 p-5 bg-white/[0.02] border border-white/5 rounded-[2rem]">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-pink-500/80 font-bold">Identity Configuration</p>
+                                            <button 
+                                                onClick={() => setEditMode(!editMode)}
+                                                className="text-[9px] font-bold uppercase tracking-widest text-white/40 hover:text-white transition-colors"
+                                            >
+                                                {editMode ? 'CANCEL' : 'OVERRIDE'}
+                                            </button>
+                                        </div>
+
+                                        {editMode ? (
+                                            <div className="space-y-4">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[8px] font-mono uppercase tracking-widest text-white/30 ml-2">Public Identity</label>
+                                                    <input 
+                                                        type="text"
+                                                        value={editData.name}
+                                                        onChange={(e) => setEditData({...editData, name: e.target.value})}
+                                                        className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-xs outline-none focus:border-pink-500/50 transition-all font-mono"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[8px] font-mono uppercase tracking-widest text-white/30 ml-2">Designation / Title</label>
+                                                    <input 
+                                                        type="text"
+                                                        value={editData.role}
+                                                        placeholder="President, Gen Sec, etc."
+                                                        onChange={(e) => setEditData({...editData, role: e.target.value})}
+                                                        className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-xs outline-none focus:border-pink-500/50 transition-all font-mono"
+                                                    />
+                                                </div>
+                                                <div className="flex items-center justify-between p-3 bg-white/[0.03] border border-white/5 rounded-xl">
+                                                    <div className="flex items-center gap-2">
+                                                        <Shield size={14} className="text-pink-500" />
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-white/70">Admin Permissions</span>
+                                                    </div>
+                                                    <input 
+                                                        type="checkbox"
+                                                        checked={editData.isAdmin}
+                                                        onChange={(e) => setEditData({...editData, isAdmin: e.target.checked})}
+                                                        className="accent-pink-500 w-4 h-4"
+                                                    />
+                                                </div>
+                                                <button 
+                                                    onClick={async () => {
+                                                        setActionLoading(true);
+                                                        try {
+                                                            await AuthService.updateUserStatus(selectedUser._id, selectedUser.status, editData.role, editData.isAdmin, editData.name);
+                                                            showMsg('Identity Updated', 'success');
+                                                            setEditMode(false);
+                                                            fetchUsers();
+                                                            // Also update selected user locally to reflect changes in modal
+                                                            setSelectedUser({...selectedUser, name: editData.name, role: editData.role, isAdmin: editData.isAdmin});
+                                                        } catch (error) {
+                                                            alert('Update failed: ' + error.message);
+                                                        } finally {
+                                                            setActionLoading(false);
+                                                        }
+                                                    }}
+                                                    className="w-full py-3 bg-pink-600 text-white font-bold text-[10px] uppercase tracking-[0.2em] rounded-xl hover:bg-pink-700 transition-all"
+                                                >
+                                                    {actionLoading ? 'UPDATING...' : 'Commit Changes'}
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center justify-between text-white/60">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-white/5 rounded-lg">
+                                                        <Users size={14} className="text-white/40" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] font-bold uppercase tracking-widest">{selectedUser.name}</p>
+                                                        <p className="text-[8px] font-mono uppercase tracking-widest opacity-50">{selectedUser.role || 'Member'}</p>
+                                                    </div>
+                                                </div>
+                                                {selectedUser.isAdmin && (
+                                                    <div className="flex items-center gap-2 px-3 py-1 bg-pink-500/10 border border-pink-500/20 rounded-full">
+                                                        <Shield size={10} className="text-pink-500" />
+                                                        <span className="text-[8px] font-bold uppercase text-pink-500">ROOT ACCESS</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 
                                 <div className="pt-4 flex gap-3">
                                     {currentUser?.role === 'admin' && selectedUser?._id !== currentUser?.id && (

@@ -17,10 +17,10 @@ const { protect } = require('../middleware/authMiddleware');
 // Middleware to restrict access to admins only
 const authorize = (...roles) => {
     return (req, res, next) => {
-        if (!roles.includes(req.user.role)) {
+        if (!req.user || !req.user.isAdmin) {
             return res.status(403).json({
                 success: false,
-                message: `User role ${req.user.role} is not authorized to access this route`
+                message: `User is not authorized to access this route`
             });
         }
         next();

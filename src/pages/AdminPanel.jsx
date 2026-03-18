@@ -106,10 +106,10 @@ const AdminPanel = ({ isEmbedded = false }) => {
         }
     };
 
-    const handleUserApproval = async (userId, status, role = 'member') => {
+    const handleUserApproval = async (userId, status, role = 'Member', isAdmin = false) => {
         setActionLoading(true);
         try {
-            await AuthService.updateUserStatus(userId, status, role);
+            await AuthService.updateUserStatus(userId, status, role, isAdmin);
             showMsg(`USER ${status.toUpperCase()} AS ${role.toUpperCase()}`, 'success');
             fetchPendingUsers();
         } catch (error) {
@@ -395,14 +395,14 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                                 {activeTab === 'pending' ? (
                                                     <>
                                                         <button
-                                                            onClick={() => handleUserApproval(item._id, 'approved', 'member')}
+                                                            onClick={() => handleUserApproval(item._id, 'approved', 'Member', false)}
                                                             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-bold uppercase tracking-widest hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all"
                                                         >
                                                             <UserCheck className="w-3.5 h-3.5" />
                                                             Approve Member
                                                         </button>
                                                         <button
-                                                            onClick={() => handleUserApproval(item._id, 'approved', 'admin')}
+                                                            onClick={() => handleUserApproval(item._id, 'approved', 'Admin', true)}
                                                             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-bold uppercase tracking-widest hover:bg-pink-600 hover:text-white hover:border-pink-600 transition-all"
                                                         >
                                                             <ShieldCheck className="w-3.5 h-3.5" />

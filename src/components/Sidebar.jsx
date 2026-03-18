@@ -148,8 +148,8 @@ export default function Sidebar({ user, activeView, setActiveView, onProfileClic
                                 <p 
                                     className="text-[9px] font-mono uppercase tracking-[0.2em] truncate"
                                     style={{ 
-                                        color: user?.role === 'admin' ? '#FF0D99' : 'var(--text)',
-                                        opacity: user?.role === 'admin' ? 1 : 0.4 
+                                        color: user?.isAdmin ? '#FF0D99' : 'var(--text)',
+                                        opacity: user?.isAdmin ? 1 : 0.4 
                                     }}
                                 >
                                     {user?.role || 'Member'}
@@ -214,7 +214,7 @@ export default function Sidebar({ user, activeView, setActiveView, onProfileClic
                 ))}
 
                 {/* Admin Specific */}
-                {user?.role === 'admin' && (
+                {(user?.isAdmin) && (
                     <div className="pt-4 mt-4 border-t border-white/5">
                         {!collapsed && (
                             <motion.p 

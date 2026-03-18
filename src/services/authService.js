@@ -177,7 +177,7 @@ export const AuthService = {
         return data.success ? data.data : [];
     },
 
-    updateUserStatus: async (userId, status, role) => {
+    updateUserStatus: async (userId, status, role, isAdmin, name) => {
         const token = localStorage.getItem('token');
         const response = await fetch(`${ADMIN_API_URL}/users/${userId}/status`, {
             method: 'PUT',
@@ -185,7 +185,7 @@ export const AuthService = {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}` 
             },
-            body: JSON.stringify({ status, role })
+            body: JSON.stringify({ status, role, isAdmin, name })
         });
         const data = await response.json();
         if (!data.success) throw new Error(data.message);

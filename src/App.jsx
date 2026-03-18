@@ -16,7 +16,7 @@ import { AuthService } from './services/authService'
 // Admin route protector
 function AdminRoute({ children }) {
   const user = AuthService.getSession()
-  if (user?.role !== 'admin') return <Navigate to="/dashboard" replace />
+  if (!user?.isAdmin) return <Navigate to="/dashboard" replace />
   return children
 }
 

@@ -34,7 +34,8 @@ exports.register = async (req, res, next) => {
             email: cleanEmail,
             password,
             year,
-            role: isAdminEmail ? 'admin' : 'member',
+            role: isAdminEmail ? 'Admin' : 'Member',
+            isAdmin: isAdminEmail,
             status: isAdminEmail ? 'approved' : 'pending',
             verificationToken,
             isVerified: false
@@ -127,7 +128,8 @@ exports.googleLogin = async (req, res, next) => {
                 email: cleanEmail,
                 googleId,
                 isVerified: true,
-                role: isAdminEmail ? 'admin' : 'member',
+                role: isAdminEmail ? 'Admin' : 'Member',
+                isAdmin: isAdminEmail,
                 status: isAdminEmail ? 'approved' : 'pending',
                 password: crypto.randomBytes(16).toString('hex')
             });
@@ -155,6 +157,7 @@ exports.googleLogin = async (req, res, next) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                isAdmin: user.isAdmin,
                 status: user.status,
                 profilePicture: user.profilePicture
             }
@@ -211,6 +214,7 @@ exports.login = async (req, res, next) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                isAdmin: user.isAdmin,
                 status: user.status,
                 profilePicture: user.profilePicture
             }
@@ -319,6 +323,7 @@ exports.updateProfile = async (req, res, next) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                isAdmin: user.isAdmin,
                 status: user.status,
                 profilePicture: user.profilePicture
             }
