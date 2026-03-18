@@ -1,9 +1,7 @@
-/**
- * AUTH SERVICE
- * Handles backend authentication, token management, and session persistence
- */
+import config from '../config';
 
-const API_URL = 'http://localhost:5001/api/auth';
+const API_URL = `${config.API_BASE_URL}/auth`;
+const ADMIN_API_URL = `${config.API_BASE_URL}/admin`;
 
 export const AuthService = {
     // Check if email is approved via backend (for now using the existing mock logic if backend doesn't have it yet, 
@@ -108,10 +106,9 @@ export const AuthService = {
         window.location.href = '/login';
     },
 
-    // ADMIN METHODS
     getApprovedEmails: async () => {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5001/api/admin/approved', {
+        const response = await fetch(`${ADMIN_API_URL}/approved`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -120,7 +117,7 @@ export const AuthService = {
 
     approveEmail: async (email) => {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5001/api/admin/approve', {
+        const response = await fetch(`${ADMIN_API_URL}/approve`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
@@ -135,7 +132,7 @@ export const AuthService = {
 
     revokeEmail: async (email) => {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5001/api/admin/approve/${email}`, {
+        const response = await fetch(`${ADMIN_API_URL}/approve/${email}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -146,7 +143,7 @@ export const AuthService = {
 
     getUsers: async () => {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5001/api/admin/users', {
+        const response = await fetch(`${ADMIN_API_URL}/users`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -155,7 +152,7 @@ export const AuthService = {
 
     getPendingUsers: async () => {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5001/api/admin/pending', {
+        const response = await fetch(`${ADMIN_API_URL}/pending`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -164,7 +161,7 @@ export const AuthService = {
 
     updateUserStatus: async (userId, status, role) => {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5001/api/admin/users/${userId}/status`, {
+        const response = await fetch(`${ADMIN_API_URL}/users/${userId}/status`, {
             method: 'PUT',
             headers: { 
                 'Content-Type': 'application/json',
