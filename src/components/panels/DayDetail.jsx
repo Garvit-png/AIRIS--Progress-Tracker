@@ -92,11 +92,11 @@ export default function DayDetail({ selectedDate }) {
                         animate={{ opacity: 1, scale: 1 }}
                         className="p-8 rounded-2xl bg-[#121212] border border-white/10 shadow-2xl flex flex-col items-center text-center max-w-sm"
                     >
-                        <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center mb-6 border border-blue-500/20">
-                            <Clock className="text-blue-400" size={32} />
+                        <div className="w-16 h-16 rounded-full bg-pink-500/10 flex items-center justify-center mb-6 border border-pink-500/20">
+                            <Clock className="text-pink-400" size={32} />
                         </div>
                         <h3 className="text-lg font-bold uppercase tracking-widest text-white mb-2">Chronal Barrier</h3>
-                        <p className="text-xs text-white/40 leading-relaxed font-mono">
+                        <p className="text-xs text-white/85 leading-relaxed font-mono">
                             The system is currently restricted. Future data nodes are not yet accessible for modification.
                         </p>
                     </motion.div>

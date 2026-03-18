@@ -63,16 +63,16 @@ export default function WorkCalendar({ selectedDate, onDateSelect, currentMonth,
                                 <option key={y} value={y} className="bg-[#121212] tracking-widest">{y}</option>
                             ))}
                         </select>
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-white/20">
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-white/60">
                             <ChevronRight size={12} className="rotate-90" />
                         </div>
                     </div>
 
                     <div className="flex gap-1">
-                        <button onClick={prevMonth} className="p-2 hover:bg-white/5 rounded-lg transition-colors border border-white/5 text-white/40 hover:text-white">
+                        <button onClick={prevMonth} className="p-2 hover:bg-white/5 rounded-lg transition-colors border border-white/5 text-white/85 hover:text-white">
                             <ChevronLeft size={16} />
                         </button>
-                        <button onClick={nextMonth} className="p-2 hover:bg-white/5 rounded-lg transition-colors border border-white/5 text-white/40 hover:text-white">
+                        <button onClick={nextMonth} className="p-2 hover:bg-white/5 rounded-lg transition-colors border border-white/5 text-white/85 hover:text-white">
                             <ChevronRight size={16} />
                         </button>
                     </div>
@@ -84,7 +84,7 @@ export default function WorkCalendar({ selectedDate, onDateSelect, currentMonth,
     const renderDays = () => (
         <div className="grid grid-cols-7 mb-2">
             {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((day) => (
-                <div key={day} className="text-center font-mono text-[9px] font-bold text-white/20 py-2">
+                <div key={day} className="text-center font-mono text-[9px] font-bold text-white/60 py-2">
                     {day}
                 </div>
             ))}
@@ -116,7 +116,7 @@ export default function WorkCalendar({ selectedDate, onDateSelect, currentMonth,
             `}
                     >
                         {isToday && (
-                            <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)] z-10" />
+                            <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-pink-400 shadow-[0_0_8px_rgba(96,165,250,0.8)] z-10" />
                         )}
 
                         <div className="relative flex items-center justify-center w-8 h-8 mb-1">
@@ -138,7 +138,7 @@ export default function WorkCalendar({ selectedDate, onDateSelect, currentMonth,
                                         strokeDasharray={88}
                                         initial={{ strokeDashoffset: 88 }}
                                         animate={{ strokeDashoffset: 88 - (88 * progress) / 100 }}
-                                        className={progress === 100 ? "text-green-500" : "text-white/40"}
+                                        className={progress === 100 ? "text-green-500" : "text-white/85"}
                                     />
                                 </svg>
                             )}
@@ -150,7 +150,7 @@ export default function WorkCalendar({ selectedDate, onDateSelect, currentMonth,
                         {/* Activity Dots */}
                         <div className="flex gap-1 h-1">
                             {hasProofs && (
-                                <div className="w-1 h-1 rounded-full bg-blue-400" title="Proof Uploaded" />
+                                <div className="w-1 h-1 rounded-full bg-pink-400" title="Proof Uploaded" />
                             )}
                             {taskCount > 0 && progress === 100 && (
                                 <div className="w-1 h-1 rounded-full bg-green-500" title="All Tasks Done" />

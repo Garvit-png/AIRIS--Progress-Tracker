@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { motion } from 'framer-motion'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { AuthService } from '../services/authService'
 
@@ -57,9 +57,39 @@ const NAV = [
     },
 ]
 
-export default function Sidebar({ user, activeView, setActiveView }) {
+export default function Sidebar({ user, activeView, setActiveView, onProfileClick }) {
     const [collapsed, setCollapsed] = useState(false)
+    const [sidebarWidth, setSidebarWidth] = useState(260)
+    const [isResizing, setIsResizing] = useState(false)
+    const sidebarRef = useRef(null)
     const navigate = useNavigate()
+
+    const startResizing = useCallback((e) => {
+        setIsResizing(true)
+    }, [])
+
+    const stopResizing = useCallback(() => {
+        setIsResizing(false)
+    }, [])
+
+    const resize = useCallback((e) => {
+        if (isResizing) {
+            const newWidth = e.clientX
+            if (newWidth > 200 && newWidth < 500) {
+                setSidebarWidth(newWidth)
+                if (collapsed && newWidth > 220) setCollapsed(false)
+            }
+        }
+    }, [isResizing, collapsed])
+
+    useEffect(() => {
+        window.addEventListener('mousemove', resize)
+        window.addEventListener('mouseup', stopResizing)
+        return () => {
+            window.removeEventListener('mousemove', resize)
+            window.removeEventListener('mouseup', stopResizing)
+        }
+    }, [resize, stopResizing])
 
     // Helper for avatar initials
     const initials = user?.name 
@@ -73,49 +103,88 @@ export default function Sidebar({ user, activeView, setActiveView }) {
 
     return (
         <motion.aside
-            animate={{ width: collapsed ? 64 : 220 }}
-            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="h-full flex flex-col border-r overflow-hidden flex-shrink-0 relative z-10 transition-colors duration-500"
+            ref={sidebarRef}
+            animate={{ width: collapsed ? 90 : sidebarWidth }}
+            transition={isResizing ? { duration: 0 } : { duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+            className="h-full flex flex-col border-r overflow-hidden flex-shrink-0 relative z-10 transition-colors duration-500 select-none"
             style={{
                 backgroundColor: 'var(--sidebar-bg)',
                 borderColor: 'var(--border)',
                 color: 'var(--text)'
             }}
         >
-            {/* Header */}
-            <div className="flex items-center gap-3 px-4 py-4 border-b min-h-[60px]" style={{ borderColor: 'var(--border)' }}>
-                <div className="w-7 h-7 rounded-full border flex items-center justify-center flex-shrink-0" style={{ borderColor: 'var(--border)' }}>
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--text)' }} />
+            {/* Resize Handle */}
+            <div
+                onMouseDown={startResizing}
+                className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize z-50 transition-colors ${isResizing ? 'bg-pink-500/50' : 'hover:bg-pink-500/20'}`}
+            />
+
+            {/* Profile Header (Top Left) */}
+            <div className={`flex items-center gap-3 ${collapsed ? 'px-3' : 'px-4'} py-6 border-b min-h-[85px] transition-all duration-500`} style={{ borderColor: 'var(--border)' }}>
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={onProfileClick}
+                        className="w-10 h-10 rounded-2xl border border-pink-500/20 flex items-center justify-center font-bold text-xs bg-white/5 uppercase overflow-hidden flex-shrink-0 shadow-lg shadow-pink-500/5"
+                    >
+                        {user?.profilePicture ? (
+                            <img src={user.profilePicture} alt="User" className="w-full h-full object-cover" />
+                        ) : (
+                            <span style={{ color: 'var(--text)' }}>{initials}</span>
+                        )}
+                    </motion.button>
+                    
+                    <AnimatePresence mode="wait">
+                        {!collapsed && (
+                            <motion.div 
+                                initial={{ opacity: 0, width: 0 }}
+                                animate={{ opacity: 1, width: 'auto' }}
+                                exit={{ opacity: 0, width: 0 }}
+                                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                className="flex flex-col items-start min-w-0 overflow-hidden whitespace-nowrap"
+                            >
+                                <p className="text-sm font-bold truncate tracking-tight w-full">{user?.name || user?.email.split('@')[0]}</p>
+                                <p 
+                                    className="text-[9px] font-mono uppercase tracking-[0.2em] truncate"
+                                    style={{ 
+                                        color: user?.role === 'admin' ? '#FF0D99' : 'var(--text)',
+                                        opacity: user?.role === 'admin' ? 1 : 0.4 
+                                    }}
+                                >
+                                    {user?.role || 'Member'}
+                                </p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
-                <motion.span
-                    animate={{ opacity: collapsed ? 0 : 1, width: collapsed ? 0 : 'auto' }}
-                    transition={{ duration: 0.2 }}
-                    className="font-semibold text-sm tracking-widest overflow-hidden whitespace-nowrap"
-                >
-                    AIRIS
-                </motion.span>
+
                 <button
-                    onClick={() => setCollapsed(c => !c)}
-                    className="ml-auto transition-colors flex-shrink-0 text-current opacity-30 hover:opacity-100"
+                    onClick={() => setCollapsed(!collapsed)}
+                    className="p-1 rounded-lg hover:bg-white/10 transition-all text-white/60 hover:text-white"
+                    title={collapsed ? "Expand" : "Collapse"}
                 >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
-                        {collapsed
-                            ? <path d="M9 18l6-6-6-6" />
-                            : <path d="M15 18l-6-6 6-6" />
-                        }
+                    <svg 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="2.5" 
+                        className={`w-4 h-4 transition-transform duration-500 ${collapsed ? 'rotate-180' : ''}`}
+                    >
+                        <path d="M15 18l-6-6 6-6" />
                     </svg>
                 </button>
             </div>
 
             {/* Nav */}
-            <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
+            <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto custom-scrollbar">
                 {NAV.map(item => (
                     <button
                         key={item.label}
                         onClick={() => setActiveView(item.label)}
                         className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-left transition-all duration-150 group relative ${activeView === item.label
                                 ? 'opacity-100'
-                                : 'opacity-40 hover:opacity-80'
+                                : 'opacity-100'
                             }`}
                         style={
                             activeView === item.label
@@ -128,22 +197,34 @@ export default function Sidebar({ user, activeView, setActiveView }) {
                         }
                     >
                         <span className="flex-shrink-0">{item.icon}</span>
-                        <motion.span
-                            animate={{ opacity: collapsed ? 0 : 1, width: collapsed ? 0 : 'auto' }}
-                            transition={{ duration: 0.2 }}
-                            className="text-sm font-medium overflow-hidden whitespace-nowrap"
-                        >
-                            {item.label}
-                        </motion.span>
+                        <AnimatePresence mode="wait">
+                            {!collapsed && (
+                                <motion.span
+                                    initial={{ opacity: 0, width: 0 }}
+                                    animate={{ opacity: 1, width: 'auto' }}
+                                    exit={{ opacity: 0, width: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="text-sm font-medium overflow-hidden whitespace-nowrap"
+                                >
+                                    {item.label}
+                                </motion.span>
+                            )}
+                        </AnimatePresence>
                     </button>
                 ))}
 
                 {/* Admin Specific */}
                 {user?.role === 'admin' && (
                     <div className="pt-4 mt-4 border-t border-white/5">
-                        <p className={`px-4 mb-2 font-mono text-[8px] uppercase tracking-[0.3em] opacity-30 ${collapsed ? 'hidden' : 'block'}`}>
-                            System Admin
-                        </p>
+                        {!collapsed && (
+                            <motion.p 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 0.6 }}
+                                className="px-4 mb-2 font-mono text-[8px] uppercase tracking-[0.3em]"
+                            >
+                                System Admin
+                            </motion.p>
+                        )}
                         <button
                             onClick={() => setActiveView('Admin')}
                             className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-left transition-all duration-150 group relative hover:bg-white/[0.05]"
@@ -162,13 +243,19 @@ export default function Sidebar({ user, activeView, setActiveView }) {
                                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                                 </svg>
                             </span>
-                            <motion.span
-                                animate={{ opacity: collapsed ? 0 : 1, width: collapsed ? 0 : 'auto' }}
-                                transition={{ duration: 0.2 }}
-                                className="text-sm font-medium overflow-hidden whitespace-nowrap"
-                            >
-                                Admin Portal
-                            </motion.span>
+                            <AnimatePresence mode="wait">
+                                {!collapsed && (
+                                    <motion.span
+                                        initial={{ opacity: 0, width: 0 }}
+                                        animate={{ opacity: 1, width: 'auto' }}
+                                        exit={{ opacity: 0, width: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="text-sm font-medium overflow-hidden whitespace-nowrap"
+                                    >
+                                        Admin Portal
+                                    </motion.span>
+                                )}
+                            </AnimatePresence>
                         </button>
 
                         <button
@@ -190,32 +277,29 @@ export default function Sidebar({ user, activeView, setActiveView }) {
                                     <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
                                 </svg>
                             </span>
-                            <motion.span
-                                animate={{ opacity: collapsed ? 0 : 1, width: collapsed ? 0 : 'auto' }}
-                                transition={{ duration: 0.2 }}
-                                className="text-sm font-medium overflow-hidden whitespace-nowrap"
-                            >
-                                Members
-                            </motion.span>
+                            <AnimatePresence mode="wait">
+                                {!collapsed && (
+                                    <motion.span
+                                        initial={{ opacity: 0, width: 0 }}
+                                        animate={{ opacity: 1, width: 'auto' }}
+                                        exit={{ opacity: 0, width: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="text-sm font-medium overflow-hidden whitespace-nowrap"
+                                    >
+                                        Members
+                                    </motion.span>
+                                )}
+                            </AnimatePresence>
                         </button>
                     </div>
                 )}
             </nav>
 
-            {/* User */}
-            <div className="px-3 py-3 border-t flex items-center gap-3 min-h-[60px]" style={{ borderColor: 'var(--border)' }}>
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: 'var(--text)', color: 'var(--bg)' }}>
-                    {initials}
-                </div>
-                {!collapsed && (
-                    <div className="flex-1 overflow-hidden whitespace-nowrap">
-                        <p className="text-xs font-semibold">{user?.name || 'Authorized User'}</p>
-                        <p className="text-[10px] font-mono opacity-35 truncate">{user?.year ? `YEAR ${user.year}` : 'Access Node'}</p>
-                    </div>
-                )}
+            {/* Logout Footer */}
+            <div className="px-4 py-4 border-t flex items-center justify-center" style={{ borderColor: 'var(--border)' }}>
                 <button 
                     onClick={handleLogout}
-                    className="opacity-30 hover:opacity-100 transition-opacity"
+                    className="w-full flex items-center justify-center gap-3 py-2 rounded-lg bg-red-500/5 border border-red-500/10 text-red-500/60 hover:text-red-500 hover:bg-red-500/10 transition-all text-[10px] font-bold uppercase tracking-widest"
                     title="Logout"
                 >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
@@ -223,6 +307,19 @@ export default function Sidebar({ user, activeView, setActiveView }) {
                         <polyline points="16 17 21 12 16 7" />
                         <line x1="21" y1="12" x2="9" y2="12" />
                     </svg>
+                    <AnimatePresence mode="wait">
+                        {!collapsed && (
+                            <motion.span
+                                initial={{ opacity: 0, width: 0 }}
+                                animate={{ opacity: 1, width: 'auto' }}
+                                exit={{ opacity: 0, width: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="whitespace-nowrap overflow-hidden"
+                            >
+                                Session Exit
+                            </motion.span>
+                        )}
+                    </AnimatePresence>
                 </button>
             </div>
         </motion.aside>

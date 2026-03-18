@@ -108,7 +108,7 @@ exports.googleLogin = async (req, res, next) => {
         });
         const { name, email, sub: googleId } = ticket.getPayload();
 
-        let user = await User.findOne({ email });
+        let user = await User.findOne({ email }).select('+profilePicture');
 
         if (user) {
             // Link googleId if not linked
@@ -155,7 +155,8 @@ exports.googleLogin = async (req, res, next) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
-                status: user.status
+                status: user.status,
+                profilePicture: user.profilePicture
             }
         });
     } catch (error) {
@@ -174,7 +175,7 @@ exports.login = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Please provide an email and password' });
         }
 
-        const user = await User.findOne({ email }).select('+password');
+        const user = await User.findOne({ email }).select('+password +profilePicture');
         if (!user) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
@@ -210,7 +211,8 @@ exports.login = async (req, res, next) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
-                status: user.status
+                status: user.status,
+                profilePicture: user.profilePicture
             }
         });
     } catch (error) {
@@ -223,7 +225,7 @@ exports.login = async (req, res, next) => {
 // @access  Private
 exports.getMe = async (req, res, next) => {
     try {
-        const user = await User.findById(req.user.id);
+        const user = await User.findById(req.user.id).select('+profilePicture');
         res.status(200).json({ success: true, user });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
@@ -292,6 +294,35 @@ exports.resetPassword = async (req, res, next) => {
         await user.save();
 
         res.status(200).json({ success: true, message: 'Password reset successful' });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+exports.updateProfile = async (req, res, next) => {
+    try {
+        const fieldsToUpdate = {};
+        if (req.body.name) fieldsToUpdate.name = req.body.name;
+        if (req.body.profilePicture !== undefined) fieldsToUpdate.profilePicture = req.body.profilePicture;
+
+        const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
+            new: true,
+            runValidators: true
+        });
+
+        res.status(200).json({
+            success: true,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                status: user.status,
+                profilePicture: user.profilePicture
+            }
+        });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
     }

@@ -26,8 +26,8 @@ export default function ProofSection({
                                     exit={{ opacity: 0, y: -5 }}
                                     className="flex items-center gap-1.5"
                                 >
-                                    <div className="w-1 h-1 rounded-full bg-blue-400 animate-pulse" />
-                                    <span className="text-[9px] font-mono text-blue-400 uppercase tracking-tighter">Synchronizing...</span>
+                                    <div className="w-1 h-1 rounded-full bg-pink-400 animate-pulse" />
+                                    <span className="text-[9px] font-mono text-pink-400 uppercase tracking-tighter">Synchronizing...</span>
                                 </motion.div>
                             ) : lastSaved ? (
                                 <motion.div
@@ -57,12 +57,12 @@ export default function ProofSection({
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isSaving}
                         className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-bold uppercase transition-all ${isSaving
-                            ? 'bg-blue-500/5 border-blue-500/10 text-blue-400/40'
-                            : 'bg-blue-500/10 border-blue-500/20 text-blue-400 hover:bg-blue-500/20'
+                            ? 'bg-pink-500/5 border-pink-500/10 text-pink-400/40'
+                            : 'bg-pink-500/10 border-pink-500/20 text-pink-400 hover:bg-pink-500/20'
                             }`}
                     >
                         {isSaving ? (
-                            <div className="w-3 h-3 border-b border-blue-400 rounded-full animate-spin" />
+                            <div className="w-3 h-3 border-b border-pink-400 rounded-full animate-spin" />
                         ) : (
                             <FileUp size={14} />
                         )}
@@ -83,7 +83,7 @@ export default function ProofSection({
                     <div key={proof.id} className="flex flex-col gap-2 p-3 rounded-xl bg-white/5 border border-white/5 group">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-white/5 text-white/40">
+                                <div className="p-2 rounded-lg bg-white/5 text-white/85">
                                     {proof.type.includes('image') ? <ImageIcon size={16} /> : <FileText size={16} />}
                                 </div>
                                 <div>

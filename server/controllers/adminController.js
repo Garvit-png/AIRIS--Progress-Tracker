@@ -128,3 +128,22 @@ exports.updateUserStatus = async (req, res) => {
         res.status(400).json({ success: false, message: error.message });
     }
 };
+// @desc    Get user profile picture
+// @route   GET /api/admin/users/:id/photo
+// @access  Private/Admin
+exports.getUserPhoto = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).select('profilePicture');
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: user.profilePicture
+        });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};

@@ -5,7 +5,8 @@ const {
     getApprovedEmails,
     getUsers,
     getPendingUsers,
-    updateUserStatus
+    updateUserStatus,
+    getUserPhoto
 } = require('../controllers/adminController');
 
 const router = express.Router();
@@ -33,6 +34,7 @@ router.post('/approve', addApprovedEmail);
 router.delete('/approve/:email', removeApprovedEmail);
 router.get('/users', getUsers);
 router.get('/pending', getPendingUsers);
+router.get('/users/:id/photo', getUserPhoto);
 router.put('/users/:id/status', updateUserStatus);
 
 module.exports = router;

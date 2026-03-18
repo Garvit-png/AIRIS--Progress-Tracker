@@ -38,7 +38,7 @@ function ErrorBoundary({ children }) {
   if (hasError) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center bg-black">
-        <div className="p-4 border border-red-500/50 rounded bg-red-500/5">
+        <div className="p-4 border border-pink-500/50 rounded bg-pink-500/5">
           <p className="font-mono text-xs text-red-500 uppercase tracking-widest mb-2 font-bold">Rendering Failure</p>
           <p className="font-mono text-[10px] text-white/50">{errorInfo}</p>
         </div>

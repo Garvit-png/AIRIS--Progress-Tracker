@@ -16,7 +16,7 @@ export default function TaskSection({
     deleteTask 
 }) {
     return (
-        <div className="flex flex-col gap-4 bg-white/5 border border-white/5 rounded-2xl p-5 overflow-hidden">
+        <div className="flex flex-col gap-4 bg-white/5 border border-pink-500/10 rounded-2xl p-5 overflow-hidden">
             <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-1">
                     <h3 className="text-sm font-bold uppercase tracking-widest">Active To-Do</h3>
@@ -55,16 +55,16 @@ export default function TaskSection({
                         value={newTaskTitle}
                         onChange={(e) => setNewTaskTitle(e.target.value)}
                         placeholder="Add a mission objective..."
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-white/20 transition-colors pr-12"
+                        className="w-full bg-white/5 border border-pink-500/20 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-pink-500/40 transition-colors pr-12"
                     />
                     <button type="submit" className="absolute right-2 top-2 p-1.5 bg-white/10 rounded-lg hover:bg-white/20 transition-all">
                         <Plus size={16} />
                     </button>
                 </form>
             ) : isPast ? (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-white/5 border border-white/5 opacity-50">
-                    <Clock size={14} className="text-white/40" />
-                    <span className="text-[10px] uppercase tracking-widest font-mono text-white/40">Work Archive Locked (Read Only)</span>
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-white/5 border border-pink-500/10 opacity-50">
+                    <Clock size={14} className="text-white/85" />
+                    <span className="text-[10px] uppercase tracking-widest font-mono text-white/85">Work Archive Locked (Read Only)</span>
                 </div>
             ) : null}
 
@@ -77,17 +77,17 @@ export default function TaskSection({
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             key={task.id}
-                            className={`group flex items-center justify-between p-3 rounded-xl border transition-all duration-300 ${task.completed ? 'bg-green-500/5 border-green-500/10' : 'bg-white/5 border-white/5 hover:border-white/10'
+                            className={`group flex items-center justify-between p-3 rounded-xl border transition-all duration-300 ${task.completed ? 'bg-green-500/5 border-green-500/10' : 'bg-white/5 border-pink-500/10 hover:border-pink-500/30'
                                 }`}
                         >
                             <div className="flex items-center gap-3">
                                 <button
                                     onClick={() => handleToggleTask(task.id)}
-                                    className={`transition-colors duration-300 ${task.completed ? 'text-green-500' : 'text-white/20 hover:text-white/40'}`}
+                                    className={`transition-colors duration-300 ${task.completed ? 'text-green-500' : 'text-white/20 hover:text-white/85'}`}
                                 >
                                     {task.completed ? <CheckCircle2 size={18} /> : <Circle size={18} />}
                                 </button>
-                                <span className={`text-xs transition-all duration-300 ${task.completed ? 'text-white/40 line-through' : 'text-white'}`}>
+                                <span className={`text-xs transition-all duration-300 ${task.completed ? 'text-white/85 line-through' : 'text-white'}`}>
                                     {task.title}
                                 </span>
                             </div>
@@ -102,7 +102,7 @@ export default function TaskSection({
                         </motion.div>
                     ))}
                     {tasks.length === 0 && (
-                        <div className="h-full flex flex-col items-center justify-center opacity-20 py-10">
+                        <div className="h-full flex flex-col items-center justify-center opacity-50 py-10">
                             <Trophy size={32} className="mb-2" />
                             <p className="text-[10px] uppercase tracking-widest">No objectives for this cycle</p>
                         </div>

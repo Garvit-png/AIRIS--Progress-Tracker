@@ -150,6 +150,15 @@ export const AuthService = {
         return data.success ? data.data : [];
     },
 
+    getUserPhoto: async (userId) => {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${ADMIN_API_URL}/users/${userId}/photo`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        return data.success ? data.data : null;
+    },
+
     getPendingUsers: async () => {
         const token = localStorage.getItem('token');
         const response = await fetch(`${ADMIN_API_URL}/pending`, {
@@ -219,6 +228,27 @@ export const AuthService = {
         localStorage.setItem('token', data.token);
         localStorage.setItem('current_user', JSON.stringify(data.user));
         return data;
+    },
+
+    updateProfile: async (profileData) => {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/profile`, {
+            method: 'PUT',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify(profileData)
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || 'Profile update failed');
+        }
+
+        // Update local storage
+        localStorage.setItem('current_user', JSON.stringify(data.user));
+        return data.user;
     }
 };
 
