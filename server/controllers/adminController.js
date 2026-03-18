@@ -67,3 +67,64 @@ exports.getApprovedEmails = async (req, res) => {
         res.status(400).json({ success: false, message: error.message });
     }
 };
+
+// @desc    Get all registered users
+// @route   GET /api/admin/users
+// @access  Private/Admin
+exports.getUsers = async (req, res) => {
+    try {
+        const users = await User.find().select('-password');
+
+        res.status(200).json({
+            success: true,
+            count: users.length,
+            data: users
+        });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Get all pending user approvals
+// @route   GET /api/admin/pending
+// @access  Private/Admin
+exports.getPendingUsers = async (req, res) => {
+    try {
+        const users = await User.find({ status: 'pending' }).select('-password');
+
+        res.status(200).json({
+            success: true,
+            count: users.length,
+            data: users
+        });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Update user status and role
+// @route   PUT /api/admin/users/:id/status
+// @access  Private/Admin
+exports.updateUserStatus = async (req, res) => {
+    try {
+        const { status, role } = req.body;
+        
+        const user = await User.findById(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        if (status) user.status = status;
+        if (role) user.role = role;
+
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            data: user
+        });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};

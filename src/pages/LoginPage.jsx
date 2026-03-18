@@ -26,14 +26,10 @@ export default function LoginPage() {
 
         setIsLoading(true)
         try {
+            // Check if email is approved (Legacy) or exists in system
             const isApproved = await AuthService.isEmailApproved(email)
-            if (isApproved) {
-                // We try a "peek" login or just proceed to password
-                // For simplicity, we move to password step and handle "not registered" via 401/404 on login
-                setStep('password')
-            } else {
-                setError('ACCESS DENIED: IDENTITY NOT AUTHORIZED')
-            }
+            // For the new workflow, we just proceed to password to check status/account
+            setStep('password')
         } catch (err) {
             setError('COMMUNICATION ERROR: SYSTEM OFFLINE')
         } finally {
@@ -51,16 +47,10 @@ export default function LoginPage() {
             navigate(from, { replace: true })
         } catch (err) {
             const message = err.message.toUpperCase()
-            if (message.includes('NOT FOUND') || message.includes('INVALID')) {
-                // If it's a 401 but we think they might need to register
-                // Actually, the requirement said "If first time, show registration"
-                // Our backend currently doesn't distinguish between "wrong password" and "user not found" for security
-                // Let's assume if login fails and error mentions user not found, we redirect
-                if (message.includes('INVALID CREDENTIALS')) {
-                    setError('INVALID CREDENTIALS')
-                } else {
-                    setError(message)
-                }
+            if (message.includes('PENDING APPROVAL')) {
+                setError('ACCOUNT PENDING ADMIN APPROVAL')
+            } else if (message.includes('NOT FOUND') || message.includes('INVALID')) {
+                setError('INVALID CREDENTIALS')
             } else {
                 setError(message)
             }
@@ -80,7 +70,11 @@ export default function LoginPage() {
             navigate(from, { replace: true })
         } catch (err) {
             console.error('Frontend Google Login Error:', err);
-            setError(err.message.toUpperCase())
+            if (err.message.includes('PENDING APPROVAL')) {
+                setError('ACCOUNT PENDING ADMIN APPROVAL')
+            } else {
+                setError(err.message.toUpperCase())
+            }
         } finally {
             setIsLoading(false)
         }

@@ -4,6 +4,8 @@ import Sidebar from './Sidebar'
 import WorkCalendar from './panels/WorkCalendar'
 import DayDetail from './panels/DayDetail'
 import MonthlySummary from './panels/MonthlySummary'
+import MembersList from './panels/MembersList'
+import AdminPanel from '../pages/AdminPanel'
 import { AuthService } from '../services/authService'
 
 export default function Dashboard({ user }) {
@@ -41,6 +43,22 @@ export default function Dashboard({ user }) {
                         </button>
                     </div>
                 </motion.div>
+            )
+        }
+
+        if (activeView === 'Members') {
+            return (
+                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                    <MembersList />
+                </div>
+            )
+        }
+
+        if (activeView === 'Admin') {
+            return (
+                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                    <AdminPanel isEmbedded={true} />
+                </div>
             )
         }
 

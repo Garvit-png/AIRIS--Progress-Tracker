@@ -145,10 +145,19 @@ export default function Sidebar({ user, activeView, setActiveView }) {
                             System Admin
                         </p>
                         <button
-                            onClick={() => navigate('/admin')}
-                            className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-left transition-all duration-150 group relative opacity-40 hover:opacity-100 hover:bg-white/5"
+                            onClick={() => setActiveView('Admin')}
+                            className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-left transition-all duration-150 group relative hover:bg-white/[0.05]"
+                            style={
+                                activeView === 'Admin'
+                                    ? {
+                                        backgroundColor: 'rgba(255,255,255,0.08)',
+                                        color: '#FF0D99',
+                                        boxShadow: 'inset 2px 0 0 #FF0D99'
+                                    }
+                                    : { color: '#FF0D99', opacity: 0.6 }
+                            }
                         >
-                            <span className="flex-shrink-0 text-[#FF0D99]">
+                            <span className="flex-shrink-0">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5">
                                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                                 </svg>
@@ -156,9 +165,37 @@ export default function Sidebar({ user, activeView, setActiveView }) {
                             <motion.span
                                 animate={{ opacity: collapsed ? 0 : 1, width: collapsed ? 0 : 'auto' }}
                                 transition={{ duration: 0.2 }}
-                                className="text-sm font-medium overflow-hidden whitespace-nowrap text-[#FF0D99]"
+                                className="text-sm font-medium overflow-hidden whitespace-nowrap"
                             >
                                 Admin Portal
+                            </motion.span>
+                        </button>
+
+                        <button
+                            onClick={() => setActiveView('Members')}
+                            className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-left transition-all duration-150 group relative"
+                            style={
+                                activeView === 'Members'
+                                    ? {
+                                        backgroundColor: 'rgba(255,255,255,0.08)',
+                                        color: '#FF0D99',
+                                        boxShadow: 'inset 2px 0 0 #FF0D99'
+                                    }
+                                    : { color: '#FF0D99', opacity: 0.6 }
+                            }
+                        >
+                            <span className="flex-shrink-0">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                </svg>
+                            </span>
+                            <motion.span
+                                animate={{ opacity: collapsed ? 0 : 1, width: collapsed ? 0 : 'auto' }}
+                                transition={{ duration: 0.2 }}
+                                className="text-sm font-medium overflow-hidden whitespace-nowrap"
+                            >
+                                Members
                             </motion.span>
                         </button>
                     </div>

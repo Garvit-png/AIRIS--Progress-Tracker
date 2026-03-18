@@ -14,40 +14,34 @@ exports.register = async (req, res, next) => {
         const { name, email, password, year } = req.body;
         const cleanEmail = email.toLowerCase().trim();
 
-        // Check if email is in ApprovedEmail collection
-        const isApproved = await ApprovedEmail.findOne({ email: cleanEmail });
+        // Check if email is in ApprovedEmail collection (Old Whitelist Logic)
+        const isApprovedEmail = await ApprovedEmail.findOne({ email: cleanEmail });
         
-        // TEMPORARY: Allow garvitgandhi0313@gmail.com to register as admin even if not in list yet
+        // TEMPORARY/PRIMARY ADMIN: garvitgandhi0313@gmail.com
         const isAdminEmail = cleanEmail === 'garvitgandhi0313@gmail.com';
         
-        if (!isApproved && !isAdminEmail) {
-            return res.status(403).json({ 
-                success: false, 
-                message: 'ACCESS DENIED: EMAIL NOT AUTHORIZED' 
-            });
-        }
-
         // Check if user exists
         const userExists = await User.findOne({ email: cleanEmail });
         if (userExists) {
             return res.status(400).json({ success: false, message: 'User already exists' });
         }
 
-        // Create user (unverified)
+        // Create user (unverified and pending)
         const verificationToken = crypto.randomBytes(20).toString('hex');
         
-        await User.create({
+        const user = await User.create({
             name,
             email: cleanEmail,
             password,
             year,
             role: isAdminEmail ? 'admin' : 'member',
+            status: isAdminEmail ? 'approved' : 'pending',
             verificationToken,
             isVerified: false
         });
 
         // Create verification url
-        const verificationUrl = `${req.protocol}://${req.get('host')}/verify-email/${verificationToken}`;
+        const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
         
         const message = `Welcome to AIRIS! Please verify your email by clicking the link: ${verificationUrl}`;
         const html = `
@@ -70,7 +64,7 @@ exports.register = async (req, res, next) => {
             });
         } catch (err) {
             // If email fails, delete the user so they can try again
-            await User.deleteOne({ email: cleanEmail });
+            await User.deleteOne({ _id: user._id });
             return res.status(500).json({ success: false, message: 'Email could not be sent' });
         }
     } catch (error) {
@@ -107,15 +101,12 @@ exports.verifyEmail = async (req, res, next) => {
 // @access  Public
 exports.googleLogin = async (req, res, next) => {
     try {
-        console.log('Google Login Request Received');
         const { idToken } = req.body;
-        console.log('Verifying Token:', idToken ? 'Token present' : 'Token missing');
         const ticket = await client.verifyIdToken({
             idToken,
             audience: process.env.GOOGLE_CLIENT_ID
         });
         const { name, email, sub: googleId } = ticket.getPayload();
-        console.log('Token Verified for:', email);
 
         let user = await User.findOne({ email });
 
@@ -123,28 +114,31 @@ exports.googleLogin = async (req, res, next) => {
             // Link googleId if not linked
             if (!user.googleId) {
                 user.googleId = googleId;
-                user.isVerified = true; // Google emails are verified
+                user.isVerified = true;
                 await user.save();
             }
         } else {
             // New user via Google
             const cleanEmail = email.toLowerCase().trim();
-            const isApproved = await ApprovedEmail.findOne({ email: cleanEmail });
             const isAdminEmail = cleanEmail === 'garvitgandhi0313@gmail.com';
-
-            if (!isApproved && !isAdminEmail) {
-                return res.status(403).json({ 
-                    success: false, 
-                    message: 'ACCESS DENIED: EMAIL NOT AUTHORIZED' 
-                });
-            }
 
             user = await User.create({
                 name,
                 email: cleanEmail,
                 googleId,
                 isVerified: true,
-                password: crypto.randomBytes(16).toString('hex') // Random password for OAuth users
+                role: isAdminEmail ? 'admin' : 'member',
+                status: isAdminEmail ? 'approved' : 'pending',
+                password: crypto.randomBytes(16).toString('hex')
+            });
+        }
+
+        // Check if status is approved
+        if (user.status !== 'approved') {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'ACCESS DENIED: ACCOUNT PENDING APPROVAL',
+                status: user.status
             });
         }
 
@@ -160,10 +154,10 @@ exports.googleLogin = async (req, res, next) => {
                 id: user._id,
                 name: user.name,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                status: user.status
             }
         });
-        console.log('Google Login Successful');
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
     }
@@ -176,12 +170,10 @@ exports.login = async (req, res, next) => {
     try {
         const { email, password } = req.body;
 
-        // Validate email & password
         if (!email || !password) {
             return res.status(400).json({ success: false, message: 'Please provide an email and password' });
         }
 
-        // Check for user
         const user = await User.findOne({ email }).select('+password');
         if (!user) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
@@ -191,10 +183,18 @@ exports.login = async (req, res, next) => {
             return res.status(401).json({ success: false, message: 'Please verify your email to login' });
         }
 
-        // Check if password matches
         const isMatch = await user.matchPassword(password);
         if (!isMatch) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+
+        // Check if status is approved
+        if (user.status !== 'approved') {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'ACCESS DENIED: ACCOUNT PENDING APPROVAL',
+                status: user.status
+            });
         }
 
         // Create token
@@ -209,7 +209,8 @@ exports.login = async (req, res, next) => {
                 id: user._id,
                 name: user.name,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                status: user.status
             }
         });
     } catch (error) {
@@ -223,11 +224,7 @@ exports.login = async (req, res, next) => {
 exports.getMe = async (req, res, next) => {
     try {
         const user = await User.findById(req.user.id);
-
-        res.status(200).json({
-            success: true,
-            user
-        });
+        res.status(200).json({ success: true, user });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
     }
@@ -239,19 +236,14 @@ exports.getMe = async (req, res, next) => {
 exports.forgotPassword = async (req, res, next) => {
     try {
         const user = await User.findOne({ email: req.body.email });
-
         if (!user) {
             return res.status(404).json({ success: false, message: 'There is no user with that email' });
         }
 
-        // Get reset token
         const resetToken = user.getResetPasswordToken();
-
         await user.save({ validateBeforeSave: false });
 
-        // Create reset url
-        const resetUrl = `${req.protocol}://${req.get('host')}/reset-password/${resetToken}`;
-
+        const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
         const message = `You are receiving this email because you (or someone else) have requested the reset of a password. Please click the link below to reset your password: \n\n ${resetUrl}`;
         const html = `
             <h1>Password Reset Request</h1>
@@ -267,11 +259,7 @@ exports.forgotPassword = async (req, res, next) => {
                 message,
                 html
             });
-
-            res.status(200).json({
-                success: true,
-                message: 'Email sent'
-            });
+            res.status(200).json({ success: true, message: 'Email sent' });
         } catch (error) {
             user.resetPasswordToken = undefined;
             user.resetPasswordExpire = undefined;
@@ -288,12 +276,7 @@ exports.forgotPassword = async (req, res, next) => {
 // @access  Public
 exports.resetPassword = async (req, res, next) => {
     try {
-        // Get hashed token
-        const resetPasswordToken = crypto
-            .createHash('sha256')
-            .update(req.params.resettoken)
-            .digest('hex');
-
+        const resetPasswordToken = crypto.createHash('sha256').update(req.params.resettoken).digest('hex');
         const user = await User.findOne({
             resetPasswordToken,
             resetPasswordExpire: { $gt: Date.now() }
@@ -303,16 +286,12 @@ exports.resetPassword = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Invalid token' });
         }
 
-        // Set new password
         user.password = req.body.password;
         user.resetPasswordToken = undefined;
         user.resetPasswordExpire = undefined;
         await user.save();
 
-        res.status(200).json({
-            success: true,
-            message: 'Password reset successful'
-        });
+        res.status(200).json({ success: true, message: 'Password reset successful' });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
     }

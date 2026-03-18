@@ -1,25 +1,32 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthService } from '../services/authService';
-import { Search, UserPlus, Shield, X, ShieldCheck, Clock, Mail, GraduationCap } from 'lucide-react';
+import { Search, UserPlus, Shield, X, Check, ShieldAlert, Clock, Mail, GraduationCap, UserCheck, ShieldCheck } from 'lucide-react';
 import Logo from '../components/Logo';
 
-const AdminPanel = () => {
+const AdminPanel = ({ isEmbedded = false }) => {
     const [emails, setEmails] = useState([]);
+    const [pendingUsers, setPendingUsers] = useState([]);
+    const [activeTab, setActiveTab] = useState('pending'); // pending, whitelist
     const [newEmail, setNewEmail] = useState('');
     const [useCollegeDomain, setUseCollegeDomain] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
     const [message, setMessage] = useState({ text: '', type: '' });
-
+    
     const COLLEGE_DOMAIN = '@nst.rishihood.edu.in';
 
     useEffect(() => {
-        fetchEmails();
-    }, []);
+        if (activeTab === 'whitelist') {
+            fetchEmails();
+        } else {
+            fetchPendingUsers();
+        }
+    }, [activeTab]);
 
     const fetchEmails = async () => {
+        setIsLoading(true);
         try {
             const data = await AuthService.getApprovedEmails();
             setEmails(data);
@@ -30,12 +37,24 @@ const AdminPanel = () => {
         }
     };
 
+    const fetchPendingUsers = async () => {
+        setIsLoading(true);
+        try {
+            const data = await AuthService.getPendingUsers();
+            setPendingUsers(data);
+        } catch (error) {
+            showMsg('Failed to load pending requests', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const showMsg = (text, type = 'info') => {
         setMessage({ text: text.toUpperCase(), type });
         setTimeout(() => setMessage({ text: '', type: '' }), 3000);
     };
 
-    const handleApprove = async (e) => {
+    const handleApproveEmail = async (e) => {
         e.preventDefault();
         if (!newEmail.trim()) return;
 
@@ -47,7 +66,7 @@ const AdminPanel = () => {
         setActionLoading(true);
         try {
             await AuthService.approveEmail(finalEmail);
-            showMsg('IDENTITY AUTHORIZED', 'success');
+            showMsg('IDENTITY PRE-AUTHORIZED', 'success');
             setNewEmail('');
             fetchEmails();
         } catch (error) {
@@ -57,14 +76,27 @@ const AdminPanel = () => {
         }
     };
 
-    const handleRevoke = async (email) => {
-        if (!window.confirm(`REVOKE ACCESS FOR ${email}?`)) return;
+    const handleRevokeEmail = async (email) => {
+        if (!window.confirm(`REVOKE PRE-AUTHORIZATION FOR ${email}?`)) return;
 
         setActionLoading(true);
         try {
             await AuthService.revokeEmail(email);
-            showMsg('ACCESS PRIVILEGES REVOKED', 'success');
+            showMsg('PRE-AUTHORIZATION REVOKED', 'success');
             fetchEmails();
+        } catch (error) {
+            showMsg(error.message, 'error');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleUserApproval = async (userId, status, role = 'member') => {
+        setActionLoading(true);
+        try {
+            await AuthService.updateUserStatus(userId, status, role);
+            showMsg(`USER ${status.toUpperCase()} AS ${role.toUpperCase()}`, 'success');
+            fetchPendingUsers();
         } catch (error) {
             showMsg(error.message, 'error');
         } finally {
@@ -78,9 +110,16 @@ const AdminPanel = () => {
         );
     }, [emails, searchQuery]);
 
+    const filteredPending = useMemo(() => {
+        return pendingUsers.filter(user => 
+            user.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            user.email.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [pendingUsers, searchQuery]);
+
     const stats = {
-        total: emails.length,
-        newToday: emails.filter(e => {
+        total: activeTab === 'whitelist' ? emails.length : pendingUsers.length,
+        newToday: (activeTab === 'whitelist' ? emails : pendingUsers).filter(e => {
             const date = new Date(e.createdAt);
             const today = new Date();
             return date.toDateString() === today.toDateString();
@@ -88,15 +127,17 @@ const AdminPanel = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#050505] text-slate-200 selection:bg-purple-500/30 font-sans">
+        <div className={`${isEmbedded ? 'pb-12' : 'min-h-screen bg-[#050505] selection:bg-purple-500/30'} text-slate-200 font-sans`}>
             {/* Professional Background */}
-            <div className="fixed inset-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-purple-900/10 blur-[120px] rounded-full opacity-50" />
-                <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-blue-900/10 blur-[120px] rounded-full opacity-50" />
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none" />
-            </div>
+            {!isEmbedded && (
+                <div className="fixed inset-0 pointer-events-none overflow-hidden">
+                    <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-purple-900/10 blur-[120px] rounded-full opacity-50" />
+                    <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-blue-900/10 blur-[120px] rounded-full opacity-50" />
+                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none" />
+                </div>
+            )}
 
-            <div className="relative z-10 max-w-7xl mx-auto px-6 py-8 md:py-12">
+            <div className={`relative z-10 mx-auto ${isEmbedded ? '' : 'max-w-7xl px-6 py-8 md:py-12'}`}>
                 {/* Header Section */}
                 <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-8 border-b border-white/5 pb-10">
                     <div className="space-y-4">
@@ -116,7 +157,9 @@ const AdminPanel = () => {
                             animate={{ opacity: 1, y: 0 }}
                             className="px-5 py-3.5 bg-white/[0.03] border border-white/5 rounded-xl backdrop-blur-md"
                         >
-                            <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-1">Authenticated</p>
+                            <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-1">
+                                {activeTab === 'pending' ? 'Pending Requests' : 'Pre-Authorized'}
+                            </p>
                             <p className="text-xl font-bold text-white">{stats.total}</p>
                         </motion.div>
                         <motion.div 
@@ -125,14 +168,34 @@ const AdminPanel = () => {
                             transition={{ delay: 0.1 }}
                             className="px-5 py-3.5 bg-white/[0.03] border border-white/5 rounded-xl backdrop-blur-md"
                         >
-                            <p className="text-[10px] font-mono text-purple-400 uppercase tracking-widest mb-1">New Sync</p>
-                            <p className="text-xl font-bold text-white">{stats.newToday || 'N/A'}</p>
+                            <p className="text-[10px] font-mono text-purple-400 uppercase tracking-widest mb-1">Incoming</p>
+                            <p className="text-xl font-bold text-white">{stats.newToday || '0'}</p>
                         </motion.div>
                     </div>
                 </header>
 
+                {/* Tab Switcher */}
+                <div className="flex gap-4 mb-8 p-1 bg-white/5 rounded-2xl w-fit border border-white/10 backdrop-blur-xl">
+                    <button 
+                        onClick={() => setActiveTab('pending')}
+                        className={`px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
+                            activeTab === 'pending' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-slate-500 hover:text-white'
+                        }`}
+                    >
+                        Pending Requests
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('whitelist')}
+                        className={`px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
+                            activeTab === 'whitelist' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-slate-500 hover:text-white'
+                        }`}
+                    >
+                        Pre-Authorization
+                    </button>
+                </div>
+
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                    {/* Control Panel (Left) */}
+                    {/* Sidebar Controls */}
                     <div className="lg:col-span-4 space-y-6">
                         <section className="p-1 bg-gradient-to-br from-white/10 to-transparent rounded-[2rem]">
                             <div className="p-8 bg-[#0a0a0a] rounded-[1.9rem] backdrop-blur-3xl relative overflow-hidden group">
@@ -141,55 +204,60 @@ const AdminPanel = () => {
                                 <div className="relative z-10 space-y-8">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-white/5 rounded-lg border border-white/10">
-                                            <UserPlus className="w-4 h-4 text-purple-400" />
+                                            {activeTab === 'pending' ? <Clock className="w-4 h-4 text-amber-400" /> : <UserPlus className="w-4 h-4 text-purple-400" />}
                                         </div>
-                                        <h2 className="text-sm font-semibold text-white tracking-wide">Grant Authorization</h2>
+                                        <h2 className="text-sm font-semibold text-white tracking-wide">
+                                            {activeTab === 'pending' ? 'Approval Queue' : 'Pre-Authorize Identity'}
+                                        </h2>
                                     </div>
 
-                                    <form onSubmit={handleApprove} className="space-y-6">
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between items-center px-1">
-                                                <label className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Identity Identifier</label>
-                                                <button 
-                                                    type="button"
-                                                    onClick={() => setUseCollegeDomain(!useCollegeDomain)}
-                                                    className={`flex items-center gap-2 px-2 py-1 rounded-md transition-all border ${
-                                                        useCollegeDomain ? 'bg-purple-500/10 border-purple-500/20 text-purple-400' : 'bg-white/5 border-white/10 text-slate-500'
-                                                    }`}
-                                                >
-                                                    <GraduationCap className="w-3 h-3" />
-                                                    <span className="text-[9px] font-bold uppercase tracking-tighter">College Mode</span>
-                                                </button>
+                                    {activeTab === 'whitelist' ? (
+                                        <form onSubmit={handleApproveEmail} className="space-y-6">
+                                            <div className="space-y-3">
+                                                <div className="flex justify-between items-center px-1">
+                                                    <label className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Email/Roll No</label>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => setUseCollegeDomain(!useCollegeDomain)}
+                                                        className={`flex items-center gap-2 px-2 py-1 rounded-md transition-all border ${
+                                                            useCollegeDomain ? 'bg-purple-500/10 border-purple-500/20 text-purple-400' : 'bg-white/5 border-white/10 text-slate-500'
+                                                        }`}
+                                                    >
+                                                        <GraduationCap className="w-3 h-3" />
+                                                        <span className="text-[9px] font-bold uppercase tracking-tighter">College Domain</span>
+                                                    </button>
+                                                </div>
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        placeholder={useCollegeDomain ? "username" : "full-email@domain.com"}
+                                                        className={`w-full bg-black/60 border rounded-xl px-5 py-4 text-sm font-mono outline-none transition-all text-white placeholder:text-slate-700 ${
+                                                            useCollegeDomain ? 'border-purple-500/30 focus:border-purple-500/60 pr-32' : 'border-white/10 focus:border-white/30'
+                                                        }`}
+                                                        value={newEmail}
+                                                        onChange={(e) => setNewEmail(e.target.value)}
+                                                    />
+                                                    {useCollegeDomain && (
+                                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-mono text-purple-400/50 select-none bg-purple-500/5 px-2 py-1 rounded border border-purple-500/10">
+                                                            {COLLEGE_DOMAIN}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                            
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    placeholder={useCollegeDomain ? "username" : "full-email@domain.com"}
-                                                    className={`w-full bg-black/60 border rounded-xl px-5 py-4 text-sm font-mono outline-none transition-all text-white placeholder:text-slate-700 ${
-                                                        useCollegeDomain ? 'border-purple-500/30 focus:border-purple-500/60 pr-32' : 'border-white/10 focus:border-white/30'
-                                                    }`}
-                                                    value={newEmail}
-                                                    onChange={(e) => setNewEmail(e.target.value)}
-                                                />
-                                                {useCollegeDomain && (
-                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-mono text-purple-400/50 select-none bg-purple-500/5 px-2 py-1 rounded border border-purple-500/10">
-                                                        {COLLEGE_DOMAIN}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            {useCollegeDomain && (
-                                                <p className="text-[10px] text-slate-500 italic px-1 font-mono">Just enter the college Roll No or ID prefix</p>
-                                            )}
+                                            <button
+                                                disabled={actionLoading}
+                                                className="w-full py-4 bg-white text-black font-bold text-[11px] uppercase tracking-[0.2em] rounded-xl hover:bg-purple-500 hover:text-white active:scale-[0.98] transition-all disabled:opacity-50 shadow-xl"
+                                            >
+                                                {actionLoading ? 'VERIFYING...' : 'GRANT PRE-AUTH'}
+                                            </button>
+                                        </form>
+                                    ) : (
+                                        <div className="space-y-4 font-mono text-[10px] text-slate-400 leading-relaxed">
+                                            <p>// SYSTEM PROTOCOL:</p>
+                                            <p>All incoming registration requests are held in the queue until manual verification.</p>
+                                            <p className="text-slate-600">Selecting 'APPROVE' will grant immediate system access to the user.</p>
                                         </div>
-
-                                        <button
-                                            disabled={actionLoading}
-                                            className="w-full py-4 bg-white text-black font-bold text-[11px] uppercase tracking-[0.2em] rounded-xl hover:bg-purple-500 hover:text-white active:scale-[0.98] transition-all disabled:opacity-50 shadow-xl"
-                                        >
-                                            {actionLoading ? 'VERIFYING...' : 'AUTHORIZE ACCESS'}
-                                        </button>
-                                    </form>
+                                    )}
 
                                     <AnimatePresence>
                                         {message.text && (
@@ -215,34 +283,32 @@ const AdminPanel = () => {
                                 <h3 className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Protocol Audit</h3>
                             </div>
                             <p className="text-[10px] text-slate-600 leading-relaxed font-mono">
-                                // System Notice: All authorization events are cryptographically logged. Revocation is permanent until manually reinstated.
+                                // NOTICE: Approval grants data ingestion privileges. Assign roles carefully.
                             </p>
                         </div>
                     </div>
 
-                    {/* Registry (Right) */}
+                    {/* Request List (Right) */}
                     <div className="lg:col-span-8 space-y-6">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-6 z-20">
-                            <div className="relative flex-1 group">
-                                <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-white transition-colors" />
-                                <input 
-                                    type="text"
-                                    placeholder="Filter authorized identities..."
-                                    className="w-full bg-[#0a0a0a]/80 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-sm outline-none focus:border-white/10 focus:bg-white/[0.05] transition-all font-sans backdrop-blur-xl placeholder:text-slate-700"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                            </div>
+                        <div className="relative group">
+                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-white transition-colors" />
+                            <input 
+                                type="text"
+                                placeholder={activeTab === 'pending' ? "Search pending requests..." : "Filter pre-authorized identities..."}
+                                className="w-full bg-[#0a0a0a]/80 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-sm outline-none focus:border-white/10 focus:bg-white/[0.05] transition-all font-sans backdrop-blur-xl placeholder:text-slate-700"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
                         </div>
 
-                        <div className="space-y-2 min-h-[500px]">
+                        <div className="space-y-3 min-h-[500px]">
                             {isLoading ? (
                                 <div className="space-y-4">
-                                    {[1, 2, 3, 4, 5].map(i => (
-                                        <div key={i} className="h-20 bg-white/[0.02] border border-white/5 rounded-2xl animate-pulse" />
+                                    {[1, 2, 3].map(i => (
+                                        <div key={i} className="h-24 bg-white/[0.02] border border-white/5 rounded-2xl animate-pulse" />
                                     ))}
                                 </div>
-                            ) : filteredEmails.length === 0 ? (
+                            ) : (activeTab === 'pending' ? filteredPending : filteredEmails).length === 0 ? (
                                 <motion.div 
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
@@ -251,41 +317,87 @@ const AdminPanel = () => {
                                     <div className="p-4 bg-white/5 rounded-full border border-white/5">
                                         <ShieldCheck className="w-8 h-8 text-slate-800" />
                                     </div>
-                                    <p className="font-mono text-[11px] text-slate-600 uppercase tracking-[0.3em]">Vault is empty / No match</p>
+                                    <p className="font-mono text-[11px] text-slate-600 uppercase tracking-[0.3em]">No Pending Transfers</p>
                                 </motion.div>
                             ) : (
                                 <AnimatePresence mode="popLayout">
-                                    {filteredEmails.map((item, index) => (
+                                    {(activeTab === 'pending' ? filteredPending : filteredEmails).map((item) => (
                                         <motion.div
                                             layout
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
                                             exit={{ opacity: 0, scale: 0.98 }}
-                                            transition={{ duration: 0.2 }}
-                                            key={item.email}
-                                            className="group relative flex items-center justify-between p-5 bg-white/[0.02] border border-white/5 rounded-2xl hover:bg-white/[0.04] hover:border-white/10 transition-all duration-300"
+                                            key={item._id || item.email}
+                                            className="group relative flex items-center justify-between p-5 bg-[#0a0a0a] border border-white/5 rounded-2xl hover:border-white/10 transition-all duration-300"
                                         >
                                             <div className="flex items-center gap-5">
-                                                <div className="hidden sm:flex items-center justify-center w-10 h-10 bg-black/40 rounded-xl border border-white/5 group-hover:border-purple-500/30 transition-colors">
-                                                    <Mail className="w-4 h-4 text-slate-600 group-hover:text-purple-400" />
+                                                <div className="hidden sm:flex items-center justify-center w-12 h-12 bg-white/[0.03] rounded-xl border border-white/5 group-hover:border-purple-500/30 transition-colors">
+                                                    {activeTab === 'pending' ? (
+                                                        <UserAlert className="w-5 h-5 text-amber-500/50 group-hover:text-amber-400" />
+                                                    ) : (
+                                                        <Mail className="w-5 h-5 text-purple-500/50 group-hover:text-purple-400" />
+                                                    )}
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-medium text-slate-200 group-hover:text-white transition-colors">{item.email}</p>
-                                                    <div className="flex items-center gap-3 mt-1 opacity-40">
+                                                    <div className="flex items-center gap-3">
+                                                        <p className="text-sm font-medium text-slate-200 group-hover:text-white transition-colors">
+                                                            {activeTab === 'pending' ? item.name : item.email}
+                                                        </p>
+                                                        {activeTab === 'pending' && (
+                                                            <span className="px-2 py-0.5 rounded-full bg-amber-500/5 border border-amber-500/20 text-[8px] font-bold uppercase tracking-tighter text-amber-500/60">
+                                                                Pending Verification
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-3 mt-1.5 opacity-50">
                                                         <span className="font-mono text-[9px] uppercase tracking-widest flex items-center gap-1.5">
-                                                            <Clock className="w-3 h-3" />
-                                                            Added {new Date(item.createdAt).toLocaleDateString()}
+                                                            <Mail className="w-3 h-3" />
+                                                            {activeTab === 'pending' ? item.email : `Authorized on ${new Date(item.createdAt).toLocaleDateString()}`}
+                                                            {activeTab === 'pending' && (
+                                                                <>
+                                                                    <span className="mx-1">•</span>
+                                                                    <GraduationCap className="w-3 h-3" />
+                                                                    Batch {item.year || 'N/A'}
+                                                                </>
+                                                            )}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <button
-                                                onClick={() => handleRevoke(item.email)}
-                                                className="p-2.5 rounded-xl border border-white/5 text-slate-600 hover:text-red-400 hover:bg-red-400/5 hover:border-red-400/20 transition-all opacity-0 group-hover:opacity-100"
-                                                title="Revoke Permission"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
+                                            
+                                            <div className="flex items-center gap-2">
+                                                {activeTab === 'pending' ? (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleUserApproval(item._id, 'approved', 'member')}
+                                                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-bold uppercase tracking-widest hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all"
+                                                        >
+                                                            <UserCheck className="w-3.5 h-3.5" />
+                                                            Approve Member
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleUserApproval(item._id, 'approved', 'admin')}
+                                                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-bold uppercase tracking-widest hover:bg-purple-600 hover:text-white hover:border-purple-600 transition-all"
+                                                        >
+                                                            <ShieldCheck className="w-3.5 h-3.5" />
+                                                            Approve Admin
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleUserApproval(item._id, 'rejected')}
+                                                            className="p-2 rounded-xl bg-white/5 border border-white/10 text-slate-500 hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/20 transition-all"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleRevokeEmail(item.email)}
+                                                        className="p-2.5 rounded-xl border border-white/5 text-slate-600 hover:text-red-400 hover:bg-red-400/5 hover:border-red-400/20 transition-all opacity-0 group-hover:opacity-100"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
                                         </motion.div>
                                     ))}
                                 </AnimatePresence>
@@ -301,5 +413,23 @@ const AdminPanel = () => {
         </div>
     );
 };
+
+// Simple Fallback Icon for missing UserAlert
+const UserAlert = (props) => (
+    <svg 
+        {...props} 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        strokeWidth="2" 
+        strokeLinecap="round" 
+        strokeLinejoin="round"
+    >
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <line x1="19" y1="8" x2="19" y2="12" />
+        <line x1="19" y1="16" x2="19.01" y2="16" />
+    </svg>
+);
 
 export default AdminPanel;

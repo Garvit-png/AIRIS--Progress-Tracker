@@ -144,6 +144,39 @@ export const AuthService = {
         return true;
     },
 
+    getUsers: async () => {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5001/api/admin/users', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        return data.success ? data.data : [];
+    },
+
+    getPendingUsers: async () => {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5001/api/admin/pending', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        return data.success ? data.data : [];
+    },
+
+    updateUserStatus: async (userId, status, role) => {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:5001/api/admin/users/${userId}/status`, {
+            method: 'PUT',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ status, role })
+        });
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message);
+        return data.data;
+    },
+
     forgotPassword: async (email) => {
         const response = await fetch(`${API_URL}/forgotpassword`, {
             method: 'POST',

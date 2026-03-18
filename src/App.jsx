@@ -9,6 +9,7 @@ import RegisterPage from './pages/RegisterPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminPanel from './pages/AdminPanel'
 import EmailVerification from './pages/EmailVerification'
+import ResetPassword from './pages/ResetPassword'
 
 import { AuthService } from './services/authService'
 
@@ -60,6 +61,20 @@ export default function App() {
   useEffect(() => {
     // Force permanent dark mode
     document.documentElement.setAttribute('data-theme', 'dark')
+
+    // Single Tab Enforcement: Listen for redirect requests from other tabs
+    const channel = new BroadcastChannel('airis_auth_channel');
+    channel.onmessage = (event) => {
+      if (event.data.type === 'CHECK_EXISTING_TAB') {
+        channel.postMessage({ type: 'TAB_EXISTS' });
+      } else if (event.data.type === 'REDIRECT_TO_RESET') {
+        // Redirection logic
+        window.focus();
+        window.location.href = `/reset-password/${event.data.token}`;
+      }
+    };
+
+    return () => channel.close();
   }, [])
 
   if (phase === 'loading') {
@@ -79,6 +94,7 @@ export default function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/verify-email/:token" element={<EmailVerification />} />
+              <Route path="/reset-password/:token" element={<ResetPassword />} />
               <Route 
                 path="/dashboard" 
                 element={

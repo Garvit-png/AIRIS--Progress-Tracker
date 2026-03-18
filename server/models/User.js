@@ -29,6 +29,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: 'member'
     },
+    status: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending'
+    },
     googleId: {
         type: String,
         unique: true,

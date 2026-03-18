@@ -2,7 +2,10 @@ const express = require('express');
 const {
     addApprovedEmail,
     removeApprovedEmail,
-    getApprovedEmails
+    getApprovedEmails,
+    getUsers,
+    getPendingUsers,
+    updateUserStatus
 } = require('../controllers/adminController');
 
 const router = express.Router();
@@ -28,5 +31,8 @@ router.use(authorize('admin'));
 router.get('/approved', getApprovedEmails);
 router.post('/approve', addApprovedEmail);
 router.delete('/approve/:email', removeApprovedEmail);
+router.get('/users', getUsers);
+router.get('/pending', getPendingUsers);
+router.put('/users/:id/status', updateUserStatus);
 
 module.exports = router;
