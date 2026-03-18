@@ -11,14 +11,28 @@ export default function MembersList() {
     const [sortKey, setSortKey] = useState('name'); // name, year
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
-    const [userPhotos, setUserPhotos] = useState({}); // Cache for lazy-loaded photos
+    const [userPhotos, setUserPhotos] = useState(() => {
+        const cached = localStorage.getItem('airis_pfp_cache');
+        return cached ? JSON.parse(cached) : {};
+    });
 
     const fetchUserPhoto = async (userId) => {
         if (userPhotos[userId]) return;
         try {
             const photoData = await AuthService.getUserPhoto(userId);
             if (photoData) {
-                setUserPhotos(prev => ({ ...prev, [userId]: photoData }));
+                setUserPhotos(prev => {
+                    const next = { ...prev, [userId]: photoData };
+                    // Persist to local storage (optional: limit size)
+                    try {
+                        localStorage.setItem('airis_pfp_cache', JSON.stringify(next));
+                    } catch (e) {
+                        // If quota exceeded, clear and save current
+                        localStorage.removeItem('airis_pfp_cache');
+                        localStorage.setItem('airis_pfp_cache', JSON.stringify({ [userId]: photoData }));
+                    }
+                    return next;
+                });
             }
         } catch (err) {
             console.error('Failed to fetch photo:', err);
@@ -40,6 +54,14 @@ export default function MembersList() {
         try {
             const data = await AuthService.getUsers();
             setUsers(data);
+
+            // Staggered background fetch for the first few users to populate cache
+            const topUsers = data.slice(0, 10);
+            topUsers.forEach((u, index) => {
+                if (!userPhotos[u._id]) {
+                    setTimeout(() => fetchUserPhoto(u._id), index * 300);
+                }
+            });
         } catch (error) {
             console.error('Failed to load members:', error);
         } finally {
