@@ -122,18 +122,31 @@ app.get('/api/debug/status', (req, res) => {
 });
 
 // Serve frontend in production (catch-all)
-if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '../dist')));
+const fsSync = require('fs');
+const distPath = path.join(__dirname, '../dist');
+const hasFrontend = fsSync.existsSync(distPath);
+
+if (process.env.NODE_ENV === 'production' && hasFrontend) {
+    app.use(express.static(distPath));
     app.get('*', (req, res) => {
-        res.sendFile(path.resolve(__dirname, '../dist', 'index.html'));
+        res.sendFile(path.resolve(distPath, 'index.html'));
     });
 } else {
-    // In development, if we accidentally hit the backend port for a frontend route
+    // API-only mode UI for Render root
+    app.get('/', (req, res) => {
+        res.json({
+            status: 'online',
+            message: 'AIRIS API is running. Access the frontend via your Vercel URL.',
+            endpoints: ['/api/auth', '/api/admin', '/api/tasks', '/api/health']
+        });
+    });
+
+    // In development or if frontend missing
     app.get('*', (req, res) => {
         if (!req.path.startsWith('/api/')) {
             res.status(404).json({
                 success: false,
-                message: `Route ${req.path} not found. If this is a frontend route, please use the Vite development port (usually http://localhost:5173)`
+                message: `Route ${req.path} not found. If this is the API, ensure you use the /api/ prefix.`
             });
         }
     });
