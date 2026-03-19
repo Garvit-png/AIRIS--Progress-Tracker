@@ -21,10 +21,27 @@ const connectDBWithRetry = async () => {
 
 const app = express();
 
-// Middleware to ensure DB is connected
+// Health check route - DOES NOT REQUIRE DB
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'Server running' });
+});
+
+// Middleware to ensure DB is connected for all other routes
 app.use(async (req, res, next) => {
-    await connectDBWithRetry();
-    next();
+    if (req.path === '/api/health') return next();
+    
+    try {
+        if (mongoose.connection.readyState !== 1) {
+            await connectDB();
+        }
+        next();
+    } catch (err) {
+        res.status(503).json({ 
+            success: false, 
+            message: 'Database connection currently unavailable. Please try again in 5 seconds.',
+            error: err.message
+        });
+    }
 });
 
 // Request logging to help debug deployment
@@ -67,11 +84,6 @@ const path = require('path');
 // Mount routers
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
-
-// Routes
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'Server running' });
-});
 
 // Debug endpoint for deployment
 app.get('/api/debug/status', (req, res) => {
@@ -118,8 +130,20 @@ app.use((err, req, res, next) => {
 module.exports = app;
 
 if (require.main === module) {
-    const PORT = process.env.PORT || 5001;
-    app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-    });
+    const PORT = process.env.PORT || 5002;
+    
+    // Connect to DB once on startup to avoid buffering issues
+    connectDB()
+        .then(() => {
+            app.listen(PORT, () => {
+                console.log(`Server running on port ${PORT}`);
+            });
+        })
+        .catch(err => {
+            console.error('CRITICAL: Failed to connect to MongoDB on startup:', err.message);
+            // Still start the server so we can return error responses to the client
+            app.listen(PORT, () => {
+                console.log(`Server running on port ${PORT} (DB DISCONNECTED)`);
+            });
+        });
 }
