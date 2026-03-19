@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/api/minimal",
-      "destination": "/api/minimal.cjs"
+      "destination": "/api/minimal.js"
     },
     {
       "source": "/api/(.*)",
-      "destination": "/api/index.cjs"
+      "destination": "/api/index.js"
     },
     {
       "source": "/((?!api).*)" ,
