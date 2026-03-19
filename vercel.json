@@ -1,4 +1,11 @@
 {
+  "redirects": [
+    {
+      "source": "/api/test-redirect",
+      "destination": "https://www.google.com",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/:path*",
