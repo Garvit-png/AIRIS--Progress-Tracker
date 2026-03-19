@@ -27,7 +27,12 @@ const app = express();
 
 // Health check route - DOES NOT REQUIRE DB
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'Server running' });
+    res.json({ status: 'Server running', time: new Date().toISOString() });
+});
+
+// For Render's default health checks
+app.get('/healthz', (req, res) => {
+    res.json({ status: 'Server healthy' });
 });
 
 // Middleware to ensure DB is connected for all other routes
