@@ -6,7 +6,6 @@ const {
     forgotPassword,
     resetPassword,
     verifyEmail,
-    googleLogin,
     updateProfile
 } = require('../controllers/authController');
 
@@ -20,7 +19,6 @@ router.get('/me', protect, getMe);
 router.post('/forgotpassword', forgotPassword);
 router.put('/resetpassword/:resettoken', resetPassword);
 router.get('/verify/:token', verifyEmail);
-router.post('/google', googleLogin);
 router.put('/profile', protect, updateProfile);
 
 module.exports = router;

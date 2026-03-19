@@ -393,28 +393,36 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                             
                                             <div className="flex items-center gap-2">
                                                 {activeTab === 'pending' ? (
-                                                    <>
-                                                        <button
-                                                            onClick={() => handleUserApproval(item._id, 'approved', 'Member', false)}
-                                                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-pink-500/5 border border-pink-500/10 text-[9px] font-bold uppercase tracking-widest hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all"
+                                                    <div className="flex flex-col sm:flex-row items-center gap-2">
+                                                        <select 
+                                                            id={`role-${item._id}`}
+                                                            className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-[9px] font-mono uppercase tracking-widest text-white/70 outline-none focus:border-pink-500/30 transition-all"
+                                                            defaultValue="Member"
                                                         >
-                                                            <UserCheck className="w-3.5 h-3.5" />
-                                                            Approve Member
-                                                        </button>
+                                                            <option value="Member">Member</option>
+                                                            <option value="Core Member">Core Member</option>
+                                                            <option value="President">President</option>
+                                                            <option value="General Secretary">General Secretary</option>
+                                                            <option value="Joint Secretary">Joint Secretary</option>
+                                                            <option value="Admin">Admin</option>
+                                                        </select>
                                                         <button
-                                                            onClick={() => handleUserApproval(item._id, 'approved', 'Admin', true)}
-                                                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-pink-500/5 border border-pink-500/10 text-[9px] font-bold uppercase tracking-widest hover:bg-pink-600 hover:text-white hover:border-pink-600 transition-all"
+                                                            onClick={() => {
+                                                                const roleSelection = document.getElementById(`role-${item._id}`).value;
+                                                                handleUserApproval(item._id, 'approved', roleSelection, roleSelection === 'Admin');
+                                                            }}
+                                                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-pink-500/10 border border-pink-500/20 text-[9px] font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-all"
                                                         >
-                                                            <ShieldCheck className="w-3.5 h-3.5" />
-                                                            Approve Admin
+                                                            <Check className="w-3.5 h-3.5" />
+                                                            Approve
                                                         </button>
                                                         <button
                                                             onClick={() => handleUserApproval(item._id, 'rejected')}
-                                                            className="p-2 rounded-xl bg-pink-500/5 border border-pink-500/10 text-white/70 hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/20 transition-all"
+                                                            className="p-2 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/20 transition-all"
                                                         >
-                                                            <X className="w-4 h-4" />
+                                                            <X className="w-3.5 h-3.5" />
                                                         </button>
-                                                    </>
+                                                    </div>
                                                 ) : activeTab === 'history' ? (
                                                     <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
                                                         <Check className="w-3.5 h-3.5 text-emerald-500" />

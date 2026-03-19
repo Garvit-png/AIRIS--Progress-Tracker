@@ -48,6 +48,12 @@ export const AuthService = {
         if (!response.ok) {
             throw new Error(data.message || 'Registration failed');
         }
+
+        // Store token and user for auto-login
+        if (data.token) {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('current_user', JSON.stringify(data.user));
+        }
         return data;
     },
 
@@ -220,6 +226,7 @@ export const AuthService = {
         return data;
     },
 
+    /*
     googleLogin: async (idToken) => {
         const response = await fetch(`${API_URL}/google`, {
             method: 'POST',
@@ -237,6 +244,7 @@ export const AuthService = {
         localStorage.setItem('current_user', JSON.stringify(data.user));
         return data;
     },
+    */
 
     updateProfile: async (profileData) => {
         const token = localStorage.getItem('token');

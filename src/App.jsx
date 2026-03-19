@@ -11,6 +11,7 @@ import AdminPanel from './pages/AdminPanel'
 import EmailVerification from './pages/EmailVerification'
 import ResetPassword from './pages/ResetPassword'
 import SecurityShield from './components/SecurityShield'
+import PendingApproval from './components/PendingApproval'
 import config from './config'
 
 import { AuthService } from './services/authService'
@@ -117,6 +118,7 @@ export default function App() {
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/verify-email/:token" element={<EmailVerification />} />
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
+                <Route path="/pending" element={<PendingApproval />} />
                 <Route 
                   path="/dashboard" 
                   element={

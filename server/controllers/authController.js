@@ -15,7 +15,7 @@ exports.register = async (req, res, next) => {
         const cleanEmail = email.toLowerCase().trim();
 
         // REMOVED RESTRICTIONS: ALL EMAILS WELCOME
-        const isAdminEmail = cleanEmail === 'garvitgandhi0313@gmail.com' || cleanEmail === 'admin@airis.tech';
+        const isAdminEmail = cleanEmail === 'garvitgandhi0313@gmail.com';
         
         // Check if user exists
         const userExists = await User.findOne({ email: cleanEmail });
@@ -30,14 +30,20 @@ exports.register = async (req, res, next) => {
             year,
             role: isAdminEmail ? 'Admin' : 'Member',
             isAdmin: isAdminEmail,
-            status: 'approved', // AUTO-APPROVED BY DEFAULT
+            status: isAdminEmail ? 'approved' : 'pending', // ADMINS AUTO-APPROVED, OTHERS PENDING
             verificationToken: null,
-            isVerified: true // AUTO-VERIFIED
+            isVerified: true // AUTO-VERIFIED FOR NOW AS REQUESTED
+        });
+
+        // Create token
+        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+            expiresIn: '7d'
         });
 
         res.status(201).json({
             success: true,
             message: 'Registration successful! Identity initialized.',
+            token,
             user: {
                 id: user._id,
                 name: user.name,
@@ -81,65 +87,7 @@ exports.verifyEmail = async (req, res, next) => {
 // @desc    Google login
 // @route   POST /api/auth/google
 // @access  Public
-exports.googleLogin = async (req, res, next) => {
-    try {
-        const { idToken } = req.body;
-        const ticket = await client.verifyIdToken({
-            idToken,
-            audience: process.env.GOOGLE_CLIENT_ID
-        });
-        const { name, email, sub: googleId } = ticket.getPayload();
-
-        let user = await User.findOne({ email });
-
-        if (user) {
-            // Link googleId if not linked
-            if (!user.googleId) {
-                user.googleId = googleId;
-                user.isVerified = true;
-                await user.save();
-            }
-        } else {
-            // New user via Google
-            const cleanEmail = email.toLowerCase().trim();
-            const isAdminEmail = cleanEmail === 'garvitgandhi0313@gmail.com';
-
-            user = await User.create({
-                name,
-                email: cleanEmail,
-                googleId,
-                isVerified: true,
-                role: isAdminEmail ? 'Admin' : 'Member',
-                isAdmin: isAdminEmail,
-                status: 'approved', // AUTO-APPROVED
-                password: crypto.randomBytes(16).toString('hex')
-            });
-        }
-
-        // NO RESTRICTIONS: ALL USERS APPROVED
-
-        // Create token
-        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-            expiresIn: '7d'
-        });
-
-        res.status(200).json({
-            success: true,
-            token,
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                isAdmin: user.isAdmin,
-                status: user.status,
-                profilePicture: user.profilePicture
-            }
-        });
-    } catch (error) {
-        res.status(400).json({ success: false, message: error.message });
-    }
-};
+// exports.googleLogin = ... (DISABLED AS REQUESTED)
 
 // @desc    Login user
 // @route   POST /api/auth/login
@@ -162,7 +110,10 @@ exports.login = async (req, res, next) => {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
-        // NO RESTRICTIONS: ALL USERS APPROVED
+        // Allow pending users to login so they can see their status in the app
+        if (user.status === 'rejected') {
+            return res.status(403).json({ success: false, message: 'ACCOUNT ACCESS REJECTED' });
+        }
 
         // Create token
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {

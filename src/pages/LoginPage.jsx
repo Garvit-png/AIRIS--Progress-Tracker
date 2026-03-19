@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { GoogleLogin } from '@react-oauth/google'
 import { AuthService } from '../services/authService'
 import Logo from '../components/Logo'
 
@@ -51,26 +50,7 @@ export default function LoginPage() {
         }
     }
 
-    const handleGoogleSuccess = async (credentialResponse) => {
-        console.log('Google Auth Triggered on Frontend');
-        setIsLoading(true)
-        setError('')
-        try {
-            console.log('Sending token to backend...');
-            await AuthService.googleLogin(credentialResponse.credential)
-            console.log('Backend Login Successful');
-            navigate(from, { replace: true })
-        } catch (err) {
-            console.error('Frontend Google Login Error:', err);
-            if (err.message.includes('PENDING APPROVAL')) {
-                setError('ACCOUNT PENDING ADMIN APPROVAL')
-            } else {
-                setError(err.message.toUpperCase())
-            }
-        } finally {
-            setIsLoading(false)
-        }
-    }
+// handleGoogleSuccess removed
 
     const handleForgotPassword = async (e) => {
         e.preventDefault()
@@ -203,20 +183,6 @@ export default function LoginPage() {
                             Forgot Password?
                         </button>
                         
-                        <div className="relative flex items-center justify-center">
-                            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5" /></div>
-                            <span className="relative px-2 bg-[var(--bg)] font-mono text-[8px] uppercase opacity-60">or</span>
-                        </div>
-
-                        <div className="flex justify-center">
-                            <GoogleLogin
-                                onSuccess={handleGoogleSuccess}
-                                onError={() => setError('GOOGLE AUTHENTICATION FAILED')}
-                                theme="filled_black"
-                                shape="pill"
-                                text="continue_with"
-                            />
-                        </div>
                     </div>
                 )}
 
