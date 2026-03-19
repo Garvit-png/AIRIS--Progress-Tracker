@@ -4,6 +4,10 @@ const mongoose = require('mongoose');
 mongoose.set('bufferCommands', false);
 
 const connectDB = async () => {
+    if (!process.env.MONGO_URI) {
+        console.log("No MONGO_URI found - continuing in DB-less mode");
+        return;
+    }
     try {
         await mongoose.connect(process.env.MONGO_URI, {
             serverSelectionTimeoutMS: 5000,

@@ -42,6 +42,7 @@ app.use(async (req, res, next) => {
     }
     
     try {
+        if (!process.env.MONGO_URI) return next();
         if (mongoose.connection.readyState !== 1) {
             await connectDB();
         }
