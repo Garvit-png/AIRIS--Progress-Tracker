@@ -32,8 +32,8 @@ export default function PendingApproval() {
                 animate={{ opacity: 1, y: 0 }}
                 className="w-full max-w-md text-center space-y-8"
             >
-                <div className="mb-4 flex justify-center">
-                    <Logo size="md" />
+                <div className="mb-12 flex justify-center pt-8">
+                    <Logo size="sm" />
                 </div>
 
                 <div className="space-y-4">

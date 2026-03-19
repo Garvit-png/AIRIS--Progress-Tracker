@@ -88,8 +88,8 @@ export default function LoginPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="w-full max-w-sm"
             >
-                <div className="mb-10 text-center">
-                    <Logo size="md" />
+                <div className="mb-14 text-center pt-8">
+                    <Logo size="sm" />
                 </div>
 
                 {step === 'email' ? (
