@@ -13,6 +13,12 @@ connectDB();
 
 const app = express();
 
+// Request logging to help debug deployment
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+});
+
 // Middleware
 const allowedOrigins = [
     process.env.CLIENT_URL, 
@@ -84,6 +90,16 @@ if (process.env.NODE_ENV === 'production') {
         }
     });
 }
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+    console.error('Unhandled Error:', err);
+    res.status(500).json({
+        success: false,
+        message: 'INTERNAL SERVER ERROR',
+        error: process.env.NODE_ENV === 'production' ? 'Unspecified' : err.message
+    });
+});
 
 module.exports = app;
 

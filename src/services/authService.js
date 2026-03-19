@@ -4,10 +4,16 @@ const API_URL = `${config.API_BASE_URL}/auth`;
 const ADMIN_API_URL = `${config.API_BASE_URL}/admin`;
 
 const safeJson = async (response) => {
+    const text = await response.text();
     try {
-        return await response.json();
+        return JSON.parse(text);
     } catch (e) {
-        return { success: false, message: 'SERVER COMMUNICATION FAILED (INVALID RESPONSE)' };
+        console.error('SERVER RETURNED NON-JSON RESPONSE:', text.substring(0, 200));
+        return { 
+            success: false, 
+            message: 'SERVER COMMUNICATION FAILED',
+            debug: text.substring(0, 100)
+        };
     }
 };
 
