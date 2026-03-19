@@ -89,8 +89,8 @@ export const AuthService = {
             const data = await safeJson(response);
 
             if (response.ok) {
-                localStorage.setItem('current_user', JSON.stringify(data.user));
-                return data.user;
+                localStorage.setItem('current_user', JSON.stringify(data.user || data));
+                return data.user || data;
             } else {
                 AuthService.logout();
                 return null;
@@ -99,6 +99,21 @@ export const AuthService = {
             console.error('Failed to fetch user:', error);
             return null;
         }
+    },
+
+    getMe: async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return null;
+
+        const response = await fetch(`${API_URL}/me`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await safeJson(response);
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to fetch user');
+        }
+        return data.user || data;
     },
 
     getSession: () => {

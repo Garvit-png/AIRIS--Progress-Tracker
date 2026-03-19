@@ -1,10 +1,29 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { AuthService } from '../services/authService'
 import Logo from './Logo'
 
 export default function PendingApproval() {
     const user = AuthService.getSession()
+    const navigate = useNavigate()
+    const [isChecking, setIsChecking] = React.useState(false)
+
+    const checkStatus = async () => {
+        setIsChecking(true)
+        try {
+            const data = await AuthService.getMe()
+            if (data.status === 'approved') {
+                // Update local storage
+                localStorage.setItem('current_user', JSON.stringify(data))
+                window.location.href = '/dashboard'
+            }
+        } catch (err) {
+            console.error('Status check failed:', err)
+        } finally {
+            setIsChecking(false)
+        }
+    }
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black">
@@ -38,8 +57,16 @@ export default function PendingApproval() {
 
                 <div className="pt-8 space-y-4">
                     <button
+                        onClick={checkStatus}
+                        disabled={isChecking}
+                        className="w-full py-3 bg-white text-black font-bold text-[10px] uppercase tracking-widest rounded-lg hover:invert transition-all disabled:opacity-50"
+                    >
+                        {isChecking ? 'Verifying Authorization...' : 'Check Approval Status'}
+                    </button>
+
+                    <button
                         onClick={() => AuthService.logout()}
-                        className="px-8 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full font-mono text-[9px] uppercase tracking-widest transition-all"
+                        className="block w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg font-mono text-[9px] uppercase tracking-widest transition-all"
                     >
                         Sign Out
                     </button>

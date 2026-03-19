@@ -17,6 +17,14 @@ export default function LoginPage() {
     const navigate = useNavigate()
     const location = useLocation()
     const from = location.state?.from?.pathname || "/dashboard"
+    const user = AuthService.getSession()
+    const token = AuthService.getToken()
+
+    React.useEffect(() => {
+        if (user && token) {
+            navigate(from, { replace: true })
+        }
+    }, [user, token, navigate, from])
 
     const handleEmailSubmit = async (e) => {
         e.preventDefault()

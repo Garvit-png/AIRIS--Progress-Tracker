@@ -18,6 +18,14 @@ export default function RegisterPage() {
     const [isEmailSent, setIsEmailSent] = useState(false)
 
     useEffect(() => {
+        const user = AuthService.getSession()
+        const token = AuthService.getToken()
+        
+        if (user && token) {
+            navigate('/dashboard', { replace: true })
+            return
+        }
+
         if (!initialEmail) {
             navigate('/login')
         }
