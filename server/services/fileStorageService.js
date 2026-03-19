@@ -1,7 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '../data');
+const DATA_DIR = process.env.DATA_DIR || path.resolve(process.cwd(), 'server/data');
 
 const getFilePath = (filename) => path.join(DATA_DIR, filename);
 

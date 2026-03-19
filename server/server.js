@@ -116,8 +116,11 @@ app.get('/api/debug/status', (req, res) => {
             HAS_MONGO_URI: !!process.env.MONGO_URI,
             HAS_JWT_SECRET: !!process.env.JWT_SECRET,
             HAS_CLIENT_URL: !!process.env.CLIENT_URL,
-            HAS_GOOGLE_CLIENT_ID: !!process.env.GOOGLE_CLIENT_ID
-        }
+            HAS_GOOGLE_CLIENT_ID: !!process.env.GOOGLE_CLIENT_ID,
+            DATA_DIR: process.env.DATA_DIR || 'default'
+        },
+        cwd: process.cwd(),
+        dir: __dirname
     });
 });
 
@@ -158,7 +161,8 @@ app.use((err, req, res, next) => {
     res.status(500).json({
         success: false,
         message: 'INTERNAL SERVER ERROR',
-        error: process.env.NODE_ENV === 'production' ? 'Unspecified' : err.message
+        error: err.message,
+        stack: process.env.NODE_ENV === 'production' ? null : err.stack
     });
 });
 
