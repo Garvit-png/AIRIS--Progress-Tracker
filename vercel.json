@@ -1,15 +1,11 @@
 {
   "rewrites": [
     {
-      "source": "/api/minimal",
-      "destination": "/api/minimal.js"
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
     },
     {
-      "source": "/api/(.*)",
-      "destination": "/api/index.js"
-    },
-    {
-      "source": "/((?!api).*)" ,
+      "source": "/((?!api).*)",
       "destination": "/index.html"
     }
   ]
