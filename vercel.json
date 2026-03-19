@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/minimal",
+      "destination": "/api/minimal.cjs"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/index.cjs"
     },
