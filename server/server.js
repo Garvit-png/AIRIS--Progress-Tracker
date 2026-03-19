@@ -8,10 +8,24 @@ const adminRoutes = require('./routes/adminRoutes');
 // Load environment variables
 dotenv.config();
 
-// Connect to MongoDB
-connectDB();
+let isDBConnected = false;
+const connectDBWithRetry = async () => {
+    if (isDBConnected) return;
+    try {
+        await connectDB();
+        isDBConnected = true;
+    } catch (err) {
+        console.error('Initial DB connection failed:', err.message);
+    }
+};
 
 const app = express();
+
+// Middleware to ensure DB is connected
+app.use(async (req, res, next) => {
+    await connectDBWithRetry();
+    next();
+});
 
 // Request logging to help debug deployment
 app.use((req, res, next) => {
