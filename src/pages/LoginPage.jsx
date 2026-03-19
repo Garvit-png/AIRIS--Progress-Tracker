@@ -24,17 +24,9 @@ export default function LoginPage() {
         setError('')
         if (!email.trim()) return
 
-        setIsLoading(true)
-        try {
-            // Check if email is approved (Legacy) or exists in system
-            const isApproved = await AuthService.isEmailApproved(email)
-            // For the new workflow, we just proceed to password to check status/account
-            setStep('password')
-        } catch (err) {
-            setError('COMMUNICATION ERROR: SYSTEM OFFLINE')
-        } finally {
-            setIsLoading(false)
-        }
+        // We jump straight to password entry or Google login. 
+        // Real validation now happens on the backend during the main handshake.
+        setStep('password')
     }
 
     const handlePasswordSubmit = async (e) => {

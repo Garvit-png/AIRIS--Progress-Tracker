@@ -11,6 +11,7 @@ import AdminPanel from './pages/AdminPanel'
 import EmailVerification from './pages/EmailVerification'
 import ResetPassword from './pages/ResetPassword'
 import SecurityShield from './components/SecurityShield'
+import config from './config'
 
 import { AuthService } from './services/authService'
 
@@ -59,10 +60,28 @@ function ErrorBoundary({ children }) {
 
 export default function App() {
   const [phase, setPhase] = useState('loading') // loading -> app
+  const [isVerifying, setIsVerifying] = useState(true)
   
   useEffect(() => {
     // Force permanent dark mode
     document.documentElement.setAttribute('data-theme', 'dark')
+
+    const checkAuth = async () => {
+      const token = AuthService.getToken()
+      if (token) {
+        try {
+          const user = await AuthService.getCurrentUser()
+          if (!user) {
+            AuthService.logout()
+          }
+        } catch (err) {
+          AuthService.logout()
+        }
+      }
+      setIsVerifying(false)
+    }
+
+    checkAuth()
 
     // Single Tab Enforcement: Listen for redirect requests from other tabs
     const channel = new BroadcastChannel('airis_auth_channel');
@@ -79,13 +98,13 @@ export default function App() {
     return () => channel.close();
   }, [])
 
-  if (phase === 'loading') {
+  if (phase === 'loading' || isVerifying) {
     const sessionUser = AuthService.getSession()
     return <LoaderScreen onComplete={() => setPhase('app')} user={sessionUser} />
   }
 
   return (
-    <GoogleOAuthProvider clientId="532663388476-7iiiepabt72281qja5vehie0qd5egc2q.apps.googleusercontent.com">
+    <GoogleOAuthProvider clientId={config.GOOGLE_CLIENT_ID}>
       <SecurityShield>
         <Router>
           <div

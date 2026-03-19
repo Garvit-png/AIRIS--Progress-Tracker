@@ -3,19 +3,20 @@ import config from '../config';
 const API_URL = `${config.API_BASE_URL}/auth`;
 const ADMIN_API_URL = `${config.API_BASE_URL}/admin`;
 
+const safeJson = async (response) => {
+    try {
+        return await response.json();
+    } catch (e) {
+        return { success: false, message: 'SERVER COMMUNICATION FAILED (INVALID RESPONSE)' };
+    }
+};
+
 export const AuthService = {
     // Check if email is approved via backend (for now using the existing mock logic if backend doesn't have it yet, 
     // but the request was to integrate with the new auth system)
     isEmailApproved: async (email) => {
-        // In this specific flow, we check if password is set on backend effectively by trying to login or register
-        // But for the "Register if not exists" flow, we might need a dedicated check or just handle it in the flow
-        const approvedEmails = [
-            'admin@airis.tech',
-            'garvitgandhi0313@gmail.com',
-            'member@airis.tech',
-            'garvit@email.com'
-        ];
-        return approvedEmails.some(e => e.toLowerCase() === email.toLowerCase().trim());
+        // This is a legacy function. We now let the backend handle everything during the main login flow.
+        return true; 
     },
 
     // Check if email has a password set (exists in DB)
@@ -37,7 +38,7 @@ export const AuthService = {
             body: JSON.stringify({ name, email, password, year })
         });
 
-        const data = await response.json();
+        const data = await safeJson(response);
         if (!response.ok) {
             throw new Error(data.message || 'Registration failed');
         }
@@ -51,7 +52,7 @@ export const AuthService = {
             body: JSON.stringify({ email, password })
         });
 
-        const data = await response.json();
+        const data = await safeJson(response);
         if (!response.ok) {
             throw new Error(data.message || 'Login failed');
         }
@@ -73,7 +74,8 @@ export const AuthService = {
                 }
             });
 
-            const data = await response.json();
+            const data = await safeJson(response);
+
             if (response.ok) {
                 localStorage.setItem('current_user', JSON.stringify(data.user));
                 return data.user;
@@ -111,7 +113,7 @@ export const AuthService = {
         const response = await fetch(`${ADMIN_API_URL}/approved`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        const data = await response.json();
+        const data = await safeJson(response);
         return data.success ? data.data : [];
     },
 
@@ -125,7 +127,7 @@ export const AuthService = {
             },
             body: JSON.stringify({ email })
         });
-        const data = await response.json();
+        const data = await safeJson(response);
         if (!data.success) throw new Error(data.message);
         return data.data;
     },
@@ -136,7 +138,7 @@ export const AuthService = {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        const data = await response.json();
+        const data = await safeJson(response);
         if (!data.success) throw new Error(data.message);
         return true;
     },
@@ -146,17 +148,16 @@ export const AuthService = {
         const response = await fetch(`${ADMIN_API_URL}/users`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        const data = await response.json();
+        const data = await safeJson(response);
         return data.success ? data.data : [];
     },
-
 
     getPendingUsers: async () => {
         const token = localStorage.getItem('token');
         const response = await fetch(`${ADMIN_API_URL}/pending`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        const data = await response.json();
+        const data = await safeJson(response);
         return data.success ? data.data : [];
     },
 
@@ -165,7 +166,7 @@ export const AuthService = {
         const response = await fetch(`${ADMIN_API_URL}/history`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        const data = await response.json();
+        const data = await safeJson(response);
         return data.success ? data.data : [];
     },
 
@@ -179,7 +180,7 @@ export const AuthService = {
             },
             body: JSON.stringify({ status, role, isAdmin, name })
         });
-        const data = await response.json();
+        const data = await safeJson(response);
         if (!data.success) throw new Error(data.message);
         return data.data;
     },
@@ -190,7 +191,7 @@ export const AuthService = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
         });
-        const data = await response.json();
+        const data = await safeJson(response);
         if (!response.ok) throw new Error(data.message || 'Failed to send reset email');
         return data;
     },
@@ -201,14 +202,14 @@ export const AuthService = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ password })
         });
-        const data = await response.json();
+        const data = await safeJson(response);
         if (!response.ok) throw new Error(data.message || 'Failed to reset password');
         return data;
     },
 
     verifyEmail: async (token) => {
         const response = await fetch(`${API_URL}/verify/${token}`);
-        const data = await response.json();
+        const data = await safeJson(response);
         if (!response.ok) throw new Error(data.message || 'Verification failed');
         return data;
     },
@@ -220,7 +221,7 @@ export const AuthService = {
             body: JSON.stringify({ idToken })
         });
 
-        const data = await response.json();
+        const data = await safeJson(response);
         if (!response.ok) {
             throw new Error(data.message || 'Google login failed');
         }
@@ -242,7 +243,8 @@ export const AuthService = {
             body: JSON.stringify(profileData)
         });
 
-        const data = await response.json();
+        const data = await safeJson(response);
+
         if (!response.ok) {
             throw new Error(data.message || 'Profile update failed');
         }
@@ -252,6 +254,10 @@ export const AuthService = {
         return data.user;
     }
 };
+
+if (typeof window !== 'undefined') {
+    window.AuthService = AuthService;
+}
 
 if (typeof window !== 'undefined') {
     window.AuthService = AuthService;

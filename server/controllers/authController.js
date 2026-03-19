@@ -14,11 +14,8 @@ exports.register = async (req, res, next) => {
         const { name, email, password, year } = req.body;
         const cleanEmail = email.toLowerCase().trim();
 
-        // Check if email is in ApprovedEmail collection (Old Whitelist Logic)
-        const isApprovedEmail = await ApprovedEmail.findOne({ email: cleanEmail });
-        
-        // TEMPORARY/PRIMARY ADMIN: garvitgandhi0313@gmail.com
-        const isAdminEmail = cleanEmail === 'garvitgandhi0313@gmail.com';
+        // REMOVED RESTRICTIONS: ALL EMAILS WELCOME
+        const isAdminEmail = cleanEmail === 'garvitgandhi0313@gmail.com' || cleanEmail === 'admin@airis.tech';
         
         // Check if user exists
         const userExists = await User.findOne({ email: cleanEmail });
@@ -26,9 +23,6 @@ exports.register = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'User already exists' });
         }
 
-        // Create user (unverified and pending)
-        const verificationToken = crypto.randomBytes(20).toString('hex');
-        
         const user = await User.create({
             name,
             email: cleanEmail,
@@ -36,38 +30,25 @@ exports.register = async (req, res, next) => {
             year,
             role: isAdminEmail ? 'Admin' : 'Member',
             isAdmin: isAdminEmail,
-            status: isAdminEmail ? 'approved' : 'pending',
-            verificationToken,
-            isVerified: false
+            status: 'approved', // AUTO-APPROVED BY DEFAULT
+            verificationToken: null,
+            isVerified: true // AUTO-VERIFIED
         });
 
-        // Create verification url
-        const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
-        
-        const message = `Welcome to AIRIS! Please verify your email by clicking the link: ${verificationUrl}`;
-        const html = `
-            <h1>Welcome to AIRIS</h1>
-            <p>Please click the button below to finish your registration:</p>
-            <a href="${verificationUrl}" style="background: #ef4444; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Verify Email</a>
-        `;
+        res.status(201).json({
+            success: true,
+            message: 'Registration successful! Identity initialized.',
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                isAdmin: user.isAdmin,
+                status: user.status
+            }
+        });
 
-        try {
-            await sendEmail({
-                email: cleanEmail,
-                subject: 'AIRIS Email Verification',
-                message,
-                html
-            });
-
-            res.status(201).json({
-                success: true,
-                message: 'Verification email sent'
-            });
-        } catch (err) {
-            // If email fails, delete the user so they can try again
-            await User.deleteOne({ _id: user._id });
-            return res.status(500).json({ success: false, message: 'Email could not be sent' });
-        }
+        // Email verification bypassed to remove restrictions
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
     }
@@ -130,19 +111,12 @@ exports.googleLogin = async (req, res, next) => {
                 isVerified: true,
                 role: isAdminEmail ? 'Admin' : 'Member',
                 isAdmin: isAdminEmail,
-                status: isAdminEmail ? 'approved' : 'pending',
+                status: 'approved', // AUTO-APPROVED
                 password: crypto.randomBytes(16).toString('hex')
             });
         }
 
-        // Check if status is approved
-        if (user.status !== 'approved') {
-            return res.status(403).json({ 
-                success: false, 
-                message: 'ACCESS DENIED: ACCOUNT PENDING APPROVAL',
-                status: user.status
-            });
-        }
+        // NO RESTRICTIONS: ALL USERS APPROVED
 
         // Create token
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
@@ -183,23 +157,12 @@ exports.login = async (req, res, next) => {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
-        if (!user.isVerified) {
-            return res.status(401).json({ success: false, message: 'Please verify your email to login' });
-        }
-
         const isMatch = await user.matchPassword(password);
         if (!isMatch) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
-        // Check if status is approved
-        if (user.status !== 'approved') {
-            return res.status(403).json({ 
-                success: false, 
-                message: 'ACCESS DENIED: ACCOUNT PENDING APPROVAL',
-                status: user.status
-            });
-        }
+        // NO RESTRICTIONS: ALL USERS APPROVED
 
         // Create token
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {

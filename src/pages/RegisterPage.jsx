@@ -35,7 +35,9 @@ export default function RegisterPage() {
         setIsLoading(true)
         try {
             const data = await AuthService.register(name, email, password, year)
-            setIsEmailSent(true)
+            // Auto-login after registration or direct to login since they are approved
+            setError('REGISTRATION SUCCESSFUL! REDIRECTING...')
+            setTimeout(() => navigate('/login'), 2000)
         } catch (err) {
             setError(err.message.toUpperCase())
         } finally {
