@@ -10,7 +10,7 @@ export default function RegisterPage() {
     const initialEmail = location.state?.email || ''
 
     const [email, setEmail] = useState(initialEmail)
-    const [name, setName] = useState('')
+    const [name, setName] = useState(location.state?.name || '')
     const [year, setYear] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')

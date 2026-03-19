@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const { OAuth2Client } = require('google-auth-library');
 const sendEmail = require('../services/emailService');
 const fileStorageService = require('../services/fileStorageService');
 
@@ -54,7 +55,7 @@ exports.register = async (req, res, next) => {
 
         res.status(201).json({
             success: true,
-            message: 'Registration successful! Identity initialized.',
+            message: 'REGISTRATION RECEIVED. ACCOUNT PENDING APPROVAL.',
             token,
             user: {
                 id: user.id,
@@ -78,7 +79,70 @@ exports.verifyEmail = async (req, res) => res.status(501).json({ message: 'Not i
 // @desc    Google login
 // @route   POST /api/auth/google
 // @access  Public
-// exports.googleLogin = ... (DISABLED AS REQUESTED)
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+exports.googleLogin = async (req, res) => {
+    try {
+        const { idToken } = req.body;
+        if (!idToken) {
+            return res.status(400).json({ success: false, message: 'Google ID token required' });
+        }
+
+        const ticket = await client.verifyIdToken({
+            idToken,
+            audience: process.env.GOOGLE_CLIENT_ID
+        });
+
+        const { email, name, picture } = ticket.getPayload();
+        const cleanEmail = email.toLowerCase().trim();
+
+        // Check if user exists
+        let user = await fileStorageService.findItem(USERS_FILE, u => u.email === cleanEmail);
+
+        if (!user) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'GMAIL NOT CONNECTED, REGISTER FIRST',
+                code: 'USER_NOT_FOUND',
+                email: cleanEmail,
+                name: name
+            });
+        }
+
+        if (user.status === 'rejected') {
+            return res.status(403).json({ success: false, message: 'ACCOUNT ACCESS REJECTED' });
+        }
+
+        // Create token
+        const token = jwt.sign(
+            { 
+                userId: user.id, 
+                role: user.role, 
+                isAdmin: user.isAdmin,
+                email: user.email 
+            }, 
+            process.env.JWT_SECRET, 
+            { expiresIn: '30d' }
+        );
+
+        res.status(200).json({
+            success: true,
+            token,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                isAdmin: user.isAdmin,
+                status: user.status,
+                profilePicture: user.profilePicture || picture
+            }
+        });
+    } catch (error) {
+        console.error('Google Auth Error:', error);
+        res.status(401).json({ success: false, message: 'Google authentication failed' });
+    }
+};
 
 // @desc    Login user
 // @route   POST /api/auth/login
@@ -93,7 +157,7 @@ exports.login = async (req, res, next) => {
 
         const user = await fileStorageService.findItem(USERS_FILE, u => u.email.toLowerCase() === email.toLowerCase());
         if (!user) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            return res.status(404).json({ success: false, message: 'ACCOUNT NOT FOUND, REGISTER FIRST' });
         }
 
         const isMatch = await bcrypt.compare(password, user.password);

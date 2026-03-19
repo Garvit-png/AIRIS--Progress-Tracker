@@ -242,7 +242,6 @@ export const AuthService = {
         return data;
     },
 
-    /*
     googleLogin: async (idToken) => {
         const response = await fetch(`${API_URL}/google`, {
             method: 'POST',
@@ -252,6 +251,14 @@ export const AuthService = {
 
         const data = await safeJson(response);
         if (!response.ok) {
+            // Check for specific "User Not Found" error to handle in UI
+            if (response.status === 404) {
+                const error = new Error(data.message || 'GMAIL NOT CONNECTED, REGISTER FIRST');
+                error.code = data.code || 'USER_NOT_FOUND';
+                error.email = data.email;
+                error.name = data.name;
+                throw error;
+            }
             throw new Error(data.message || 'Google login failed');
         }
 
@@ -260,7 +267,6 @@ export const AuthService = {
         localStorage.setItem('current_user', JSON.stringify(data.user));
         return data;
     },
-    */
 
     updateProfile: async (profileData) => {
         const token = localStorage.getItem('token');

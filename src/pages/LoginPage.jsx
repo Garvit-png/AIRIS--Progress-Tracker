@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { AuthService } from '../services/authService'
+import { GoogleLogin } from '@react-oauth/google'
 import Logo from '../components/Logo'
 
 export default function LoginPage() {
@@ -46,16 +47,40 @@ export default function LoginPage() {
             navigate(from, { replace: true })
         } catch (err) {
             const message = err.message.toUpperCase()
-            if (message.includes('PENDING APPROVAL')) {
+            if (message.includes('NOT FOUND') || message.includes('REGISTER FIRST')) {
+                setError('ACCOUNT NOT FOUND, REGISTER FIRST')
+            } else if (message.includes('PENDING APPROVAL')) {
                 setError('ACCOUNT PENDING ADMIN APPROVAL')
-            } else if (message.includes('NOT FOUND') || message.includes('INVALID')) {
-                setError('INVALID CREDENTIALS')
             } else {
                 setError(message)
             }
         } finally {
             setIsLoading(false)
         }
+    }
+
+    const handleGoogleSuccess = async (credentialResponse) => {
+        setError('')
+        setIsLoading(true)
+        try {
+            await AuthService.googleLogin(credentialResponse.credential)
+            navigate(from, { replace: true })
+        } catch (err) {
+            if (err.code === 'USER_NOT_FOUND') {
+                setError('GMAIL NOT CONNECTED, REGISTER FIRST')
+                // Pre-fill registration if they choose to proceed
+                setEmail(err.email || email)
+                setUserData({ name: err.name, email: err.email })
+            } else {
+                setError(err.message.toUpperCase())
+            }
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const handleGoogleError = () => {
+        setError('GOOGLE AUTHENTICATION FAILED')
     }
 
 // handleGoogleSuccess removed
@@ -78,7 +103,7 @@ export default function LoginPage() {
     }
 
     const handleNewIdentity = () => {
-        navigate('/register', { state: { email } })
+        navigate('/register', { state: { email, name: userData?.name } })
     }
 
     return (
@@ -114,6 +139,27 @@ export default function LoginPage() {
                         >
                             {isLoading ? 'Verifying...' : 'Verify Identity'}
                         </button>
+
+                        <div className="relative py-4">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-white/5"></div>
+                            </div>
+                            <div className="relative flex justify-center text-[8px] uppercase tracking-widest">
+                                <span className="bg-[var(--bg)] px-4 text-white/30 font-mono italic">Secure Link</span>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-center">
+                            <GoogleLogin
+                                onSuccess={handleGoogleSuccess}
+                                onError={handleGoogleError}
+                                theme="filled_black"
+                                shape="pill"
+                                size="large"
+                                width="100%"
+                                text="continue_with"
+                            />
+                        </div>
                     </form>
                 ) : (
                     <form onSubmit={handlePasswordSubmit} className="space-y-4">
