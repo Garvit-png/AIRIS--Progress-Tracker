@@ -55,26 +55,26 @@ export default function PendingApproval() {
                     </p>
                 </div>
 
-                <div className="pt-8 space-y-4">
+                <div className="pt-10 flex flex-col items-center gap-4">
                     <button
                         onClick={checkStatus}
                         disabled={isChecking}
-                        className="w-full py-3 bg-white text-black font-bold text-[10px] uppercase tracking-widest rounded-lg hover:invert transition-all disabled:opacity-50"
+                        className="px-10 py-3 bg-white text-black font-bold text-[10px] uppercase tracking-widest rounded-full hover:invert transition-all disabled:opacity-50"
                     >
-                        {isChecking ? 'Verifying Authorization...' : 'Check Approval Status'}
+                        {isChecking ? 'Verifying...' : 'Check Status'}
                     </button>
 
                     <button
                         onClick={() => AuthService.logout()}
-                        className="block w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg font-mono text-[9px] uppercase tracking-widest transition-all"
+                        className="px-8 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full font-mono text-[9px] uppercase tracking-widest transition-all"
                     >
                         Sign Out
                     </button>
-                    
-                    <p className="font-mono text-[8px] opacity-30 uppercase">
-                        Access will be granted automatically upon approval
-                    </p>
                 </div>
+                    
+                <p className="font-mono text-[8px] opacity-30 uppercase">
+                    Access will be granted automatically upon approval
+                </p>
             </motion.div>
         </div>
     )

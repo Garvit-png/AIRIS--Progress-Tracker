@@ -393,17 +393,17 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                             
                                             <div className="flex items-center gap-2">
                                                 {activeTab === 'pending' ? (
-                                                    <div className="flex flex-col sm:flex-row items-center gap-2">
+                                                    <div className="flex items-center gap-1.5 p-1 bg-white/5 border border-white/10 rounded-xl">
                                                         <select 
                                                             id={`role-${item._id}`}
-                                                            className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-[9px] font-mono uppercase tracking-widest text-white/70 outline-none focus:border-pink-500/30 transition-all"
+                                                            className="bg-transparent text-[8px] font-mono text-white/80 outline-none px-2 py-0.5 border-r border-white/10"
                                                             defaultValue="Member"
                                                         >
                                                             <option value="Member">Member</option>
                                                             <option value="Core Member">Core Member</option>
-                                                            <option value="President">President</option>
-                                                            <option value="General Secretary">General Secretary</option>
-                                                            <option value="Joint Secretary">Joint Secretary</option>
+                                                            <option value="President">Pres</option>
+                                                            <option value="General Secretary">GS</option>
+                                                            <option value="Joint Secretary">JS</option>
                                                             <option value="Admin">Admin</option>
                                                         </select>
                                                         <button
@@ -411,16 +411,15 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                                                 const roleSelection = document.getElementById(`role-${item._id}`).value;
                                                                 handleUserApproval(item._id, 'approved', roleSelection, roleSelection === 'Admin');
                                                             }}
-                                                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-pink-500/10 border border-pink-500/20 text-[9px] font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-all"
+                                                            className="flex items-center gap-1.5 px-3 py-1 text-[8px] font-bold uppercase tracking-widest text-pink-400 hover:text-white transition-all"
                                                         >
-                                                            <Check className="w-3.5 h-3.5" />
                                                             Approve
                                                         </button>
                                                         <button
                                                             onClick={() => handleUserApproval(item._id, 'rejected')}
-                                                            className="p-2 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/20 transition-all"
+                                                            className="p-1 px-2 border-l border-white/10 text-white/20 hover:text-red-500 transition-all"
                                                         >
-                                                            <X className="w-3.5 h-3.5" />
+                                                            <X className="w-3 h-3" />
                                                         </button>
                                                     </div>
                                                 ) : activeTab === 'history' ? (

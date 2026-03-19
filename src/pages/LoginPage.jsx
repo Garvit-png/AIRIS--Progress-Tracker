@@ -117,19 +117,13 @@ export default function LoginPage() {
                     </form>
                 ) : (
                     <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                        <div className="flex justify-between items-baseline mb-1.5">
-                            <label className="font-mono text-[9px] uppercase tracking-widest opacity-70">Identity Verification</label>
-                            <button
-                                type="button"
-                                onClick={() => setStep('email')}
-                                className="font-mono text-[8px] uppercase opacity-80 hover:opacity-100"
-                            >
-                                Change Email
-                            </button>
+                        <div className="text-center space-y-2 mb-8">
+                            <p className="font-mono text-[9px] tracking-[0.3em] uppercase opacity-80">Security Protocol</p>
+                            <h1 className="text-2xl font-bold tracking-tight uppercase text-white">Access Portal</h1>
+                            <p className="font-mono text-[9px] text-white/40 uppercase">
+                                Welcome, <span className="text-white/90">{email}</span>
+                            </p>
                         </div>
-                        <p className="text-center font-mono text-[10px] text-white/90 mb-2">
-                            Welcome, {email}
-                        </p>
                         <input
                             type="password"
                             autoFocus
