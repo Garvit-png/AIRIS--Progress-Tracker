@@ -9,7 +9,7 @@
       "destination": "/api/index.cjs"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api).*)" ,
       "destination": "/index.html"
     }
   ]
