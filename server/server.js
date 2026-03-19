@@ -14,16 +14,28 @@ connectDB();
 const app = express();
 
 // Middleware
-const allowedOrigins = [process.env.CLIENT_URL, 'https://airis-progress-tracker.vercel.app', 'http://localhost:5173'];
+const allowedOrigins = [
+    process.env.CLIENT_URL, 
+    'https://airis-progress-tracker.vercel.app', 
+    'http://localhost:5173',
+    'http://localhost:5001'
+];
+
 app.use(cors({
     origin: function (origin, callback) {
         // allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) === -1) {
+        
+        const isVercel = origin.endsWith('.vercel.app');
+        const isAllowed = allowedOrigins.indexOf(origin) !== -1 || isVercel;
+
+        if (isAllowed) {
+            return callback(null, true);
+        } else {
+            console.log('CORS blocked origin:', origin);
             const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
             return callback(new Error(msg), false);
         }
-        return callback(null, true);
     },
     credentials: true
 }));
@@ -39,6 +51,20 @@ app.use('/api/admin', adminRoutes);
 // Routes
 app.get('/api/health', (req, res) => {
     res.json({ status: 'Server running' });
+});
+
+// Debug endpoint for deployment
+app.get('/api/debug/status', (req, res) => {
+    res.json({
+        status: 'online',
+        env: {
+            NODE_ENV: process.env.NODE_ENV,
+            HAS_MONGO_URI: !!process.env.MONGO_URI,
+            HAS_JWT_SECRET: !!process.env.JWT_SECRET,
+            HAS_CLIENT_URL: !!process.env.CLIENT_URL,
+            HAS_GOOGLE_CLIENT_ID: !!process.env.GOOGLE_CLIENT_ID
+        }
+    });
 });
 
 // Serve frontend in production (catch-all)
