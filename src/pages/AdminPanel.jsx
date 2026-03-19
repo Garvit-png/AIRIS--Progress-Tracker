@@ -8,7 +8,8 @@ const AdminPanel = ({ isEmbedded = false }) => {
     const [emails, setEmails] = useState([]);
     const [pendingUsers, setPendingUsers] = useState([]);
     const [approvedUsers, setApprovedUsers] = useState([]);
-    const [activeTab, setActiveTab] = useState('pending'); // pending, whitelist, history
+    const [activeTab, setActiveTab] = useState('pending'); // pending, whitelist, history, tasks
+    const [tasks, setTasks] = useState([]);
     const [newEmail, setNewEmail] = useState('');
     const [useCollegeDomain, setUseCollegeDomain] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -23,6 +24,8 @@ const AdminPanel = ({ isEmbedded = false }) => {
             fetchEmails();
         } else if (activeTab === 'history') {
             fetchApprovedUsers();
+        } else if (activeTab === 'tasks') {
+            fetchTasks();
         } else {
             fetchPendingUsers();
         }
@@ -59,6 +62,18 @@ const AdminPanel = ({ isEmbedded = false }) => {
             setApprovedUsers(data);
         } catch (error) {
             showMsg('Failed to load approval history', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const fetchTasks = async () => {
+        setIsLoading(true);
+        try {
+            const data = await AuthService.getAllTasks();
+            setTasks(data);
+        } catch (error) {
+            showMsg('Failed to load tasks', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -138,6 +153,13 @@ const AdminPanel = ({ isEmbedded = false }) => {
             user.email.toLowerCase().includes(searchQuery.toLowerCase())
         );
     }, [approvedUsers, searchQuery]);
+
+    const filteredTasks = useMemo(() => {
+        return tasks.filter(task => 
+            task.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            task.targetEmail.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [tasks, searchQuery]);
 
     const stats = {
         total: activeTab === 'whitelist' ? emails.length : (activeTab === 'history' ? approvedUsers.length : pendingUsers.length),
@@ -219,6 +241,14 @@ const AdminPanel = ({ isEmbedded = false }) => {
                     >
                         History
                     </button>
+                    <button 
+                        onClick={() => setActiveTab('tasks')}
+                        className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
+                            activeTab === 'tasks' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/75 hover:text-white/90'
+                        }`}
+                    >
+                        Tasks
+                    </button>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -238,7 +268,80 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                         </h2>
                                     </div>
 
-                                    {activeTab === 'whitelist' ? (
+                                    {activeTab === 'tasks' ? (
+                                        <form onSubmit={async (e) => {
+                                            e.preventDefault();
+                                            const targetEmail = e.target.targetEmail.value;
+                                            const title = e.target.title.value;
+                                            const description = e.target.description.value;
+                                            const deadline = e.target.deadline.value;
+                                            
+                                            setActionLoading(true);
+                                            try {
+                                                const file = e.target.file.files[0];
+                                                await AuthService.sendTask({ targetEmail, title, description, deadline }, file);
+                                                showMsg('TASK DISPATCHED SUCCESSFULLY', 'success');
+                                                e.target.reset();
+                                                fetchTasks();
+                                            } catch (error) {
+                                                showMsg(error.message, 'error');
+                                            } finally {
+                                                setActionLoading(false);
+                                            }
+                                        }} className="space-y-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-mono text-white/50 uppercase tracking-widest">Target Email</label>
+                                                <input 
+                                                    name="targetEmail"
+                                                    required
+                                                    type="email"
+                                                    placeholder="user@example.com"
+                                                    className="w-full bg-black/40 border border-pink-500/20 rounded-xl px-4 py-3 text-xs outline-none text-white focus:border-pink-500/50"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-mono text-white/50 uppercase tracking-widest">Task Title</label>
+                                                <input 
+                                                    name="title"
+                                                    required
+                                                    type="text"
+                                                    placeholder="Assigned responsibility..."
+                                                    className="w-full bg-black/40 border border-pink-500/20 rounded-xl px-4 py-3 text-xs outline-none text-white focus:border-pink-500/50"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-mono text-white/50 uppercase tracking-widest">Description</label>
+                                                <textarea 
+                                                    name="description"
+                                                    rows="3"
+                                                    placeholder="Detailed instructions..."
+                                                    className="w-full bg-black/40 border border-pink-500/20 rounded-xl px-4 py-3 text-xs outline-none text-white focus:border-pink-500/50 resize-none"
+                                                ></textarea>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-mono text-white/50 uppercase tracking-widest">Deadline</label>
+                                                <input 
+                                                    name="deadline"
+                                                    type="date"
+                                                    className="w-full bg-black/40 border border-pink-500/20 rounded-xl px-4 py-3 text-xs outline-none text-white focus:border-pink-500/50"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-mono text-white/50 uppercase tracking-widest">Attachment (PDF/Image)</label>
+                                                <input 
+                                                    name="file"
+                                                    type="file"
+                                                    accept=".pdf,image/*"
+                                                    className="w-full bg-black/40 border border-pink-500/20 rounded-xl px-4 py-3 text-[10px] outline-none text-white focus:border-pink-500/50 file:bg-pink-500/10 file:border-0 file:text-pink-500 file:text-[9px] file:font-bold file:uppercase file:px-3 file:py-1 file:rounded-md file:mr-4 hover:file:bg-pink-500/20"
+                                                />
+                                            </div>
+                                            <button
+                                                className="w-full py-4 bg-pink-500 text-white font-bold text-[10px] uppercase tracking-[0.2em] rounded-xl hover:bg-pink-600 active:scale-[0.98] transition-all shadow-lg shadow-pink-500/20"
+                                            >
+                                                Dispatch Task
+                                            </button>
+                                        </form>
+                                    ) : activeTab === 'whitelist' ? (
                                         <form onSubmit={handleApproveEmail} className="space-y-6">
                                             <div className="space-y-3">
                                                 <div className="flex justify-between items-center px-1">
@@ -334,7 +437,7 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                         <div key={i} className="h-24 bg-white/[0.02] border border-pink-500/10 rounded-2xl animate-pulse" />
                                     ))}
                                 </div>
-                            ) : (activeTab === 'pending' ? filteredPending : (activeTab === 'history' ? filteredApproved : filteredEmails)).length === 0 ? (
+                            ) : (activeTab === 'pending' ? filteredPending : (activeTab === 'history' ? filteredApproved : (activeTab === 'tasks' ? filteredTasks : filteredEmails))).length === 0 ? (
                                 <motion.div 
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
@@ -347,7 +450,7 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                 </motion.div>
                             ) : (
                                 <AnimatePresence mode="popLayout">
-                                    {(activeTab === 'pending' ? filteredPending : (activeTab === 'history' ? filteredApproved : filteredEmails)).map((item) => (
+                                    {(activeTab === 'pending' ? filteredPending : (activeTab === 'history' ? filteredApproved : (activeTab === 'tasks' ? filteredTasks : filteredEmails))).map((item) => (
                                         <motion.div
                                             layout
                                             initial={{ opacity: 0, scale: 0.95 }}
@@ -358,7 +461,30 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                         >
                                             <div className="flex items-center gap-5">
                                                 <div className="hidden sm:flex items-center justify-center w-12 h-12 bg-white/[0.03] rounded-xl border border-pink-500/10 group-hover:border-pink-500/40 transition-colors">
-                                                    {activeTab === 'pending' ? (
+                                                    {activeTab === 'tasks' ? (
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`px-3 py-1.5 rounded-lg border text-[8px] font-bold uppercase tracking-widest ${
+                                                            item.status === 'completed' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' :
+                                                            item.status === 'in-progress' ? 'bg-blue-500/10 border-blue-500/20 text-blue-500' :
+                                                            'bg-amber-500/10 border-amber-500/20 text-amber-500'
+                                                        }`}>
+                                                            {item.status}
+                                                        </div>
+                                                        <div className="text-[10px] font-mono text-white/40">
+                                                            To: {item.targetEmail}
+                                                        </div>
+                                                        {item.attachment && (
+                                                            <a 
+                                                                href={AuthService.getAttachmentUrl(item.attachment.path)}
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer"
+                                                                className="ml-2 text-[8px] font-bold text-pink-400 hover:text-white underline underline-offset-2"
+                                                            >
+                                                                VIEW ATTACHMENT
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                ) : activeTab === 'pending' ? (
                                                         <UserAlert className="w-5 h-5 text-amber-500/50 group-hover:text-amber-400" />
                                                     ) : (
                                                         <Mail className="w-5 h-5 text-pink-500/50 group-hover:text-pink-400" />

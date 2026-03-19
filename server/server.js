@@ -1,9 +1,13 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const path = require('path');
+const fileUpload = require('express-fileupload');
+const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const taskRoutes = require('./routes/taskRoutes');
 
 // Load environment variables
 dotenv.config();
@@ -28,7 +32,14 @@ app.get('/api/health', (req, res) => {
 
 // Middleware to ensure DB is connected for all other routes
 app.use(async (req, res, next) => {
-    if (req.path === '/api/health') return next();
+    // These routes can work without MongoDB
+    if (req.path === '/api/health' || 
+        req.path.startsWith('/api/tasks') || 
+        req.path.startsWith('/api/auth') || 
+        req.path.startsWith('/api/admin') || 
+        req.path.startsWith('/api/debug')) {
+        return next();
+    }
     
     try {
         if (mongoose.connection.readyState !== 1) {
@@ -77,13 +88,18 @@ app.use(cors({
     credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(fileUpload());
 
-const path = require('path');
+const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
+
+// Static folder for uploads
+app.use('/uploads', express.static(UPLOADS_DIR));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Mount routers
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/tasks', taskRoutes);
 
 // Debug endpoint for deployment
 app.get('/api/debug/status', (req, res) => {

@@ -23,4 +23,4 @@ server/.env
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
+ server/uploads

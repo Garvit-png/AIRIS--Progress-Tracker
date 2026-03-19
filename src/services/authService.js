@@ -2,6 +2,7 @@ import config from '../config';
 
 const API_URL = `${config.API_BASE_URL}/auth`;
 const ADMIN_API_URL = `${config.API_BASE_URL}/admin`;
+const TASK_API_URL = `${config.API_BASE_URL}/tasks`;
 
 const safeJson = async (response) => {
     const text = await response.text();
@@ -281,6 +282,75 @@ export const AuthService = {
         // Update local storage
         localStorage.setItem('current_user', JSON.stringify(data.user));
         return data.user;
+    },
+
+    // Task Management
+    sendTask: async (taskData, file) => {
+        const token = localStorage.getItem('token');
+        const formData = new FormData();
+        
+        // Append task metadata
+        Object.keys(taskData).forEach(key => {
+            formData.append(key, taskData[key]);
+        });
+        
+        // Append file if exists
+        if (file) {
+            formData.append('file', file);
+        }
+
+        const response = await fetch(`${TASK_API_URL}/send`, {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Bearer ${token}` 
+            },
+            body: formData
+        });
+        const data = await safeJson(response);
+        if (!data.success) throw new Error(data.message);
+        return data.data;
+    },
+
+    getMyTasks: async () => {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${TASK_API_URL}/my-tasks`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await safeJson(response);
+        if (!data.success) throw new Error(data.message);
+        return data.data;
+    },
+
+    getAllTasks: async () => {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${TASK_API_URL}/all`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await safeJson(response);
+        if (!data.success) throw new Error(data.message);
+        return data.data;
+    },
+
+    updateTaskStatus: async (taskId, status) => {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${TASK_API_URL}/${taskId}/status`, {
+            method: 'PUT',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ status })
+        });
+        const data = await safeJson(response);
+        if (!data.success) throw new Error(data.message);
+        return data.data;
+    },
+
+    getAttachmentUrl: (path) => {
+        if (!path) return '';
+        // Use relative path which will be proxied by Vite in dev 
+        // or served by the same origin in production.
+        return path;
     }
 };
 

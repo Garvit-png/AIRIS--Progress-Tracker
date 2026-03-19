@@ -15,6 +15,8 @@ export default function Dashboard({ user: initialUser }) {
     const [activeView, setActiveView] = useState('Dashboard')
     const [selectedDate, setSelectedDate] = useState(new Date())
     const [currentMonth, setCurrentMonth] = useState(new Date())
+    const [tasks, setTasks] = useState([])
+    const [tasksLoading, setTasksLoading] = useState(false)
     
     // Profile Modal State
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
@@ -25,7 +27,31 @@ export default function Dashboard({ user: initialUser }) {
 
     React.useEffect(() => {
         setHeaderVisible(true);
-    }, []);
+        if (activeView === 'Tasks') {
+            fetchMyTasks();
+        }
+    }, [activeView]);
+
+    const fetchMyTasks = async () => {
+        setTasksLoading(true);
+        try {
+            const data = await AuthService.getMyTasks();
+            setTasks(data);
+        } catch (error) {
+            console.error('Failed to load tasks:', error);
+        } finally {
+            setTasksLoading(false);
+        }
+    };
+
+    const handleUpdateTaskStatus = async (taskId, status) => {
+        try {
+            await AuthService.updateTaskStatus(taskId, status);
+            fetchMyTasks();
+        } catch (error) {
+            alert(error.message);
+        }
+    };
 
     const handleLogout = () => {
         AuthService.logout()
@@ -219,6 +245,101 @@ export default function Dashboard({ user: initialUser }) {
             return (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6">
                     <MembersList />
+                </div>
+            )
+        }
+
+        if (activeView === 'Tasks') {
+            return (
+                <div className="max-w-4xl mx-auto px-4 py-8">
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h2 className="text-2xl font-bold text-white tracking-tight">Active Responsibilities</h2>
+                            <p className="text-[10px] font-mono text-white/40 uppercase tracking-[0.2em] mt-1">Registry of Assigned Tasks</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        {tasksLoading ? (
+                            <div className="animate-pulse space-y-4">
+                                {[1, 2, 3].map(i => <div key={i} className="h-24 bg-white/5 rounded-2xl border border-white/5" />)}
+                            </div>
+                        ) : tasks.length === 0 ? (
+                            <div className="py-20 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-3xl">
+                                <div className="p-4 bg-white/5 rounded-full mb-4">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8 text-white/20">
+                                        <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                                    </svg>
+                                </div>
+                                <p className="text-[10px] font-mono text-white/20 uppercase tracking-[0.3em]">No Pending Assignments</p>
+                            </div>
+                        ) : (
+                            tasks.map(task => (
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    key={task.id}
+                                    className="p-6 bg-white/[0.03] border border-white/10 rounded-2xl hover:border-pink-500/20 transition-all group"
+                                >
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-3">
+                                                <h3 className="text-sm font-semibold text-white">{task.title}</h3>
+                                                <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-tighter ${
+                                                    task.status === 'completed' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' :
+                                                    task.status === 'in-progress' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' :
+                                                    'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                                                }`}>
+                                                    {task.status}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-white/60 line-clamp-2">{task.description}</p>
+                                            {task.attachment && (
+                                                <div className="mt-2 text-[10px] font-mono">
+                                                    <span className="text-white/30 mr-2 uppercase tracking-widest">Attachment:</span>
+                                                    <a 
+                                                        href={AuthService.getAttachmentUrl(task.attachment.path)}
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                        className="text-pink-400 hover:text-white font-bold underline underline-offset-2"
+                                                    >
+                                                        {task.attachment.name.toUpperCase()}
+                                                    </a>
+                                                </div>
+                                            )}
+                                            <div className="flex items-center gap-4 text-[9px] font-mono text-white/30 uppercase tracking-widest">
+                                                <span>From: {task.senderName}</span>
+                                                {task.deadline && <span>Due: {new Date(task.deadline).toLocaleDateString()}</span>}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                            {task.status !== 'completed' && (
+                                                <>
+                                                    {task.status === 'pending' && (
+                                                        <button 
+                                                            onClick={() => handleUpdateTaskStatus(task.id, 'in-progress')}
+                                                            className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-[9px] font-bold uppercase tracking-widest text-white/80 hover:bg-pink-500 hover:text-white transition-all shadow-xl"
+                                                        >
+                                                            Start Task
+                                                        </button>
+                                                    )}
+                                                    {task.status === 'in-progress' && (
+                                                        <button 
+                                                            onClick={() => handleUpdateTaskStatus(task.id, 'completed')}
+                                                            className="px-4 py-2 bg-emerald-500/20 border border-emerald-500/20 rounded-lg text-[9px] font-bold uppercase tracking-widest text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all shadow-xl"
+                                                        >
+                                                            Mark Done
+                                                        </button>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))
+                        )}
+                    </div>
                 </div>
             )
         }

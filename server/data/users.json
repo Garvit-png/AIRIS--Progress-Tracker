@@ -1,0 +1,13 @@
+[
+  {
+    "id": "admin-1",
+    "name": "Garvit Gandhi",
+    "email": "garvitgandhi0313@gmail.com",
+    "password": "$2a$10$MGhay1or3oI04hKSv7lxdOW5dW0o39.PjJqQCIRRmhXKt1/lLYQvO",
+    "role": "Admin",
+    "isAdmin": true,
+    "status": "approved",
+    "isVerified": true,
+    "createdAt": "2026-03-19T07:37:00Z"
+  }
+]

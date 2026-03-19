@@ -1,5 +1,7 @@
-const ApprovedEmail = require('../models/ApprovedEmail');
-const User = require('../models/User');
+const fileStorageService = require('../services/fileStorageService');
+
+const USERS_FILE = 'users.json';
+const APPROVED_EMAILS_FILE = 'approved_emails.json';
 
 // @desc    Add email to whitelist
 // @route   POST /api/admin/approve
@@ -12,13 +14,14 @@ exports.addApprovedEmail = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Please provide an email' });
         }
 
-        const existing = await ApprovedEmail.findOne({ email: email.toLowerCase() });
+        const cleanEmail = email.toLowerCase().trim();
+        const existing = await fileStorageService.findItem(APPROVED_EMAILS_FILE, e => e.email === cleanEmail);
         if (existing) {
             return res.status(400).json({ success: false, message: 'Email already approved' });
         }
 
-        const approved = await ApprovedEmail.create({
-            email: email.toLowerCase(),
+        const approved = await fileStorageService.addItem(APPROVED_EMAILS_FILE, {
+            email: cleanEmail,
             addedBy: req.user.id
         });
 
@@ -36,11 +39,13 @@ exports.addApprovedEmail = async (req, res) => {
 // @access  Private/Admin
 exports.removeApprovedEmail = async (req, res) => {
     try {
-        const approved = await ApprovedEmail.findOneAndDelete({ email: req.params.email.toLowerCase() });
-
-        if (!approved) {
+        const cleanEmail = req.params.email.toLowerCase().trim();
+        const item = await fileStorageService.findItem(APPROVED_EMAILS_FILE, e => e.email === cleanEmail);
+        if (!item) {
             return res.status(404).json({ success: false, message: 'Email not found in whitelist' });
         }
+
+        await fileStorageService.removeItem(APPROVED_EMAILS_FILE, item.id);
 
         res.status(200).json({
             success: true,
@@ -56,7 +61,7 @@ exports.removeApprovedEmail = async (req, res) => {
 // @access  Private/Admin
 exports.getApprovedEmails = async (req, res) => {
     try {
-        const emails = await ApprovedEmail.find().populate('addedBy', 'name email');
+        const emails = await fileStorageService.readJson(APPROVED_EMAILS_FILE);
 
         res.status(200).json({
             success: true,
@@ -73,12 +78,13 @@ exports.getApprovedEmails = async (req, res) => {
 // @access  Private/Admin
 exports.getUsers = async (req, res) => {
     try {
-        const users = await User.find().select('-password');
+        const users = await fileStorageService.readJson(USERS_FILE);
+        const usersWithoutPassword = users.map(({ password, ...u }) => u);
 
         res.status(200).json({
             success: true,
-            count: users.length,
-            data: users
+            count: usersWithoutPassword.length,
+            data: usersWithoutPassword
         });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
@@ -90,12 +96,13 @@ exports.getUsers = async (req, res) => {
 // @access  Private/Admin
 exports.getPendingUsers = async (req, res) => {
     try {
-        const users = await User.find({ status: 'pending' }).select('-password');
+        const users = await fileStorageService.findItems(USERS_FILE, u => u.status === 'pending');
+        const usersWithoutPassword = users.map(({ password, ...u }) => u);
 
         res.status(200).json({
             success: true,
-            count: users.length,
-            data: users
+            count: usersWithoutPassword.length,
+            data: usersWithoutPassword
         });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
@@ -109,33 +116,34 @@ exports.updateUserStatus = async (req, res) => {
     try {
         const { status, role, isAdmin, name } = req.body;
         
-        const user = await User.findById(req.params.id);
+        const updates = {};
+        if (status) updates.status = status;
+        if (role) updates.role = role;
+        if (isAdmin !== undefined) updates.isAdmin = isAdmin;
+        if (name) updates.name = name;
+
+        const user = await fileStorageService.updateItem(USERS_FILE, req.params.id, updates);
 
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        if (status) user.status = status;
-        if (role) user.role = role;
-        if (isAdmin !== undefined) user.isAdmin = isAdmin;
-        if (name) user.name = name;
-
-        await user.save();
-
+        const { password, ...userWithoutPassword } = user;
         res.status(200).json({
             success: true,
-            data: user
+            data: userWithoutPassword
         });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
     }
 };
+
 // @desc    Get user profile picture
 // @route   GET /api/admin/users/:id/photo
 // @access  Private/Admin
 exports.getUserPhoto = async (req, res) => {
     try {
-        const user = await User.findById(req.params.id);
+        const user = await fileStorageService.findItem(USERS_FILE, u => u.id === req.params.id);
 
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
@@ -155,12 +163,13 @@ exports.getUserPhoto = async (req, res) => {
 // @access  Private/Admin
 exports.getApprovedUsers = async (req, res) => {
     try {
-        const users = await User.find({ status: 'approved' }).select('-password');
+        const users = await fileStorageService.findItems(USERS_FILE, u => u.status === 'approved');
+        const usersWithoutPassword = users.map(({ password, ...u }) => u);
 
         res.status(200).json({
             success: true,
-            count: users.length,
-            data: users
+            count: usersWithoutPassword.length,
+            data: usersWithoutPassword
         });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });

@@ -1,10 +1,10 @@
-const User = require('../models/User');
-const ApprovedEmail = require('../models/ApprovedEmail');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const sendEmail = require('../services/emailService');
-const { OAuth2Client } = require('google-auth-library');
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const fileStorageService = require('../services/fileStorageService');
+
+const USERS_FILE = 'users.json';
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -14,38 +14,50 @@ exports.register = async (req, res, next) => {
         const { name, email, password, year } = req.body;
         const cleanEmail = email.toLowerCase().trim();
 
-        // REMOVED RESTRICTIONS: ALL EMAILS WELCOME
-        const isAdminEmail = cleanEmail === 'garvitgandhi0313@gmail.com';
-        
         // Check if user exists
-        const userExists = await User.findOne({ email: cleanEmail });
+        const userExists = await fileStorageService.findItem(USERS_FILE, u => u.email === cleanEmail);
         if (userExists) {
             return res.status(400).json({ success: false, message: 'User already exists' });
         }
 
-        const user = await User.create({
+        // Hash password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        const isAdminEmail = cleanEmail === 'garvitgandhi10313@gmail.com' || cleanEmail === 'garvitgandhi0313@gmail.com';
+
+        const newUser = {
             name,
             email: cleanEmail,
-            password,
+            password: hashedPassword,
             year,
             role: isAdminEmail ? 'Admin' : 'Member',
             isAdmin: isAdminEmail,
-            status: isAdminEmail ? 'approved' : 'pending', // ADMINS AUTO-APPROVED, OTHERS PENDING
-            verificationToken: null,
-            isVerified: true // AUTO-VERIFIED FOR NOW AS REQUESTED
-        });
+            status: isAdminEmail ? 'approved' : 'pending',
+            isVerified: true, // AUTO-VERIFIED FOR NOW
+            createdAt: new Date().toISOString()
+        };
+
+        const user = await fileStorageService.addItem(USERS_FILE, newUser);
 
         // Create token
-        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-            expiresIn: '30d'
-        });
+        const token = jwt.sign(
+            { 
+                userId: user.id, 
+                role: user.role, 
+                isAdmin: user.isAdmin,
+                email: user.email 
+            }, 
+            process.env.JWT_SECRET, 
+            { expiresIn: '30d' }
+        );
 
         res.status(201).json({
             success: true,
             message: 'Registration successful! Identity initialized.',
             token,
             user: {
-                id: user._id,
+                id: user.id,
                 name: user.name,
                 email: user.email,
                 role: user.role,
@@ -53,8 +65,6 @@ exports.register = async (req, res, next) => {
                 status: user.status
             }
         });
-
-        // Email verification bypassed to remove restrictions
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
     }
@@ -63,26 +73,7 @@ exports.register = async (req, res, next) => {
 // @desc    Verify email
 // @route   GET /api/auth/verify/:token
 // @access  Public
-exports.verifyEmail = async (req, res, next) => {
-    try {
-        const user = await User.findOne({ verificationToken: req.params.token });
-
-        if (!user) {
-            return res.status(400).json({ success: false, message: 'Invalid verification token' });
-        }
-
-        user.isVerified = true;
-        user.verificationToken = undefined;
-        await user.save();
-
-        res.status(200).json({
-            success: true,
-            message: 'Email verified successfully. You can now login.'
-        });
-    } catch (error) {
-        res.status(400).json({ success: false, message: error.message });
-    }
-};
+exports.verifyEmail = async (req, res) => res.status(501).json({ message: 'Not implemented in DB-less mode' });
 
 // @desc    Google login
 // @route   POST /api/auth/google
@@ -100,12 +91,12 @@ exports.login = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Please provide an email and password' });
         }
 
-        const user = await User.findOne({ email }).select('+password');
+        const user = await fileStorageService.findItem(USERS_FILE, u => u.email.toLowerCase() === email.toLowerCase());
         if (!user) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
-        const isMatch = await user.matchPassword(password);
+        const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
@@ -116,15 +107,22 @@ exports.login = async (req, res, next) => {
         }
 
         // Create token
-        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-            expiresIn: '30d'
-        });
+        const token = jwt.sign(
+            { 
+                userId: user.id, 
+                role: user.role, 
+                isAdmin: user.isAdmin,
+                email: user.email 
+            }, 
+            process.env.JWT_SECRET, 
+            { expiresIn: '30d' }
+        );
 
         res.status(200).json({
             success: true,
             token,
             user: {
-                id: user._id,
+                id: user.id,
                 name: user.name,
                 email: user.email,
                 role: user.role,
@@ -143,8 +141,11 @@ exports.login = async (req, res, next) => {
 // @access  Private
 exports.getMe = async (req, res, next) => {
     try {
-        const user = await User.findById(req.user.id);
-        res.status(200).json({ success: true, user });
+        const user = await fileStorageService.findItem(USERS_FILE, u => u.id === req.user.id);
+        if (!user) throw new Error('User not found');
+        
+        const { password, ...userWithoutPassword } = user;
+        res.status(200).json({ success: true, user: userWithoutPassword });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
     }
@@ -153,87 +154,28 @@ exports.getMe = async (req, res, next) => {
 // @desc    Forgot password
 // @route   POST /api/auth/forgotpassword
 // @access  Public
-exports.forgotPassword = async (req, res, next) => {
-    try {
-        const user = await User.findOne({ email: req.body.email });
-        if (!user) {
-            return res.status(404).json({ success: false, message: 'There is no user with that email' });
-        }
-
-        const resetToken = user.getResetPasswordToken();
-        await user.save({ validateBeforeSave: false });
-
-        const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
-        const message = `You are receiving this email because you (or someone else) have requested the reset of a password. Please click the link below to reset your password: \n\n ${resetUrl}`;
-        const html = `
-            <h1>Password Reset Request</h1>
-            <p>Please click the button below to reset your password:</p>
-            <a href="${resetUrl}" style="background: #ef4444; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Password</a>
-            <p>If you did not request this, please ignore this email.</p>
-        `;
-
-        try {
-            await sendEmail({
-                email: user.email,
-                subject: 'Password Reset Request',
-                message,
-                html
-            });
-            res.status(200).json({ success: true, message: 'Email sent' });
-        } catch (error) {
-            user.resetPasswordToken = undefined;
-            user.resetPasswordExpire = undefined;
-            await user.save({ validateBeforeSave: false });
-            return res.status(500).json({ success: false, message: 'Email could not be sent' });
-        }
-    } catch (error) {
-        res.status(400).json({ success: false, message: error.message });
-    }
-};
+exports.forgotPassword = async (req, res) => res.status(501).json({ message: 'Not implemented in DB-less mode' });
 
 // @desc    Reset password
 // @route   PUT /api/auth/resetpassword/:resettoken
 // @access  Public
-exports.resetPassword = async (req, res, next) => {
-    try {
-        const resetPasswordToken = crypto.createHash('sha256').update(req.params.resettoken).digest('hex');
-        const user = await User.findOne({
-            resetPasswordToken,
-            resetPasswordExpire: { $gt: Date.now() }
-        });
+exports.resetPassword = async (req, res) => res.status(501).json({ message: 'Not implemented in DB-less mode' });
 
-        if (!user) {
-            return res.status(400).json({ success: false, message: 'Invalid token' });
-        }
-
-        user.password = req.body.password;
-        user.resetPasswordToken = undefined;
-        user.resetPasswordExpire = undefined;
-        await user.save();
-
-        res.status(200).json({ success: true, message: 'Password reset successful' });
-    } catch (error) {
-        res.status(400).json({ success: false, message: error.message });
-    }
-};
 // @desc    Update user profile
 // @route   PUT /api/auth/profile
 // @access  Private
 exports.updateProfile = async (req, res, next) => {
     try {
-        const fieldsToUpdate = {};
-        if (req.body.name) fieldsToUpdate.name = req.body.name;
-        if (req.body.profilePicture !== undefined) fieldsToUpdate.profilePicture = req.body.profilePicture;
+        const updates = {};
+        if (req.body.name) updates.name = req.body.name;
+        if (req.body.profilePicture !== undefined) updates.profilePicture = req.body.profilePicture;
 
-        const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
-            new: true,
-            runValidators: true
-        });
+        const user = await fileStorageService.updateItem(USERS_FILE, req.user.id, updates);
 
         res.status(200).json({
             success: true,
             user: {
-                id: user._id,
+                id: user.id,
                 name: user.name,
                 email: user.email,
                 role: user.role,
