@@ -79,8 +79,9 @@ export default function LoginPage() {
         }
     }
 
-    const handleGoogleError = () => {
-        setError('GOOGLE AUTHENTICATION FAILED')
+    const handleGoogleError = (error) => {
+        console.error('Google Auth Error:', error)
+        setError('GOOGLE CLIENT-SIDE ERROR (CHECK POPUP/ORG RESTRICTIONS)')
     }
 
 // handleGoogleSuccess removed
