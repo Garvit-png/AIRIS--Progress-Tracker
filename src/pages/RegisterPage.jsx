@@ -95,7 +95,7 @@ export default function RegisterPage() {
                 className="w-full max-w-sm"
             >
                 <div className="mb-10 text-center">
-                    <Logo size="md" />
+                    <Logo size="lg" />
                 </div>
 
                 <form onSubmit={handleRegister} className="space-y-4">

@@ -114,7 +114,7 @@ export default function LoginPage() {
                 className="w-full max-w-sm"
             >
                 <div className="mb-14 text-center pt-8">
-                    <Logo size="sm" />
+                    <Logo size="lg" />
                 </div>
 
                 {step === 'email' ? (

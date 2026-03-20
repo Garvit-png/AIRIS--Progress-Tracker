@@ -33,7 +33,7 @@ export default function PendingApproval() {
                 className="w-full max-w-md text-center space-y-8"
             >
                 <div className="mb-12 flex justify-center pt-8">
-                    <Logo size="sm" />
+                    <Logo size="lg" />
                 </div>
 
                 <div className="space-y-4">
