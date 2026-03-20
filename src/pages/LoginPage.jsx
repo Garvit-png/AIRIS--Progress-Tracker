@@ -81,7 +81,7 @@ export default function LoginPage() {
 
     const handleGoogleError = (error) => {
         console.error('Google Auth Error:', error)
-        setError('GOOGLE CLIENT-SIDE ERROR (CHECK POPUP/ORG RESTRICTIONS)')
+        setError(`AUTH FAILED - ENSURE "${window.location.origin}" IS ADDED TO GOOGLE CONSOLE ORIGINS`)
     }
 
 // handleGoogleSuccess removed
