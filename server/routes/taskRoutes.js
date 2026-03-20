@@ -1,12 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const fileStorageService = require('../services/fileStorageService');
+const Task = require('../models/Task');
 const { protect } = require('../middleware/authMiddleware');
+const path = require('path');
 
 // Middleware to check if user is Admin or President
 const authorizeAdminOrPresident = (req, res, next) => {
-    // We check req.user which is populated by protect middleware
-    // Note: Since we updated JWT to include role, we can also check req.user.role
     if (req.user && (req.user.isAdmin || req.user.role === 'President' || req.user.role === 'Admin')) {
         return next();
     }
@@ -15,8 +14,6 @@ const authorizeAdminOrPresident = (req, res, next) => {
         message: 'Not authorized: Requires Admin or President role'
     });
 };
-
-const path = require('path');
 
 // @desc    Send task to a user
 // @route   POST /api/tasks/send
@@ -43,7 +40,7 @@ router.post('/send', protect, authorizeAdminOrPresident, async (req, res) => {
             };
         }
 
-        const task = await fileStorageService.addItem('tasks.json', {
+        const task = await Task.create({
             senderEmail: req.user.email,
             senderName: req.user.name,
             targetEmail: targetEmail.toLowerCase().trim(),
@@ -68,8 +65,7 @@ router.post('/send', protect, authorizeAdminOrPresident, async (req, res) => {
 // @access  Private
 router.get('/my-tasks', protect, async (req, res) => {
     try {
-        const allTasks = await fileStorageService.readJson('tasks.json');
-        const myTasks = allTasks.filter(task => task.targetEmail === req.user.email.toLowerCase());
+        const myTasks = await Task.find({ targetEmail: req.user.email.toLowerCase() });
         
         res.status(200).json({
             success: true,
@@ -85,7 +81,7 @@ router.get('/my-tasks', protect, async (req, res) => {
 // @access  Private (Admin/President)
 router.get('/all', protect, authorizeAdminOrPresident, async (req, res) => {
     try {
-        const allTasks = await fileStorageService.readJson('tasks.json');
+        const allTasks = await Task.find();
         res.status(200).json({
             success: true,
             data: allTasks
@@ -101,7 +97,10 @@ router.get('/all', protect, authorizeAdminOrPresident, async (req, res) => {
 router.put('/:id/status', protect, async (req, res) => {
     try {
         const { status } = req.body;
-        const task = await fileStorageService.updateItem('tasks.json', req.params.id, { status });
+        const task = await Task.findByIdAndUpdate(req.params.id, { status }, {
+            new: true,
+            runValidators: true
+        });
         
         if (!task) {
             return res.status(404).json({ success: false, message: 'Task not found' });
