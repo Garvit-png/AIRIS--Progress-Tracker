@@ -88,7 +88,7 @@ exports.googleLogin = async (req, res) => {
         const cleanEmail = email.toLowerCase().trim();
 
         // Check if user exists
-        let user = await User.findOne({ email: cleanEmail });
+        let user = await User.findOne({ email: { $regex: new RegExp(`^${cleanEmail}$`, 'i') } });
 
         if (!user) {
             console.log(`Google Auth: User not found for email ${cleanEmail}`);
