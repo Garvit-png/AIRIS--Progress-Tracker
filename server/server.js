@@ -1,5 +1,8 @@
 const express = require('express');
 const dotenv = require('dotenv');
+// Load environment variables immediately
+dotenv.config();
+
 const cors = require('cors');
 const path = require('path');
 const fileUpload = require('express-fileupload');
@@ -8,9 +11,6 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const taskRoutes = require('./routes/taskRoutes');
-
-// Load environment variables
-dotenv.config();
 
 let isDBConnected = false;
 const connectDBWithRetry = async () => {
@@ -38,14 +38,14 @@ app.get('/healthz', (req, res) => {
 // Middleware to ensure DB is connected for all other routes
 app.use(async (req, res, next) => {
     // These routes can work without MongoDB
-    if (req.path === '/api/health' || 
-        req.path.startsWith('/api/tasks') || 
-        req.path.startsWith('/api/auth') || 
-        req.path.startsWith('/api/admin') || 
+    if (req.path === '/api/health' ||
+        req.path.startsWith('/api/tasks') ||
+        req.path.startsWith('/api/auth') ||
+        req.path.startsWith('/api/admin') ||
         req.path.startsWith('/api/debug')) {
         return next();
     }
-    
+
     try {
         if (!process.env.MONGO_URI) return next();
         if (mongoose.connection.readyState !== 1) {
@@ -53,8 +53,8 @@ app.use(async (req, res, next) => {
         }
         next();
     } catch (err) {
-        res.status(503).json({ 
-            success: false, 
+        res.status(503).json({
+            success: false,
             message: 'Database connection currently unavailable. Please try again in 5 seconds.',
             error: err.message
         });
@@ -69,8 +69,8 @@ app.use((req, res, next) => {
 
 // Middleware
 const allowedOrigins = [
-    process.env.CLIENT_URL, 
-    'https://airis-progress-tracker.vercel.app', 
+    process.env.CLIENT_URL,
+    'https://airis-progress-tracker.vercel.app',
     'http://localhost:5173',
     'http://localhost:5001'
 ];
@@ -79,7 +79,7 @@ app.use(cors({
     origin: function (origin, callback) {
         // allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-        
+
         const isVercel = origin.endsWith('.vercel.app');
         const isAllowed = allowedOrigins.indexOf(origin) !== -1 || isVercel;
 
@@ -170,7 +170,7 @@ module.exports = app;
 
 if (require.main === module) {
     const PORT = process.env.PORT || 5002;
-    
+
     // Connect to DB once on startup to avoid buffering issues
     connectDB()
         .then(() => {
