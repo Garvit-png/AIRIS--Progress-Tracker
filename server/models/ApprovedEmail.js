@@ -21,6 +21,9 @@ const approvedEmailSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     }
+}, {
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
 });
 
 module.exports = mongoose.model('ApprovedEmail', approvedEmailSchema);

@@ -35,7 +35,7 @@ exports.register = async (req, res, next) => {
         // Create token
         const token = jwt.sign(
             { 
-                userId: user._id, 
+                userId: user.id, 
                 role: user.role, 
                 isAdmin: user.isAdmin,
                 email: user.email 
@@ -49,7 +49,7 @@ exports.register = async (req, res, next) => {
             message: 'REGISTRATION RECEIVED. ACCOUNT PENDING APPROVAL.',
             token,
             user: {
-                id: user._id,
+                id: user.id,
                 name: user.name,
                 email: user.email,
                 role: user.role,
@@ -91,6 +91,7 @@ exports.googleLogin = async (req, res) => {
         let user = await User.findOne({ email: cleanEmail });
 
         if (!user) {
+            console.log(`Google Auth: User not found for email ${cleanEmail}`);
             return res.status(404).json({ 
                 success: false, 
                 message: 'GMAIL NOT CONNECTED, REGISTER FIRST',
@@ -107,7 +108,7 @@ exports.googleLogin = async (req, res) => {
         // Create token
         const token = jwt.sign(
             { 
-                userId: user._id, 
+                userId: user.id, 
                 role: user.role, 
                 isAdmin: user.isAdmin,
                 email: user.email 
@@ -120,7 +121,7 @@ exports.googleLogin = async (req, res) => {
             success: true,
             token,
             user: {
-                id: user._id,
+                id: user.id,
                 name: user.name,
                 email: user.email,
                 role: user.role,
@@ -130,7 +131,7 @@ exports.googleLogin = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Google Auth Error:', error);
+        console.error('Google Auth Error:', error.message);
         res.status(401).json({ success: false, message: 'Google authentication failed' });
     }
 };
@@ -164,7 +165,7 @@ exports.login = async (req, res, next) => {
         // Create token
         const token = jwt.sign(
             { 
-                userId: user._id, 
+                userId: user.id, 
                 role: user.role, 
                 isAdmin: user.isAdmin,
                 email: user.email 
@@ -177,7 +178,7 @@ exports.login = async (req, res, next) => {
             success: true,
             token,
             user: {
-                id: user._id,
+                id: user.id,
                 name: user.name,
                 email: user.email,
                 role: user.role,
