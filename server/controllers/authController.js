@@ -75,9 +75,17 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 exports.googleLogin = async (req, res) => {
     try {
         const { idToken } = req.body;
+        
+        if (!process.env.GOOGLE_CLIENT_ID) {
+            console.error('CRITICAL: GOOGLE_CLIENT_ID is missing in environment variables');
+            return res.status(500).json({ success: false, message: 'Server configuration error' });
+        }
+
         if (!idToken) {
             return res.status(400).json({ success: false, message: 'Google ID token required' });
         }
+
+        console.log('Google Auth: Attempting verification...');
 
         const ticket = await client.verifyIdToken({
             idToken,

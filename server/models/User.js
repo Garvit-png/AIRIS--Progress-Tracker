@@ -60,7 +60,9 @@ const userSchema = new mongoose.Schema({
     resetPasswordExpire: Date
 }, {
     toJSON: { virtuals: true },
-    toObject: { virtuals: true }
+    toObject: { virtuals: true },
+    bufferCommands: false,
+    autoIndex: true
 });
 
 // Encrypt password using bcrypt

@@ -37,11 +37,9 @@ app.get('/healthz', (req, res) => {
 
 // Middleware to ensure DB is connected for all other routes
 app.use(async (req, res, next) => {
-    // These routes can work without MongoDB
-    if (req.path === '/api/health' ||
-        req.path.startsWith('/api/tasks') ||
-        req.path.startsWith('/api/auth') ||
-        req.path.startsWith('/api/admin') ||
+    // Only health and debug routes can truly work without MongoDB
+    if (req.path === '/api/health' || 
+        req.path === '/healthz' ||
         req.path.startsWith('/api/debug')) {
         return next();
     }
