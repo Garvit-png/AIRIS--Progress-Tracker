@@ -52,8 +52,15 @@ export const AuthService = {
 
         // Store token and user for auto-login
         if (data.token) {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('current_user', JSON.stringify(data.user));
+            try {
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('current_user', JSON.stringify(data.user));
+            } catch (storageError) {
+                console.warn('LocalStorage quota exceeded, clearing and retrying...', storageError);
+                localStorage.clear();
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('current_user', JSON.stringify(data.user));
+            }
         }
         return data;
     },
@@ -71,8 +78,15 @@ export const AuthService = {
         }
 
         // Store token and user
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('current_user', JSON.stringify(data.user));
+        try {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('current_user', JSON.stringify(data.user));
+        } catch (storageError) {
+            console.warn('LocalStorage quota exceeded, clearing and retrying...', storageError);
+            localStorage.clear();
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('current_user', JSON.stringify(data.user));
+        }
         return data;
     },
 
@@ -263,8 +277,15 @@ export const AuthService = {
         }
 
         // Store token and user
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('current_user', JSON.stringify(data.user));
+        try {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('current_user', JSON.stringify(data.user));
+        } catch (storageError) {
+            console.warn('LocalStorage quota exceeded, clearing and retrying...', storageError);
+            localStorage.clear();
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('current_user', JSON.stringify(data.user));
+        }
         return data;
     },
 
@@ -286,7 +307,13 @@ export const AuthService = {
         }
 
         // Update local storage
-        localStorage.setItem('current_user', JSON.stringify(data.user));
+        try {
+            localStorage.setItem('current_user', JSON.stringify(data.user));
+        } catch (storageError) {
+            console.warn('LocalStorage quota exceeded, clearing and retrying...', storageError);
+            localStorage.clear();
+            localStorage.setItem('current_user', JSON.stringify(data.user));
+        }
         return data.user;
     },
 
