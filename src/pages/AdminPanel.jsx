@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AuthService } from '../services/authService';
 import { Search, UserPlus, Shield, X, Check, ShieldAlert, Clock, Mail, GraduationCap, UserCheck, ShieldCheck } from 'lucide-react';
 import Logo from '../components/Logo';
+import AdminPortalGate from '../components/AdminPortalGate';
 
 const AdminPanel = ({ isEmbedded = false }) => {
     const [emails, setEmails] = useState([]);
@@ -19,6 +20,10 @@ const AdminPanel = ({ isEmbedded = false }) => {
     const [actionLoading, setActionLoading] = useState(false);
     const [message, setMessage] = useState({ text: '', type: '' });
     
+    // Portal Security
+    const [isUnlocked, setIsUnlocked] = useState(sessionStorage.getItem('admin_portal_unlocked') === 'true');
+    const [isGateOpen, setIsGateOpen] = useState(!isUnlocked && !isEmbedded);
+
     const COLLEGE_DOMAIN = '@nst.rishihood.edu.in';
 
     useEffect(() => {
@@ -180,7 +185,26 @@ const AdminPanel = ({ isEmbedded = false }) => {
 
     return (
         <div className={`${isEmbedded ? 'pb-12' : 'min-h-screen bg-[#050505] selection:bg-pink-500/30'} text-slate-200 font-sans`}>
-            {/* Professional Background */}
+            {/* Security Gate for non-embedded view */}
+            {!isEmbedded && (
+                <AdminPortalGate 
+                    isOpen={isGateOpen} 
+                    onClose={() => window.location.href = '/dashboard'} 
+                    onUnlock={() => {
+                        setIsUnlocked(true);
+                        setIsGateOpen(false);
+                        sessionStorage.setItem('admin_portal_unlocked', 'true');
+                    }} 
+                />
+            )}
+
+            {(!isUnlocked && !isEmbedded) ? (
+                <div className="min-h-screen flex items-center justify-center">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.5em] animate-pulse">Waiting for Authorization...</p>
+                </div>
+            ) : (
+                <>
+                    {/* Professional Background */}
             {!isEmbedded && (
                 <div className="fixed inset-0 pointer-events-none overflow-hidden">
                     <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-pink-900/10 blur-[120px] rounded-full opacity-50" />
@@ -642,6 +666,8 @@ const AdminPanel = ({ isEmbedded = false }) => {
             
             {actionLoading && (
                 <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm cursor-wait" />
+            )}
+                </>
             )}
         </div>
     );

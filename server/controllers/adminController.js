@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const ApprovedEmail = require('../models/ApprovedEmail');
+const AdminSettings = require('../models/AdminSettings');
 
 // @desc    Add email to whitelist
 // @route   POST /api/admin/approve
@@ -169,6 +170,76 @@ exports.getApprovedUsers = async (req, res) => {
             success: true,
             count: users.length,
             data: users
+        });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Check if admin portal password is set
+// @route   GET /api/admin/portal-status
+// @access  Private/Admin
+exports.getPortalStatus = async (req, res) => {
+    try {
+        const settings = await AdminSettings.findOne();
+        res.status(200).json({
+            success: true,
+            isSet: !!settings
+        });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Set initial admin portal password
+// @route   POST /api/admin/portal-setup
+// @access  Private/Admin
+exports.setupPortalPassword = async (req, res) => {
+    try {
+        const { password } = req.body;
+        if (!password) {
+            return res.status(400).json({ success: false, message: 'Please provide a password' });
+        }
+
+        const existing = await AdminSettings.findOne();
+        if (existing) {
+            return res.status(400).json({ success: false, message: 'Portal password already set' });
+        }
+
+        await AdminSettings.create({ adminPortalPassword: password });
+
+        res.status(201).json({
+            success: true,
+            message: 'Portal password set successfully'
+        });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Verify admin portal password
+// @route   POST /api/admin/portal-verify
+// @access  Private/Admin
+exports.verifyPortalPassword = async (req, res) => {
+    try {
+        const { password } = req.body;
+        if (!password) {
+            return res.status(400).json({ success: false, message: 'Please provide a password' });
+        }
+
+        const settings = await AdminSettings.findOne();
+        if (!settings) {
+            return res.status(404).json({ success: false, message: 'Portal password not set yet' });
+        }
+
+        const isMatch = await settings.matchPassword(password);
+        if (!isMatch) {
+            return res.status(401).json({ success: false, message: 'Invalid portal password' });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Portal unlocked'
         });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });

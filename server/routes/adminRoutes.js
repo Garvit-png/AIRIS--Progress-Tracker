@@ -7,7 +7,10 @@ const {
     getPendingUsers,
     updateUserStatus,
     getUserPhoto,
-    getApprovedUsers
+    getApprovedUsers,
+    getPortalStatus,
+    setupPortalPassword,
+    verifyPortalPassword
 } = require('../controllers/adminController');
 
 const router = express.Router();
@@ -38,5 +41,8 @@ router.get('/pending', getPendingUsers);
 router.get('/users/:id/photo', getUserPhoto);
 router.put('/users/:id/status', updateUserStatus);
 router.get('/history', getApprovedUsers);
+router.get('/portal-status', getPortalStatus);
+router.post('/portal-setup', setupPortalPassword);
+router.post('/portal-verify', verifyPortalPassword);
 
 module.exports = router;

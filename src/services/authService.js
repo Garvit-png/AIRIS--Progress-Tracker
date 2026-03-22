@@ -393,6 +393,46 @@ export const AuthService = {
         // Use relative path which will be proxied by Vite in dev 
         // or served by the same origin in production.
         return path;
+    },
+
+    // Admin Portal Password Management
+    getPortalStatus: async () => {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${ADMIN_API_URL}/portal-status`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await safeJson(response);
+        return data; // returns { success, isSet }
+    },
+
+    setupPortalPassword: async (password) => {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${ADMIN_API_URL}/portal-setup`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ password })
+        });
+        const data = await safeJson(response);
+        if (!data.success) throw new Error(data.message);
+        return data;
+    },
+
+    verifyPortalPassword: async (password) => {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${ADMIN_API_URL}/portal-verify`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ password })
+        });
+        const data = await safeJson(response);
+        if (!data.success) throw new Error(data.message);
+        return data;
     }
 };
 

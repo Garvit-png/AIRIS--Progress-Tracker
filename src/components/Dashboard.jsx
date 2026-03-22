@@ -6,8 +6,9 @@ import DayDetail from './panels/DayDetail'
 import MonthlySummary from './panels/MonthlySummary'
 import MembersList from './panels/MembersList'
 import AdminPanel from '../pages/AdminPanel'
+import AdminPortalGate from './AdminPortalGate'
 import { AuthService } from '../services/authService'
-import { Camera, X, Upload, Save, User as UserIcon } from 'lucide-react'
+import { Camera, X, Upload, Save, User as UserIcon, Lock, Unlock } from 'lucide-react'
 
 export default function Dashboard({ user: initialUser }) {
     const [user, setUser] = useState(initialUser)
@@ -25,12 +26,47 @@ export default function Dashboard({ user: initialUser }) {
     const [isUpdating, setIsUpdating] = useState(false)
     const fileInputRef = useRef(null)
 
+    // Admin Portal Security State
+    const [isPortalUnlocked, setIsPortalUnlocked] = useState(sessionStorage.getItem('admin_portal_unlocked') === 'true')
+    const [isGateOpen, setIsGateOpen] = useState(false)
+    const [pendingView, setPendingView] = useState(null)
+
     React.useEffect(() => {
         setHeaderVisible(true);
         if (activeView === 'Tasks') {
             fetchMyTasks();
         }
     }, [activeView]);
+
+    const handleViewChange = (view) => {
+        const restrictedViews = ['Approvals', 'Members'];
+        const isAdmin = user?.isAdmin || user?.role?.toLowerCase() === 'admin';
+
+        if (isAdmin && restrictedViews.includes(view) && !isPortalUnlocked) {
+            setPendingView(view);
+            setIsGateOpen(true);
+        } else {
+            setActiveView(view);
+        }
+    };
+
+    const handlePortalUnlock = () => {
+        setIsPortalUnlocked(true);
+        sessionStorage.setItem('admin_portal_unlocked', 'true');
+        setIsGateOpen(false);
+        if (pendingView) {
+            setActiveView(pendingView);
+            setPendingView(null);
+        }
+    };
+
+    const handleLockPortal = () => {
+        setIsPortalUnlocked(false);
+        sessionStorage.removeItem('admin_portal_unlocked');
+        if (['Approvals', 'Members'].includes(activeView)) {
+            setActiveView('Dashboard');
+        }
+    };
 
     const fetchMyTasks = async () => {
         setTasksLoading(true);
@@ -236,6 +272,32 @@ export default function Dashboard({ user: initialUser }) {
                         >
                             Log Out / Terminate Session
                         </button>
+
+                        {(user?.isAdmin || user?.role?.toLowerCase() === 'admin') && (
+                            <div className="pt-6 mt-6 border-t border-pink-500/10">
+                                <p className="text-[9px] font-mono text-pink-400 uppercase tracking-[0.3em] mb-4">Security Protocol</p>
+                                <button
+                                    onClick={isPortalUnlocked ? handleLockPortal : () => handleViewChange('Approvals')}
+                                    className={`w-full py-3 border flex items-center justify-center gap-3 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${
+                                        isPortalUnlocked 
+                                        ? 'border-amber-500/30 text-amber-500 hover:bg-amber-500/5' 
+                                        : 'border-pink-500/30 text-pink-400 hover:bg-pink-500/5'
+                                    }`}
+                                >
+                                    {isPortalUnlocked ? (
+                                        <>
+                                            <Lock size={14} />
+                                            Lock Admin Portal
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Unlock size={14} />
+                                            Unlock Admin Portal
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </motion.div>
             )
@@ -381,7 +443,7 @@ export default function Dashboard({ user: initialUser }) {
             <Sidebar 
                 user={user} 
                 activeView={activeView} 
-                setActiveView={setActiveView} 
+                setActiveView={handleViewChange} 
                 onProfileClick={() => setIsProfileModalOpen(true)}
             />
 
@@ -422,6 +484,11 @@ export default function Dashboard({ user: initialUser }) {
             </div>
 
             <ProfileModal />
+            <AdminPortalGate 
+                isOpen={isGateOpen} 
+                onClose={() => setIsGateOpen(false)} 
+                onUnlock={handlePortalUnlock}
+            />
         </div>
     )
 }
