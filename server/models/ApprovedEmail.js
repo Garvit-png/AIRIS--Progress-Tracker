@@ -20,6 +20,14 @@ const approvedEmailSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    role: {
+        type: String,
+        default: 'Member'
+    },
+    isAdmin: {
+        type: Boolean,
+        default: false
     }
 }, {
     toJSON: { virtuals: true },

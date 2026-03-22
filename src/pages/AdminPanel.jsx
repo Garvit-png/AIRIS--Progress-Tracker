@@ -11,6 +11,8 @@ const AdminPanel = ({ isEmbedded = false }) => {
     const [activeTab, setActiveTab] = useState('pending'); // pending, whitelist, history, tasks
     const [tasks, setTasks] = useState([]);
     const [newEmail, setNewEmail] = useState('');
+    const [whitelistRole, setWhitelistRole] = useState('Member');
+    const [whitelistIsAdmin, setWhitelistIsAdmin] = useState(false);
     const [useCollegeDomain, setUseCollegeDomain] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -95,9 +97,11 @@ const AdminPanel = ({ isEmbedded = false }) => {
 
         setActionLoading(true);
         try {
-            await AuthService.approveEmail(finalEmail);
+            await AuthService.approveEmail(finalEmail, whitelistRole, whitelistIsAdmin);
             showMsg('IDENTITY PRE-AUTHORIZED', 'success');
             setNewEmail('');
+            setWhitelistRole('Member');
+            setWhitelistIsAdmin(false);
             fetchEmails();
         } catch (error) {
             showMsg(error.message, 'error');
@@ -374,6 +378,34 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                                         </div>
                                                     )}
                                                 </div>
+
+                                                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                                                    <div className="flex-1">
+                                                        <select
+                                                            className="w-full bg-black/40 border border-pink-500/10 rounded-xl px-4 py-3 text-[10px] font-mono text-white/80 outline-none focus:border-pink-500/30 transition-all uppercase tracking-widest cursor-pointer"
+                                                            value={whitelistRole}
+                                                            onChange={(e) => setWhitelistRole(e.target.value)}
+                                                        >
+                                                            <option value="Member">Member</option>
+                                                            <option value="Core Member">Core Member</option>
+                                                            <option value="President">President</option>
+                                                            <option value="Coordinator">Coordinator</option>
+                                                            <option value="Lead">Lead</option>
+                                                        </select>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setWhitelistIsAdmin(!whitelistIsAdmin)}
+                                                        className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl transition-all border ${
+                                                            whitelistIsAdmin ? 'bg-pink-500/20 border-pink-500/40 text-pink-400' : 'bg-white/5 border-white/10 text-white/40'
+                                                        }`}
+                                                    >
+                                                        <Shield className={`w-3.5 h-3.5 ${whitelistIsAdmin ? 'text-pink-400' : 'opacity-40'}`} />
+                                                        <span className="text-[9px] font-bold uppercase tracking-widest">
+                                                            {whitelistIsAdmin ? 'ADMIN PRIVILEGE: ON' : 'ADMIN: OFF'}
+                                                        </span>
+                                                    </button>
+                                                </div>
                                             </div>
                                             <button
                                                 disabled={actionLoading}
@@ -494,18 +526,28 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                                 <div>
                                                     <div className="flex items-center gap-3">
                                                         <p className="text-sm font-medium text-slate-200 group-hover:text-white transition-colors">
-                                                            {activeTab === 'pending' ? item.name : item.email}
+                                                            {activeTab === 'pending' ? item.name : (activeTab === 'history' ? item.name : item.email)}
                                                         </p>
                                                         {activeTab === 'pending' && (
                                                             <span className="px-2 py-0.5 rounded-full bg-amber-500/5 border border-amber-500/20 text-[8px] font-bold uppercase tracking-tighter text-amber-500/60">
                                                                 Pending Verification
                                                             </span>
                                                         )}
+                                                        {activeTab === 'whitelist' && (
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="px-2 py-0.5 rounded-lg bg-pink-500/5 border border-pink-500/10 text-[8px] font-bold uppercase tracking-wider text-pink-400/80">
+                                                                    {item.role || 'Member'}
+                                                                </span>
+                                                                {item.isAdmin && (
+                                                                    <Shield className="w-3 h-3 text-pink-500/50" />
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     <div className="flex items-center gap-3 mt-1.5 opacity-50">
                                                         <span className="font-mono text-[9px] uppercase tracking-widest flex items-center gap-1.5">
                                                             <Mail className="w-3 h-3" />
-                                                            {activeTab === 'pending' ? item.email : `Authorized on ${new Date(item.createdAt).toLocaleDateString()}`}
+                                                            {activeTab === 'pending' ? item.email : (activeTab === 'history' ? item.email : `Whitelisted: ${new Date(item.createdAt).toLocaleDateString()}`)}
                                                             {activeTab === 'pending' && (
                                                                 <>
                                                                     <span className="mx-1">•</span>

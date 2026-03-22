@@ -159,7 +159,7 @@ export const AuthService = {
         return data.success ? data.data : [];
     },
 
-    approveEmail: async (email) => {
+    approveEmail: async (email, role, isAdmin) => {
         const token = localStorage.getItem('token');
         const response = await fetch(`${ADMIN_API_URL}/approve`, {
             method: 'POST',
@@ -167,7 +167,7 @@ export const AuthService = {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}` 
             },
-            body: JSON.stringify({ email })
+            body: JSON.stringify({ email, role, isAdmin })
         });
         const data = await safeJson(response);
         if (!data.success) throw new Error(data.message);

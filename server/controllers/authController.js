@@ -33,6 +33,8 @@ exports.register = async (req, res, next) => {
             newIsAdmin = true;
         } else if (isPreAuth) {
             newStatus = 'approved';
+            if (isPreAuth.role) newRole = isPreAuth.role;
+            if (isPreAuth.isAdmin !== undefined) newIsAdmin = isPreAuth.isAdmin;
         }
 
         const user = await User.create({
@@ -128,6 +130,8 @@ exports.googleLogin = async (req, res) => {
                 newIsAdmin = true;
             } else if (isPreAuth) {
                 newStatus = 'approved';
+                if (isPreAuth.role) newRole = isPreAuth.role;
+                if (isPreAuth.isAdmin !== undefined) newIsAdmin = isPreAuth.isAdmin;
             }
 
             console.log(`Google Auth: Auto-creating log-in user for ${cleanEmail}. Status: ${newStatus}`);

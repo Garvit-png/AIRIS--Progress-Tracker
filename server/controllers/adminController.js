@@ -6,7 +6,7 @@ const ApprovedEmail = require('../models/ApprovedEmail');
 // @access  Private/Admin
 exports.addApprovedEmail = async (req, res) => {
     try {
-        const { email } = req.body;
+        const { email, role, isAdmin } = req.body;
 
         if (!email) {
             return res.status(400).json({ success: false, message: 'Please provide an email' });
@@ -20,6 +20,8 @@ exports.addApprovedEmail = async (req, res) => {
 
         const approved = await ApprovedEmail.create({
             email: cleanEmail,
+            role: role || 'Member',
+            isAdmin: isAdmin || false,
             addedBy: req.user.id
         });
 
