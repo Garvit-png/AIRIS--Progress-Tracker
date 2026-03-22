@@ -6,6 +6,7 @@ import { AuthService } from '../../services/authService';
 export default function MembersList() {
     const [users, setUsers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [photoCache, setPhotoCache] = useState({});
     const [searchQuery, setSearchQuery] = useState('');
     const [filterYear, setFilterYear] = useState('All'); // All, 1, 2, 3, 4
     const [sortKey, setSortKey] = useState('name'); // name, year
@@ -284,10 +285,18 @@ export default function MembersList() {
                                     setSelectedUser(user);
                                     setEditData({ name: user.name, role: user.role || 'Member', isAdmin: !!user.isAdmin });
                                     setEditMode(false);
-                                    // Fetch full photo on demand
+                                    
+                                    // Extreme Performance: Use Cache first
+                                    if (photoCache[user._id]) {
+                                        setSelectedUser(prev => prev && prev._id === user._id ? { ...prev, profilePicture: photoCache[user._id] } : prev);
+                                        return;
+                                    }
+
+                                    // Fetch full photo on demand if not in cache
                                     try {
                                         const photo = await AuthService.getUserPhoto(user._id);
                                         if (photo) {
+                                            setPhotoCache(prev => ({ ...prev, [user._id]: photo })); // Store in cache
                                             setSelectedUser(prev => prev && prev._id === user._id ? { ...prev, profilePicture: photo } : prev);
                                         }
                                     } catch (err) {

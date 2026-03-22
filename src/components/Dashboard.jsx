@@ -64,8 +64,8 @@ export default function Dashboard({ user: initialUser }) {
             img.src = base64;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 400;
-                const MAX_HEIGHT = 400;
+                const MAX_WIDTH = 128;
+                const MAX_HEIGHT = 128;
                 let width = img.width;
                 let height = img.height;
 
@@ -85,8 +85,8 @@ export default function Dashboard({ user: initialUser }) {
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                // Compress to JPEG for smallest size
-                resolve(canvas.toDataURL('image/jpeg', 0.6));
+                // Ultra-compress for fastest loading
+                resolve(canvas.toDataURL('image/jpeg', 0.5));
             };
         });
     }
