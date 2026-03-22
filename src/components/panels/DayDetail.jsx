@@ -65,20 +65,21 @@ export default function DayDetail({ selectedDate }) {
         if (!file) return;
 
         setIsSaving(true);
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            setTimeout(() => {
-                workStore.addProof(dateStr, {
-                    name: file.name,
-                    type: file.type,
-                    url: event.target.result
-                });
-                setIsSaving(false);
-                setLastSaved(new Date());
-                setTimeout(() => setLastSaved(null), 3000);
-            }, 1000); // Reduced delay from 1500
-        };
-        reader.readAsDataURL(file);
+        // Avoid using FileReader for data URLs as saving Base64 to localStorage 
+        // quickly exceeds the 5MB domain quota and breaks the application layout and login.
+        // Instead, use a temporary blob URL for this session's UI preview.
+        const tempUrl = URL.createObjectURL(file);
+        
+        setTimeout(() => {
+            workStore.addProof(dateStr, {
+                name: file.name,
+                type: file.type,
+                url: tempUrl
+            });
+            setIsSaving(false);
+            setLastSaved(new Date());
+            setTimeout(() => setLastSaved(null), 3000);
+        }, 1000);
     };
 
     const completedCount = data.tasks.filter(t => t.completed).length;
