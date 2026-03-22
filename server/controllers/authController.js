@@ -95,18 +95,42 @@ exports.googleLogin = async (req, res) => {
         const { email, name, picture } = ticket.getPayload();
         const cleanEmail = email.toLowerCase().trim();
 
+        console.log(`Google Auth Payload: email="${email}", cleanEmail="${cleanEmail}", name="${name}"`);
+
         // Check if user exists
         let user = await User.findOne({ email: { $regex: new RegExp(`^${cleanEmail}$`, 'i') } });
 
         if (!user) {
-            console.log(`Google Auth: User not found for email ${cleanEmail}`);
-            return res.status(404).json({ 
-                success: false, 
-                message: 'GMAIL NOT CONNECTED, REGISTER FIRST',
-                code: 'USER_NOT_FOUND',
-                email: cleanEmail,
-                name: name
-            });
+            const isAdminEmail = cleanEmail === 'garvitgandhi10313@gmail.com' || cleanEmail === 'garvitgandhi0313@gmail.com';
+            
+            if (isAdminEmail) {
+                console.log(`Google Auth: Auto-creating admin user for ${cleanEmail}`);
+                user = await User.create({
+                    name: name || 'Admin User',
+                    email: cleanEmail,
+                    password: crypto.randomBytes(20).toString('hex'), // Dummy password
+                    role: 'Admin',
+                    isAdmin: true,
+                    status: 'approved',
+                    isVerified: true,
+                    googleId: ticket.getPayload().sub,
+                    profilePicture: picture || ''
+                });
+            } else {
+                console.log(`Google Auth: User not found for email ${cleanEmail}`);
+                return res.status(404).json({ 
+                    success: false, 
+                    message: 'GMAIL NOT CONNECTED, REGISTER FIRST',
+                    code: 'USER_NOT_FOUND',
+                    email: cleanEmail,
+                    name: name
+                });
+            }
+        } else if (!user.googleId) {
+            // Link Google ID if it isn't linked yet
+            user.googleId = ticket.getPayload().sub;
+            user.profilePicture = user.profilePicture || picture;
+            await user.save();
         }
 
         if (user.status === 'rejected') {
