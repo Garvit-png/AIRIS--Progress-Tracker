@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, ListFilter, Users, Mail, GraduationCap, ChevronDown, Check, Shield, Clock } from 'lucide-react';
+import { Search, Filter, ListFilter, Users, Mail, GraduationCap, ChevronDown, Check, Shield, Clock, X } from 'lucide-react';
 import { AuthService } from '../../services/authService';
 
 export default function MembersList() {
@@ -280,10 +280,19 @@ export default function MembersList() {
                                 exit={{ opacity: 0, scale: 0.98 }}
                                 transition={{ delay: index * 0.01 }}
                                 key={user._id}
-                                onClick={() => {
+                                onClick={async () => {
                                     setSelectedUser(user);
                                     setEditData({ name: user.name, role: user.role || 'Member', isAdmin: !!user.isAdmin });
                                     setEditMode(false);
+                                    // Fetch full photo on demand
+                                    try {
+                                        const photo = await AuthService.getUserPhoto(user._id);
+                                        if (photo) {
+                                            setSelectedUser(prev => prev && prev._id === user._id ? { ...prev, profilePicture: photo } : prev);
+                                        }
+                                    } catch (err) {
+                                        console.error('Failed to load user photo:', err);
+                                    }
                                 }}
                                 className="group relative grid grid-cols-1 md:grid-cols-12 items-center gap-4 px-6 md:px-8 py-4 bg-transparent border border-transparent hover:border-pink-500/30 hover:bg-pink-500/[0.02] transition-all cursor-pointer rounded-2xl mx-1"
                             >
@@ -341,6 +350,18 @@ export default function MembersList() {
 
                                 {/* Status/Action Sector */}
                                 <div className="col-span-1 text-right flex items-center justify-end gap-3">
+                                    {currentUser?.isAdmin && user._id !== currentUser.id && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleRevokeAccess(user);
+                                            }}
+                                            title="Revoke Access"
+                                            className="p-1.5 rounded-lg border border-red-500/20 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
+                                        >
+                                            <X size={14} className="flex-shrink-0" />
+                                        </button>
+                                    )}
                                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-500 animate-pulse" />
                                     <ChevronDown size={14} className="text-white/25 group-hover:text-white/85 -rotate-90" />
                                 </div>
@@ -502,7 +523,7 @@ export default function MembersList() {
                                 )}
 
                                 <div className="pt-4 flex gap-3">
-                                    {currentUser?.role === 'admin' && selectedUser?._id !== currentUser?.id && (
+                                    {currentUser?.isAdmin && selectedUser?._id !== currentUser?.id && (
                                         <button 
                                             onClick={() => handleRevokeAccess(selectedUser)}
                                             disabled={actionLoading}

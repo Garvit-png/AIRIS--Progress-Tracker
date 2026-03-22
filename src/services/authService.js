@@ -185,6 +185,15 @@ export const AuthService = {
         return true;
     },
 
+    getUserPhoto: async (id) => {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${ADMIN_API_URL}/users/${id}/photo`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await safeJson(response);
+        return data.success ? data.data : '';
+    },
+
     getUsers: async () => {
         const token = localStorage.getItem('token');
         const response = await fetch(`${ADMIN_API_URL}/users`, {
