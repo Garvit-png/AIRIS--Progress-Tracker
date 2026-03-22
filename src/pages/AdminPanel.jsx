@@ -125,8 +125,9 @@ const AdminPanel = ({ isEmbedded = false }) => {
         setActionLoading(true);
         try {
             await AuthService.updateUserStatus(userId, status, role, isAdmin);
-            showMsg(`USER ${status.toUpperCase()} AS ${role.toUpperCase()}`, 'success');
+            showMsg(status === 'pending' ? 'USER ACCESS REVOKED' : `USER ${status.toUpperCase()} AS ${role.toUpperCase()}`, 'success');
             fetchPendingUsers();
+            fetchApprovedUsers();
         } catch (error) {
             showMsg(error.message, 'error');
         } finally {
@@ -549,9 +550,22 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                                         </button>
                                                     </div>
                                                 ) : activeTab === 'history' ? (
-                                                    <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                                                        <Check className="w-3.5 h-3.5 text-emerald-500" />
-                                                        <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500/95">Approved {item.role}</span>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                                                            <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                                            <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500/95">Approved {item.role}</span>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => {
+                                                                if(window.confirm(`Revoke access for ${item.name} and send back to pending queue?`)) {
+                                                                    handleUserApproval(item._id, 'pending', 'Member', false);
+                                                                }
+                                                            }}
+                                                            title="Revoke Access"
+                                                            className="p-2.5 rounded-xl border border-pink-500/10 text-slate-600 hover:text-amber-500 hover:bg-amber-500/5 hover:border-amber-500/20 transition-all opacity-0 group-hover:opacity-100"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
                                                     </div>
                                                 ) : (
                                                     <button
