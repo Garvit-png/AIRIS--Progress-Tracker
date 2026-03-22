@@ -58,7 +58,8 @@ export default function MembersList() {
     };
 
     const filteredUsers = useMemo(() => {
-        let result = [...users];
+        // Only show approved members in the directory
+        let result = users.filter(u => u.status === 'approved');
 
         // Search filter (Case-sensitive as requested)
         if (searchQuery) {
@@ -91,10 +92,10 @@ export default function MembersList() {
     }, [users, searchQuery, filterYear, sortKey]);
 
     const stats = {
-        total: users.length,
+        total: users.filter(u => u.status === 'approved').length,
         filtered: filteredUsers.length,
-        firstYear: users.filter(u => u.year?.toString() === '1').length,
-        secondYear: users.filter(u => u.year?.toString() === '2').length
+        firstYear: users.filter(u => u.status === 'approved' && u.year?.toString() === '1').length,
+        secondYear: users.filter(u => u.status === 'approved' && u.year?.toString() === '2').length
     };
 
     const yearOptions = [
