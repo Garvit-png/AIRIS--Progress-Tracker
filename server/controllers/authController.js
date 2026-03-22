@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const { OAuth2Client } = require('google-auth-library');
 const sendEmail = require('../services/emailService');
 const User = require('../models/User');
+const ApprovedEmail = require('../models/ApprovedEmail');
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -20,15 +21,28 @@ exports.register = async (req, res, next) => {
         }
 
         const isAdminEmail = cleanEmail === 'garvitgandhi10313@gmail.com' || cleanEmail === 'garvitgandhi0313@gmail.com';
+        const isPreAuth = await ApprovedEmail.findOne({ email: cleanEmail });
+
+        let newRole = 'Member';
+        let newStatus = 'pending';
+        let newIsAdmin = false;
+
+        if (isAdminEmail) {
+            newRole = 'Admin';
+            newStatus = 'approved';
+            newIsAdmin = true;
+        } else if (isPreAuth) {
+            newStatus = 'approved';
+        }
 
         const user = await User.create({
             name,
             email: cleanEmail,
             password,
             year,
-            role: isAdminEmail ? 'Admin' : 'Member',
-            isAdmin: isAdminEmail,
-            status: isAdminEmail ? 'approved' : 'pending',
+            role: newRole,
+            isAdmin: newIsAdmin,
+            status: newStatus,
             isVerified: true // AUTO-VERIFIED FOR NOW
         });
 
@@ -102,30 +116,32 @@ exports.googleLogin = async (req, res) => {
 
         if (!user) {
             const isAdminEmail = cleanEmail === 'garvitgandhi10313@gmail.com' || cleanEmail === 'garvitgandhi0313@gmail.com';
-            
+            const isPreAuth = await ApprovedEmail.findOne({ email: cleanEmail });
+
+            let newRole = 'Member';
+            let newStatus = 'pending';
+            let newIsAdmin = false;
+
             if (isAdminEmail) {
-                console.log(`Google Auth: Auto-creating admin user for ${cleanEmail}`);
-                user = await User.create({
-                    name: name || 'Admin User',
-                    email: cleanEmail,
-                    password: crypto.randomBytes(20).toString('hex'), // Dummy password
-                    role: 'Admin',
-                    isAdmin: true,
-                    status: 'approved',
-                    isVerified: true,
-                    googleId: ticket.getPayload().sub,
-                    profilePicture: picture || ''
-                });
-            } else {
-                console.log(`Google Auth: User not found for email ${cleanEmail}`);
-                return res.status(404).json({ 
-                    success: false, 
-                    message: 'GMAIL NOT CONNECTED, REGISTER FIRST',
-                    code: 'USER_NOT_FOUND',
-                    email: cleanEmail,
-                    name: name
-                });
+                newRole = 'Admin';
+                newStatus = 'approved';
+                newIsAdmin = true;
+            } else if (isPreAuth) {
+                newStatus = 'approved';
             }
+
+            console.log(`Google Auth: Auto-creating log-in user for ${cleanEmail}. Status: ${newStatus}`);
+            user = await User.create({
+                name: name || 'Google User',
+                email: cleanEmail,
+                password: crypto.randomBytes(20).toString('hex'), // Dummy password
+                role: newRole,
+                isAdmin: newIsAdmin,
+                status: newStatus,
+                isVerified: true,
+                googleId: ticket.getPayload().sub,
+                profilePicture: picture || ''
+            });
         } else if (!user.googleId) {
             // Link Google ID if it isn't linked yet
             user.googleId = ticket.getPayload().sub;
