@@ -57,6 +57,13 @@ export default function MembersList() {
         }
     };
 
+    const getInitials = (name) => {
+        if (!name) return '??';
+        const parts = name.split(' ');
+        if (parts.length === 1) return name.charAt(0).toUpperCase();
+        return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    };
+
     const filteredUsers = useMemo(() => {
         // Only show approved members in the directory
         let result = users.filter(u => u.status === 'approved');
@@ -312,7 +319,7 @@ export default function MembersList() {
                                         {user.profilePicture ? (
                                             <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
                                         ) : (
-                                            user.name.charAt(0).toUpperCase()
+                                            <span className="text-[11px] tracking-tight">{getInitials(user.name)}</span>
                                         )}
                                     </div>
                                     <div className="space-y-0.5 min-w-0">
@@ -413,7 +420,7 @@ export default function MembersList() {
                                             {selectedUser.profilePicture ? (
                                                 <img src={selectedUser.profilePicture} alt={selectedUser.name} className="w-full h-full object-cover" />
                                             ) : (
-                                                selectedUser.name.charAt(0).toUpperCase()
+                                                getInitials(selectedUser.name)
                                             )}
                                         </div>
                                     </div>

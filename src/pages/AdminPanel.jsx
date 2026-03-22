@@ -139,6 +139,13 @@ const AdminPanel = ({ isEmbedded = false }) => {
         }
     };
 
+    const getInitials = (name) => {
+        if (!name) return '??';
+        const parts = name.split(' ');
+        if (parts.length === 1) return name.charAt(0).toUpperCase();
+        return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    };
+
     const filteredEmails = useMemo(() => {
         return emails.filter(item => 
             item.email.toLowerCase().includes(searchQuery.toLowerCase())
@@ -517,11 +524,17 @@ const AdminPanel = ({ isEmbedded = false }) => {
                                                             </a>
                                                         )}
                                                     </div>
-                                                ) : activeTab === 'pending' ? (
-                                                        <UserAlert className="w-5 h-5 text-amber-500/50 group-hover:text-amber-400" />
-                                                    ) : (
-                                                        <Mail className="w-5 h-5 text-pink-500/50 group-hover:text-pink-400" />
-                                                    )}
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center overflow-hidden">
+                                                        {item.profilePicture ? (
+                                                            <img src={item.profilePicture} alt="" className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <span className="text-[10px] font-bold text-white/40">
+                                                                {activeTab === 'whitelist' ? '??' : getInitials(item.name || item.email)}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center gap-3">
