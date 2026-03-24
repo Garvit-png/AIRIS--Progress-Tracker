@@ -1,53 +1,123 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, ShieldAlert, ShieldCheck, Lock, Unlock, ArrowRight, X } from 'lucide-react';
 import { AuthService } from '../services/authService';
+import { Shield, Lock, KeyRound, X, ArrowRight } from 'lucide-react';
+
+const PIN_LENGTH = 4;
 
 export default function AdminPortalGate({ isOpen, onClose, onUnlock }) {
-    const [status, setStatus] = useState('checking'); // checking, set-password, enter-password
-    const [password, setPassword] = useState('');
+    const [status, setStatus] = useState('checking'); // checking, setup-1, setup-2, setup-3, enter-pin
+    const [pins, setPins] = useState(['', '', '', '']);
+    const [setupPins, setSetupPins] = useState({ first: '', second: '', third: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const inputRefs = useRef([]);
 
     useEffect(() => {
         if (isOpen) {
             checkStatus();
+        } else {
+            resetState();
         }
     }, [isOpen]);
 
+    const resetState = () => {
+        setPins(['', '', '', '']);
+        setSetupPins({ first: '', second: '', third: '' });
+        setError('');
+        setLoading(false);
+    };
+
     const checkStatus = async () => {
-        setStatus('checking');
         try {
             const data = await AuthService.getPortalStatus();
-            if (data.success) {
-                setStatus(data.isSet ? 'enter-password' : 'set-password');
-            } else {
-                setError('Failed to reach security server');
-            }
+            setStatus(data.isSet ? 'enter-pin' : 'setup-1');
         } catch (err) {
-            setError('Connection failed');
+            setError('Failed to reach security server');
         }
     };
 
-    const handleAction = async (e) => {
-        e.preventDefault();
+    const handlePinChange = (index, value) => {
+        if (!/^\d*$/.test(value)) return;
+        
+        const newPins = [...pins];
+        newPins[index] = value.slice(-1);
+        setPins(newPins);
         setError('');
+
+        if (value && index < PIN_LENGTH - 1) {
+            inputRefs.current[index + 1].focus();
+        }
+    };
+
+    const handleKeyDown = (index, e) => {
+        if (e.key === 'Backspace' && !pins[index] && index > 0) {
+            inputRefs.current[index - 1].focus();
+        }
+    };
+
+    useEffect(() => {
+        if (pins.every(p => p !== '')) {
+            const timer = setTimeout(() => {
+                handleSubmit();
+            }, 300);
+            return () => clearTimeout(timer);
+        }
+    }, [pins]);
+
+    const handleSubmit = async () => {
+        const pinString = pins.join('');
         setLoading(true);
+        setError('');
 
         try {
-            if (status === 'set-password') {
-                await AuthService.setupPortalPassword(password);
-                setStatus('enter-password');
-                setPassword('');
-                // Let the user know they need to enter it now
-            } else {
-                await AuthService.verifyPortalPassword(password);
+            if (status === 'setup-1') {
+                setSetupPins(prev => ({ ...prev, first: pinString }));
+                setStatus('setup-2');
+                setPins(['', '', '', '']);
+                inputRefs.current[0]?.focus();
+            } else if (status === 'setup-2') {
+                if (pinString !== setupPins.first) {
+                    setError('PINs do not match. Restarting setup...');
+                    setStatus('setup-1');
+                    setSetupPins({ first: '', second: '', third: '' });
+                } else {
+                    setSetupPins(prev => ({ ...prev, second: pinString }));
+                    setStatus('setup-3');
+                }
+                setPins(['', '', '', '']);
+                inputRefs.current[0]?.focus();
+            } else if (status === 'setup-3') {
+                if (pinString !== setupPins.first) {
+                    setError('Verification failed. Restarting setup...');
+                    setStatus('setup-1');
+                    setSetupPins({ first: '', second: '', third: '' });
+                } else {
+                    await AuthService.setupPortalPassword(pinString);
+                    setStatus('enter-pin');
+                }
+                setPins(['', '', '', '']);
+                inputRefs.current[0]?.focus();
+            } else if (status === 'enter-pin') {
+                await AuthService.verifyPortalPassword(pinString);
                 onUnlock();
             }
         } catch (err) {
-            setError(err.message || 'Action failed');
+            setError(err.message || 'Verification failed');
+            setPins(['', '', '', '']);
+            inputRefs.current[0]?.focus();
         } finally {
             setLoading(false);
+        }
+    };
+
+    const getInstruction = () => {
+        switch (status) {
+            case 'setup-1': return 'Create 4-Digit Security PIN';
+            case 'setup-2': return 'Confirm Security PIN';
+            case 'setup-3': return 'Final Verification';
+            case 'enter-pin': return 'Enter Admin Security PIN';
+            default: return 'Authorizing...';
         }
     };
 
@@ -55,97 +125,109 @@ export default function AdminPortalGate({ isOpen, onClose, onUnlock }) {
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-[250] flex items-center justify-center p-4">
                 <motion.div 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-black/80 backdrop-blur-xl"
                     onClick={onClose}
-                    className="absolute inset-0 bg-black/90 backdrop-blur-xl"
                 />
                 
                 <motion.div 
-                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                    className="relative w-full max-w-md bg-[#0a0a0a] border border-pink-500/20 rounded-[2.5rem] overflow-hidden shadow-[0_0_50px_rgba(255,13,153,0.1)]"
+                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                    className="relative w-full max-w-sm bg-[#0A0A0A] border border-white/10 rounded-[40px] shadow-2xl p-10"
                 >
-                    {/* Header Decorative */}
-                    <div className="h-32 bg-gradient-to-br from-pink-600/10 via-transparent to-transparent relative overflow-hidden">
-                        <div className="absolute inset-0 opacity-20" style={{ 
-                            backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0)',
-                            backgroundSize: '24px 24px' 
-                        }} />
-                        <button 
-                            onClick={onClose}
-                            className="absolute top-6 right-6 w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-all z-10"
-                        >
-                            <X size={16} />
-                        </button>
+                    {/* Minimalist Brading */}
+                    <div className="flex flex-col items-center text-center mb-12">
+                        <div className="w-20 h-20 bg-pink-500/10 rounded-[32px] flex items-center justify-center mb-8 border border-pink-500/20 shadow-[0_0_30px_rgba(255,13,153,0.1)]">
+                            {status.includes('setup') ? (
+                                <KeyRound className="text-pink-500" size={36} />
+                            ) : (
+                                <Lock className="text-pink-500" size={36} />
+                            )}
+                        </div>
+                        <h2 className="text-2xl font-bold tracking-tight text-white mb-3">
+                            {getInstruction()}
+                        </h2>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
+                            <Shield size={10} className="text-pink-500" />
+                            <span className="text-white/30 text-[9px] font-mono uppercase tracking-[0.2em]">
+                                Level 4 Clearance
+                            </span>
+                        </div>
                     </div>
 
-                    <div className="px-8 pb-10 -mt-10 relative z-10 flex flex-col items-center text-center">
-                        <div className={`w-20 h-20 rounded-3xl mb-6 flex items-center justify-center shadow-2xl ring-1 ring-white/10 transition-all duration-500 ${
-                            status === 'checking' ? 'bg-white/5 border-white/20 animate-pulse' :
-                            status === 'set-password' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
-                            'bg-pink-500/10 border-pink-500/20 text-pink-400'
-                        }`}>
-                            {status === 'checking' && <Shield size={32} />}
-                            {status === 'set-password' && <ShieldAlert size={32} />}
-                            {status === 'enter-password' && <Lock size={32} />}
-                        </div>
+                    {/* PIN Input blocks */}
+                    <div className="flex justify-center gap-4 mb-12">
+                        {pins.map((pin, i) => (
+                            <motion.input
+                                key={i}
+                                ref={el => inputRefs.current[i] = el}
+                                type="password"
+                                inputMode="numeric"
+                                value={pin}
+                                onChange={(e) => handlePinChange(i, e.target.value)}
+                                onKeyDown={(e) => handleKeyDown(i, e)}
+                                disabled={loading}
+                                className={`w-14 h-20 bg-white/[0.03] border ${pin ? 'border-pink-500/50 bg-pink-500/5' : 'border-white/10'} rounded-2xl text-center text-3xl font-bold text-white outline-none transition-all focus:border-pink-500 focus:ring-4 focus:ring-pink-500/10 disabled:opacity-50`}
+                                initial={false}
+                                animate={pin ? { scale: [1, 1.05, 1], rotate: [0, 2, -2, 0] } : {}}
+                                transition={{ duration: 0.2 }}
+                            />
+                        ))}
+                    </div>
 
-                        <div className="space-y-2 mb-8">
-                            <h2 className="text-xl font-bold text-white tracking-tight">
-                                {status === 'checking' ? 'Security Handshake' :
-                                 status === 'set-password' ? 'Initial Protocol Setup' : 'Restricted Access'}
-                            </h2>
-                            <p className="text-[10px] font-mono text-white/40 uppercase tracking-[0.2em]">
-                                {status === 'checking' ? 'Verifying system integrity...' :
-                                 status === 'set-password' ? 'Establish Master Portal Key' : 'Enter Admin Authorization Cipher'}
-                            </p>
-                        </div>
-
-                        {status !== 'checking' && (
-                            <form onSubmit={handleAction} className="w-full space-y-6">
-                                <div className="space-y-2 relative">
-                                    <input 
-                                        type="password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        placeholder={status === 'set-password' ? 'New Security Key' : 'Security Key'}
-                                        autoFocus
-                                        className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-6 py-4 text-sm font-mono text-center focus:border-pink-500/40 focus:ring-1 focus:ring-pink-500/20 outline-none transition-all text-white placeholder:text-white/20"
-                                    />
-                                    {error && (
-                                        <motion.p 
-                                            initial={{ opacity: 0, scale: 0.95 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            className="text-[9px] font-mono text-red-400 uppercase tracking-widest pt-2"
-                                        >
-                                            {error}
-                                        </motion.p>
-                                    )}
-                                </div>
-
-                                <button 
-                                    type="submit"
-                                    disabled={loading || !password}
-                                    className="w-full h-14 bg-white text-black rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-3 transition-all hover:bg-pink-500 hover:text-white disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-black group shadow-xl"
+                    {/* Feedback Messages */}
+                    <div className="h-10 mb-8 flex items-center justify-center">
+                        <AnimatePresence mode="wait">
+                            {error ? (
+                                <motion.div 
+                                    key="error"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className="text-red-500 text-[10px] font-mono uppercase tracking-[0.2em] text-center"
                                 >
-                                    {loading ? 'Processing...' : (
-                                        <>
-                                            {status === 'set-password' ? 'Initialize' : 'Authorize'}
-                                            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                                        </>
-                                    )}
-                                </button>
-                            </form>
-                        )}
+                                    {error}
+                                </motion.div>
+                            ) : loading ? (
+                                <motion.div 
+                                    key="loading"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="flex items-center gap-2 text-pink-500/60 font-mono text-[9px] uppercase tracking-[0.3em] animate-pulse"
+                                >
+                                    Engaging Security Handshake
+                                </motion.div>
+                            ) : status.includes('setup') ? (
+                                <motion.div 
+                                    key="setup-progress"
+                                    className="flex gap-2"
+                                >
+                                    {[1, 2, 3].map(step => (
+                                        <div 
+                                            key={step}
+                                            className={`h-1.5 rounded-full transition-all duration-500 ${
+                                                status === `setup-${step}` ? 'w-8 bg-pink-500' : 'w-2 bg-white/10'
+                                            }`}
+                                        />
+                                    ))}
+                                </motion.div>
+                            ) : null}
+                        </AnimatePresence>
+                    </div>
 
-                        <p className="mt-8 text-[8px] font-mono text-white/20 uppercase tracking-[0.3em]">
-                            Secondary Authentication Layer Active
-                        </p>
+                    {/* Exit Action */}
+                    <div className="text-center">
+                        <button 
+                            onClick={onClose}
+                            className="text-white/20 hover:text-white/60 text-[10px] font-mono uppercase tracking-[0.4em] transition-all hover:tracking-[0.5em]"
+                        >
+                            Decline Access
+                        </button>
                     </div>
                 </motion.div>
             </div>

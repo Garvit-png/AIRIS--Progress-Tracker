@@ -444,6 +444,7 @@ export default function Dashboard({ user: initialUser }) {
                 user={user} 
                 activeView={activeView} 
                 setActiveView={handleViewChange} 
+                isPortalUnlocked={isPortalUnlocked}
                 onProfileClick={() => setIsProfileModalOpen(true)}
             />
 
