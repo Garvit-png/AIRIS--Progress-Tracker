@@ -298,3 +298,27 @@ exports.updateProfile = async (req, res, next) => {
         res.status(400).json({ success: false, message: error.message });
     }
 };
+
+// @desc    Find user by email (for starting chats)
+// @route   GET /api/auth/users/search/:email
+// @access  Private
+exports.findUserByEmail = async (req, res) => {
+    try {
+        const user = await User.findOne({ email: req.params.email.toLowerCase().trim() })
+            .select('name email profilePicture');
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        res.status(200).json({
+            success: true,
+            user
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};

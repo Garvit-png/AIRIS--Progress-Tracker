@@ -11,6 +11,9 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const taskRoutes = require('./routes/taskRoutes');
+const chatRoutes = require('./routes/chatRoutes');
+const http = require('http');
+const { Server } = require('socket.io');
 
 let isDBConnected = false;
 const connectDBWithRetry = async () => {
@@ -104,6 +107,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Debug endpoint for deployment
 app.get('/api/debug/status', (req, res) => {
@@ -164,6 +168,48 @@ app.use((err, req, res, next) => {
     });
 });
 
+const httpServer = http.createServer(app);
+const io = new Server(httpServer, {
+    cors: {
+        origin: allowedOrigins,
+        credentials: true
+    }
+});
+
+// Socket.io Real-time Chat Logic
+io.on('connection', (socket) => {
+    console.log('User connected:', socket.id);
+
+    // Join a conversation room
+    socket.on('join_conversation', (conversationId) => {
+        socket.join(conversationId);
+        console.log(`User ${socket.id} joined conversation: ${conversationId}`);
+    });
+
+    // Leave a conversation room
+    socket.on('leave_conversation', (conversationId) => {
+        socket.leave(conversationId);
+        console.log(`User ${socket.id} left conversation: ${conversationId}`);
+    });
+
+    // Handle sending a message
+    socket.on('send_message', (data) => {
+        const { conversationId, message } = data;
+        // Broadcast to all users in the conversation room
+        socket.to(conversationId).emit('receive_message', message);
+    });
+
+    // Handle typing status
+    socket.on('typing', (data) => {
+        const { conversationId, userId, isTyping } = data;
+        socket.to(conversationId).emit('user_typing', { userId, isTyping });
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+    });
+});
+
 module.exports = app;
 
 if (require.main === module) {
@@ -172,14 +218,14 @@ if (require.main === module) {
     // Connect to DB once on startup to avoid buffering issues
     connectDB()
         .then(() => {
-            app.listen(PORT, () => {
+            httpServer.listen(PORT, () => {
                 console.log(`Server running on port ${PORT}`);
             });
         })
         .catch(err => {
             console.error('CRITICAL: Failed to connect to MongoDB on startup:', err.message);
             // Still start the server so we can return error responses to the client
-            app.listen(PORT, () => {
+            httpServer.listen(PORT, () => {
                 console.log(`Server running on port ${PORT} (DB DISCONNECTED)`);
             });
         });

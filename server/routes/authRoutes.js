@@ -7,7 +7,8 @@ const {
     forgotPassword,
     resetPassword,
     verifyEmail,
-    updateProfile
+    updateProfile,
+    findUserByEmail
 } = require('../controllers/authController');
 
 const router = express.Router();
@@ -22,5 +23,6 @@ router.post('/forgotpassword', forgotPassword);
 router.put('/resetpassword/:resettoken', resetPassword);
 router.get('/verify/:token', verifyEmail);
 router.put('/profile', protect, updateProfile);
+router.get('/users/search/:email', protect, findUserByEmail);
 
 module.exports = router;
