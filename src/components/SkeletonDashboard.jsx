@@ -23,9 +23,8 @@ const SkeletonDashboard = () => {
 
                 <div className="flex-1 p-6 space-y-6 overflow-hidden">
                     {/* Top Row */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="h-16 bg-white/12 border border-white/5 rounded-xl animate-pulse" />
-                        <div className="lg:col-span-2 h-16 bg-white/12 border border-white/5 rounded-xl animate-pulse" />
+                    <div className="grid grid-cols-1 gap-6">
+                        <div className="w-full h-16 bg-white/12 border border-white/5 rounded-xl animate-pulse" />
                     </div>
 
                     {/* Main Content Area */}
