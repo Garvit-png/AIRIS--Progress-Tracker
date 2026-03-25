@@ -331,12 +331,15 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                             </div>
                         ))}
                     </div>
-                ) : filteredConversations.length === 0 ? (
-                    <div className="p-10 text-center space-y-2">
-                        <p className="text-[10px] font-mono text-white/20 uppercase tracking-[0.2em]">No Conversations</p>
-                    </div>
                 ) : (
-                    <>
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                        {filteredConversations.length === 0 && discoveredProfiles.length === 0 && (
+                            <div className="p-10 text-center space-y-2">
+                                <p className="text-[10px] font-mono text-white/20 uppercase tracking-[0.2em]">No Conversations</p>
+                                {search && <p className="text-[9px] text-white/10 italic">Search query "{search}" returned no local or spectral results.</p>}
+                            </div>
+                        )}
+
                         {filteredConversations.map(conv => {
                             const otherParticipant = conv.isGroup ? null : conv.participants.find(p => p._id !== user.id);
                             const isActive = activeConversation?._id === conv._id;
@@ -375,9 +378,9 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
 
                         {discoveredProfiles.length > 0 && (
                             <div className="mt-4 pb-10">
-                                <p className="px-6 py-2 text-[9px] font-black text-white/30 uppercase tracking-[0.2em] flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-pink-500/40" />
-                                    Global Profiles
+                                <p className="px-6 py-2 text-[9px] font-black text-pink-500/60 uppercase tracking-[0.2em] flex items-center gap-2 border-b border-white/5 bg-white/[0.02] mb-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-pink-500/40 shadow-[0_0_8px_rgba(255,45,120,0.4)]" />
+                                    Global Profile Matches
                                 </p>
                                 {discoveredProfiles.map(profile => (
                                     <button
@@ -385,18 +388,21 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                         onClick={() => handleStartDM(profile)}
                                         className="w-full flex items-center gap-3 px-6 py-3 hover:bg-white/[0.04] transition-all group"
                                     >
-                                        <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center overflow-hidden shrink-0">
+                                        <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-pink-500/20">
                                             {profile.profilePicture ? <img src={profile.profilePicture} className="w-full h-full object-cover" /> : <User size={16} className="text-white/20" />}
                                         </div>
                                         <div className="flex-1 min-w-0 text-left">
                                             <p className="text-xs font-bold text-white truncate group-hover:text-pink-400">{profile.name}</p>
                                             <p className="text-[9px] text-white/20 uppercase tracking-widest">{profile.role}</p>
                                         </div>
+                                        <div className="px-2 py-0.5 rounded-lg bg-pink-500/10 text-pink-500 text-[8px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                                            START CHAT
+                                        </div>
                                     </button>
                                 ))}
                             </div>
                         )}
-                    </>
+                    </div>
                 )}
             </div>
         </div>
