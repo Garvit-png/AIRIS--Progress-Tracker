@@ -54,6 +54,7 @@ exports.register = async (req, res, next) => {
                 userId: user.id, 
                 role: user.role, 
                 isAdmin: user.isAdmin,
+                status: user.status,
                 email: user.email 
             }, 
             process.env.JWT_SECRET, 
@@ -169,12 +170,12 @@ exports.googleLogin = async (req, res) => {
             return res.status(403).json({ success: false, message: 'ACCOUNT ACCESS REJECTED' });
         }
 
-        // Create token
         const token = jwt.sign(
             { 
                 userId: user.id, 
                 role: user.role, 
                 isAdmin: user.isAdmin,
+                status: user.status,
                 email: user.email 
             }, 
             process.env.JWT_SECRET, 
@@ -232,6 +233,7 @@ exports.login = async (req, res, next) => {
                 userId: user.id, 
                 role: user.role, 
                 isAdmin: user.isAdmin,
+                status: user.status,
                 email: user.email 
             }, 
             process.env.JWT_SECRET, 

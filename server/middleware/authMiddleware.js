@@ -31,7 +31,8 @@ exports.protect = async (req, res, next) => {
                     id: decoded.userId, 
                     role: decoded.role, 
                     isAdmin: decoded.isAdmin,
-                    email: decoded.email // This might be missing in payload, let's fix login/register too
+                    status: decoded.status || 'approved', // Default to approved for legacy tokens
+                    email: decoded.email
                 };
             }
         } catch (dbError) {
@@ -60,7 +61,8 @@ exports.protect = async (req, res, next) => {
 
 // Middleware to restrict access to approved users only
 exports.requireApproved = (req, res, next) => {
-    if (req.user && req.user.status === 'approved') {
+    // Admins are always approved by default to prevent lockout during transition
+    if (req.user && (req.user.status === 'approved' || req.user.isAdmin)) {
         return next();
     }
     
