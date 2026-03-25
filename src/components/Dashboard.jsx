@@ -9,7 +9,23 @@ import AdminPanel from '../pages/AdminPanel'
 import AdminPortalGate from './AdminPortalGate'
 import ChatPanel from './panels/ChatPanel'
 import { AuthService } from '../services/authService'
-import { Camera, X, Upload, Save, User as UserIcon, Lock, Unlock } from 'lucide-react'
+import { Camera, X, Upload, Save, User as UserIcon, Lock, Unlock, Clock as ClockIcon } from 'lucide-react'
+
+const Clock = () => {
+    const [time, setTime] = React.useState(new Date())
+    React.useEffect(() => {
+        const timer = setInterval(() => setTime(new Date()), 1000)
+        return () => clearInterval(timer)
+    }, [])
+    return (
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.03] border border-white/10 rounded-lg">
+            <ClockIcon size={12} className="text-pink-500" />
+            <span className="text-[10px] font-mono text-white/60 tracking-wider">
+                {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
+        </div>
+    )
+}
 
 export default function Dashboard({ user: initialUser }) {
     const [user, setUser] = useState(initialUser)
@@ -438,26 +454,26 @@ export default function Dashboard({ user: initialUser }) {
                     <motion.div 
                         whileHover={{ scale: 1.01, y: -2 }}
                         onClick={() => setActiveView('Chat')}
-                        className="p-6 bg-pink-500/5 border border-pink-500/20 rounded-3xl cursor-pointer hover:bg-pink-500/10 transition-all group relative overflow-hidden"
+                        className="p-4 bg-pink-500/5 border border-pink-500/20 rounded-2xl cursor-pointer hover:bg-pink-500/10 transition-all group relative overflow-hidden h-[120px]"
                     >
-                        <div className="absolute top-0 right-0 p-4">
-                            <div className="flex gap-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse" />
-                                <span className="w-1.5 h-1.5 rounded-full bg-pink-400/20" />
+                        <div className="absolute top-0 right-0 p-3">
+                            <div className="flex gap-1">
+                                <span className="w-1 h-1 rounded-full bg-pink-500 animate-pulse" />
+                                <span className="w-1 h-1 rounded-full bg-pink-400/20" />
                             </div>
                         </div>
-                        <div className="flex items-center gap-4 mb-4">
-                            <div className="p-3 bg-pink-500/10 rounded-2xl text-pink-500 group-hover:scale-110 transition-transform border border-pink-500/20">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-pink-500/10 rounded-xl text-pink-500 group-hover:scale-105 transition-transform border border-pink-500/20">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
                                     <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
                                 </svg>
                             </div>
                             <div>
-                                <h3 className="text-xs font-black uppercase tracking-[0.25em] text-white">Secure Messages</h3>
-                                <p className="text-[9px] font-mono text-pink-400 uppercase mt-0.5 font-bold">Encrypted Terminal</p>
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Secure Messages</h3>
+                                <p className="text-[8px] font-mono text-pink-400 uppercase mt-0.5 font-bold">Encrypted Terminal</p>
                             </div>
                         </div>
-                        <p className="text-[10px] text-white/40 uppercase tracking-widest leading-relaxed">Access the centralized communication hub for real-time collaboration.</p>
+                        <p className="text-[10px] text-white/40 uppercase tracking-widest leading-normal line-clamp-2">Access the centralized communication hub for real-time collaboration.</p>
                     </motion.div>
 
                     <div className="lg:col-span-2">
@@ -465,9 +481,9 @@ export default function Dashboard({ user: initialUser }) {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr_1fr] gap-4 items-start">
                     {/* Left: Calendar */}
-                    <div className="lg:col-span-5 xl:col-span-4 sticky top-0">
+                    <div className="sticky top-0">
                         <WorkCalendar
                             selectedDate={selectedDate}
                             onDateSelect={setSelectedDate}
@@ -477,7 +493,7 @@ export default function Dashboard({ user: initialUser }) {
                     </div>
 
                     {/* Right: Day Detail */}
-                    <div className="lg:col-span-7 xl:col-span-8 min-h-[600px]">
+                    <div className="lg:col-span-2 min-h-[500px]">
                         <DayDetail selectedDate={selectedDate} />
                     </div>
                 </div>
@@ -512,16 +528,20 @@ export default function Dashboard({ user: initialUser }) {
                         {activeView !== 'Chat' && activeView !== 'Approvals' && (
                             <button 
                                 onClick={() => setActiveView('Chat')}
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-pink-500/10 border border-pink-500/20 text-pink-500 hover:bg-pink-500 hover:text-white transition-all text-[10px] font-bold uppercase tracking-widest"
+                                className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-pink-500/10 border border-pink-500/20 text-pink-500 hover:bg-pink-500 hover:text-white transition-all text-[9px] font-bold uppercase tracking-widest"
                             >
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3">
                                     <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
                                 </svg>
                                 <span>Quick Chat</span>
                             </button>
                         )}
-                        <div className="text-right hidden sm:block">
-                            <p className="text-[9px] font-mono uppercase opacity-80 tracking-widest">Active Session</p>
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/5 border border-green-500/10 rounded-lg">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                            <p className="text-[9px] font-mono uppercase text-green-500/80 font-bold tracking-widest">Active Session</p>
+                        </div>
+                        <div className="hidden md:block">
+                            <Clock />
                         </div>
                     </div>
                 </motion.header>

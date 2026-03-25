@@ -15,7 +15,7 @@ export default function ProofSection({
         <div className="flex flex-col gap-4 bg-white/5 border border-pink-500/10 rounded-2xl p-5 overflow-hidden relative">
             <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-1">
-                    <h3 className="text-sm font-bold uppercase tracking-widest">Verifiable Proof</h3>
+                    <h3 className="text-sm font-bold tracking-tight text-white/90">Verifiable Proof</h3>
                     <div className="flex items-center gap-2">
                         <AnimatePresence mode="wait">
                             {isSaving ? (
@@ -114,9 +114,21 @@ export default function ProofSection({
                     </div>
                 ))}
                 {proofs.length === 0 && (
-                    <div className="h-full flex flex-col items-center justify-center opacity-60 py-10">
-                        <FileCheck size={32} className="mb-2" />
-                        <p className="text-[10px] uppercase tracking-widest">No evidence recorded</p>
+                    <div 
+                        onClick={() => isToday && fileInputRef.current?.click()}
+                        className={`flex-1 flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-2xl transition-all ${
+                            isToday 
+                            ? 'border-pink-500/10 bg-pink-500/[0.02] cursor-pointer hover:border-pink-500/40 hover:bg-pink-500/[0.05] group/upload' 
+                            : 'border-white/5 bg-white/5 opacity-50'
+                        }`}
+                    >
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 transition-transform ${isToday ? 'bg-pink-500/10 group-hover/upload:scale-110' : 'bg-white/5'}`}>
+                            <FileCheck size={24} className={isToday ? 'text-pink-500' : 'text-white/20'} />
+                        </div>
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-white/20 font-bold mb-2">No evidence recorded</p>
+                        {isToday && (
+                            <p className="text-[9px] font-mono text-pink-500/40 uppercase tracking-widest">Click to upload verification</p>
+                        )}
                     </div>
                 )}
             </div>

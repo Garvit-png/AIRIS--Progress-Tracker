@@ -68,38 +68,14 @@ const NAV = [
 ]
 
 export default function Sidebar({ user, activeView, setActiveView, isPortalUnlocked, onProfileClick }) {
-    const [collapsed, setCollapsed] = useState(false)
-    const [sidebarWidth, setSidebarWidth] = useState(260)
-    const [isResizing, setIsResizing] = useState(false)
-    const sidebarRef = useRef(null)
+    const [collapsed, setCollapsed] = useState(() => {
+        return localStorage.getItem('sidebar_collapsed') === 'true'
+    })
     const navigate = useNavigate()
 
-    const startResizing = useCallback((e) => {
-        setIsResizing(true)
-    }, [])
-
-    const stopResizing = useCallback(() => {
-        setIsResizing(false)
-    }, [])
-
-    const resize = useCallback((e) => {
-        if (isResizing) {
-            const newWidth = e.clientX
-            if (newWidth > 200 && newWidth < 500) {
-                setSidebarWidth(newWidth)
-                if (collapsed && newWidth > 220) setCollapsed(false)
-            }
-        }
-    }, [isResizing, collapsed])
-
     useEffect(() => {
-        window.addEventListener('mousemove', resize)
-        window.addEventListener('mouseup', stopResizing)
-        return () => {
-            window.removeEventListener('mousemove', resize)
-            window.removeEventListener('mouseup', stopResizing)
-        }
-    }, [resize, stopResizing])
+        localStorage.setItem('sidebar_collapsed', collapsed)
+    }, [collapsed])
 
     // Helper for avatar initials
     const initials = user?.name 
@@ -114,79 +90,113 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
     return (
         <motion.aside
             className="h-full flex flex-col bg-[#050505] border-r border-white/5 overflow-hidden flex-shrink-0 relative z-10"
-            animate={{ width: 280 }}
+            initial={false}
+            animate={{ width: collapsed ? 60 : 200 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
         >
             {/* User Profile Section */}
-            <div className="p-6">
-                <div className="p-4 bg-white/[0.03] border border-white/10 rounded-[2rem] flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-pink-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-pink-500/20">
+            <div className={`p-3 ${collapsed ? 'px-2' : 'px-4'} pt-6 pb-4`}>
+                <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} p-2 rounded-2xl transition-all`}>
+                    <div 
+                        onClick={onProfileClick}
+                        className="w-10 h-10 rounded-full bg-pink-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-pink-500/20 cursor-pointer flex-shrink-0"
+                    >
                         {initials}
                     </div>
-                    <div className="flex flex-col min-w-0">
-                        <span className="text-white font-bold text-sm truncate">{user?.name || user?.email.split('@')[0]}</span>
-                        <span className="text-pink-500 text-[10px] font-black uppercase tracking-widest">{user?.role || 'Member'}</span>
-                    </div>
+                    {!collapsed && (
+                        <div className="flex flex-col min-w-0 flex-1">
+                            <span className="text-white font-bold text-xs truncate leading-none mb-1">{user?.name || user?.email.split('@')[0]}</span>
+                            <span className="text-pink-500 text-[9px] font-black uppercase tracking-wider">{user?.role || 'Member'}</span>
+                        </div>
+                    )}
                 </div>
+                
+                {/* Toggle Button */}
+                <button 
+                    onClick={() => setCollapsed(!collapsed)}
+                    className={`absolute top-4 right-2 p-1.5 rounded-lg bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 transition-all z-20 ${collapsed ? '-right-1 scale-75 opacity-0 group-hover:opacity-100' : ''}`}
+                >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={`w-3.5 h-3.5 transition-transform ${collapsed ? 'rotate-180' : ''}`}>
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                </button>
             </div>
 
             {/* Navigation List */}
-            <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar">
+            <nav className="flex-1 px-2 space-y-1 overflow-y-auto custom-scrollbar">
                 {NAV.map(item => (
                     <button
                         key={item.label}
                         onClick={() => setActiveView(item.label)}
-                        className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-left transition-all duration-200 group ${
+                        className={`w-full flex items-center ${collapsed ? 'justify-center px-0' : 'px-3'} py-3 rounded-xl text-left transition-all duration-200 group relative ${
                             activeView === item.label
-                            ? 'bg-white/10 text-white shadow-xl'
-                            : 'bg-transparent text-white/50 hover:text-white/80 hover:bg-white/[0.03]'
+                            ? 'bg-white/10 text-white'
+                            : 'bg-transparent text-white/40 hover:text-white/80 hover:bg-white/[0.03]'
                         }`}
+                        title={collapsed ? item.label : ''}
                     >
-                        <span className={`${activeView === item.label ? 'text-white' : 'text-white/40 group-hover:text-white/60'} transition-colors`}>
-                            {item.icon}
+                        <span className={`${activeView === item.label ? 'text-white' : 'text-white/30 group-hover:text-white/60'} transition-colors flex-shrink-0`}>
+                            {React.cloneElement(item.icon, { className: 'w-[18px] h-[18px]' })}
                         </span>
-                        <span className="text-sm font-semibold tracking-tight">{item.label}</span>
+                        {!collapsed && (
+                            <span className="text-[13px] font-semibold tracking-tight ml-3">{item.label}</span>
+                        )}
+                        {collapsed && activeView === item.label && (
+                            <motion.div 
+                                layoutId="active-indicator"
+                                className="absolute left-0 w-1 h-6 bg-pink-500 rounded-r-full"
+                            />
+                        )}
                     </button>
                 ))}
 
                 {/* System Admin Section */}
                 {(user?.isAdmin || user?.role?.toLowerCase() === 'admin') && (
-                    <div className="pt-8 pb-4 space-y-4">
-                        <div className="px-4">
-                            <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">System Admin</span>
-                        </div>
+                    <div className="pt-6 pb-2 space-y-3">
+                        {!collapsed && (
+                            <div className="px-3">
+                                <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em]">System Admin</span>
+                            </div>
+                        )}
                         
                         <button
                             onClick={() => setActiveView('Approvals')}
-                            className={`w-full flex items-center gap-4 px-5 py-4 rounded-[1.5rem] text-left transition-all duration-300 border ${
+                            className={`w-full flex items-center ${collapsed ? 'justify-center px-0' : 'px-3'} py-3 rounded-xl text-left transition-all duration-300 border ${
                                 activeView === 'Approvals'
                                 ? 'bg-pink-500/10 border-pink-500/30 text-pink-500'
-                                : 'bg-pink-500/[0.03] border-pink-500/10 text-pink-500/80 hover:bg-pink-500/5 hover:border-pink-500/20'
+                                : 'bg-pink-500/[0.03] border-pink-500/10 text-pink-500/60 hover:bg-pink-500/5 hover:border-pink-500/20'
                             }`}
+                            title={collapsed ? 'Admin Portal' : ''}
                         >
                             <span className="flex-shrink-0">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-[18px] h-[18px]">
                                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                                     <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                                 </svg>
                             </span>
-                            <span className="text-xs font-bold uppercase tracking-wider">Admin Portal</span>
+                            {!collapsed && (
+                                <span className="text-xs font-bold uppercase tracking-wider ml-3">Admin Portal</span>
+                            )}
                         </button>
                     </div>
                 )}
             </nav>
 
             {/* Footer Section */}
-            <div className="p-4 border-t border-white/5 space-y-2">
+            <div className="p-2 border-t border-white/5 space-y-1">
                 <button 
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-4 px-5 py-4 rounded-[1.5rem] bg-white/[0.03] border border-white/10 text-white/60 hover:text-white hover:bg-white/5 hover:border-white/20 transition-all group"
+                    className={`w-full flex items-center ${collapsed ? 'justify-center px-0' : 'px-3'} py-3 rounded-xl bg-white/[0.02] border border-white/5 text-white/40 hover:text-white hover:bg-white/5 transition-all group`}
+                    title={collapsed ? 'Session Exit' : ''}
                 >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-[18px] h-[18px] opacity-50 group-hover:opacity-100 transition-opacity flex-shrink-0">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                         <polyline points="16 17 21 12 16 7" />
                         <line x1="21" y1="12" x2="9" y2="12" />
                     </svg>
-                    <span className="text-xs font-bold uppercase tracking-wider">Session Exit</span>
+                    {!collapsed && (
+                        <span className="text-xs font-bold uppercase tracking-wider ml-3">Session Exit</span>
+                    )}
                 </button>
             </div>
         </motion.aside>

@@ -19,7 +19,7 @@ export default function TaskSection({
         <div className="flex flex-col gap-4 bg-white/5 border border-pink-500/10 rounded-2xl p-5 overflow-hidden">
             <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-1">
-                    <h3 className="text-sm font-bold uppercase tracking-widest">Active To-Do</h3>
+                    <h3 className="text-sm font-bold tracking-tight text-white/90">Active To-Do</h3>
                     <div className="flex items-center gap-2 h-4">
                         <AnimatePresence mode="wait">
                             {isSyncingTasks ? (
@@ -102,9 +102,20 @@ export default function TaskSection({
                         </motion.div>
                     ))}
                     {tasks.length === 0 && (
-                        <div className="h-full flex flex-col items-center justify-center opacity-50 py-10">
-                            <Trophy size={32} className="mb-2" />
-                            <p className="text-[10px] uppercase tracking-widest">No objectives for this cycle</p>
+                        <div className="flex-1 flex flex-col items-center justify-center p-8 border-2 border-dashed border-pink-500/10 rounded-2xl bg-pink-500/[0.02] group/empty transition-all hover:border-pink-500/20">
+                            <div className="w-12 h-12 rounded-full bg-pink-500/5 flex items-center justify-center mb-4 group-hover/empty:scale-110 transition-transform">
+                                <Trophy size={24} className="text-pink-500/40" />
+                            </div>
+                            <p className="text-[10px] uppercase tracking-[0.2em] text-white/20 font-bold mb-4">No objectives for this cycle</p>
+                            {isToday && (
+                                <button 
+                                    onClick={() => document.querySelector('input[placeholder*="mission objective"]')?.focus()}
+                                    className="flex items-center gap-2 px-4 py-2 bg-pink-500/10 border border-pink-500/20 rounded-lg text-pink-500 text-[9px] font-black uppercase tracking-widest hover:bg-pink-500 hover:text-white transition-all shadow-lg shadow-pink-500/10"
+                                >
+                                    <Plus size={12} />
+                                    <span>Add Objective</span>
+                                </button>
+                            )}
                         </div>
                     )}
                 </AnimatePresence>
