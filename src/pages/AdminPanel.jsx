@@ -249,17 +249,6 @@ const AdminPanel = ({ isEmbedded = false }) => {
                             <p className="text-2xl font-bold text-pink-500 tracking-tight">{stats.totalOverall}</p>
                         </motion.div>
 
-                        <motion.button 
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            onClick={() => window.location.href = '/dashboard?view=Chat'}
-                            className="px-8 py-4 bg-pink-500 text-white rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg shadow-pink-500/20 hover:bg-pink-600 transition-all border border-pink-400/20"
-                        >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5">
-                                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                            </svg>
-                            <span className="text-[9px] font-black uppercase tracking-widest">Chat Portal</span>
-                        </motion.button>
                     </div>
                 </header>
 

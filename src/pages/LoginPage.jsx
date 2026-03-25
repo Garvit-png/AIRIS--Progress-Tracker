@@ -62,6 +62,8 @@ export default function LoginPage() {
     const handleGoogleSuccess = async (credentialResponse) => {
         setError('')
         setIsLoading(true)
+        // We can use the error field for temporary status messages if we want, 
+        // but for now just let the button show the state
         try {
             await AuthService.googleLogin(credentialResponse.credential)
             navigate(from, { replace: true })
@@ -138,7 +140,7 @@ export default function LoginPage() {
                             disabled={isLoading}
                             className="w-full py-3 bg-white text-black font-bold text-[10px] uppercase tracking-widest rounded-lg hover:invert transition-all disabled:opacity-50"
                         >
-                            {isLoading ? 'Verifying...' : 'Verify Identity'}
+                            {isLoading ? 'HANDSHAKING...' : 'Verify Identity'}
                         </button>
 
                         <div className="relative py-4">

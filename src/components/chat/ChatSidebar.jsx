@@ -14,6 +14,45 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
     const [groupParticipants, setGroupParticipants] = useState([]); // Array of emails
     const [newParticipantEmail, setNewParticipantEmail] = useState('');
 
+    const handleCreateDM = async (e) => {
+        e.preventDefault();
+        if (!newChatEmail.trim()) return;
+
+        try {
+            // Find user by email
+            const res = await fetch(`${SOCKET_URL}/api/auth/users/search/${newChatEmail.trim()}`, {
+                headers: { 'Authorization': `Bearer ${AuthService.getToken()}` }
+            });
+            const data = await res.json();
+            
+            if (!data.success) {
+                alert(data.message || 'User not registered in system');
+                return;
+            }
+
+            const response = await fetch(`${SOCKET_URL}/api/chat/conversation/dm`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${AuthService.getToken()}`
+                },
+                body: JSON.stringify({
+                    userId: data.user._id
+                })
+            });
+            const chatData = await response.json();
+            if (chatData.success) {
+                onSelectConversation(chatData.data);
+                onNewConversation();
+                setIsCreating(false);
+                setNewChatEmail('');
+            }
+        } catch (error) {
+            console.error('Failed to create DM:', error);
+            alert('PROTOCOL ERROR: Could not establish link');
+        }
+    };
+
     const handleAddParticipant = (e) => {
         e.preventDefault();
         if (newParticipantEmail && !groupParticipants.includes(newParticipantEmail)) {
@@ -60,6 +99,21 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
             console.error('Failed to create group:', error);
         }
     };
+
+    const filteredConversations = (conversations || []).filter(conv => {
+        if (!search) return true;
+        const searchLower = search.toLowerCase();
+        
+        if (conv.isGroup) {
+            return conv.groupName?.toLowerCase().includes(searchLower);
+        }
+        
+        const otherParticipant = conv.participants.find(p => p._id !== (user?.id || user?._id));
+        return (
+            otherParticipant?.name?.toLowerCase().includes(searchLower) ||
+            otherParticipant?.email?.toLowerCase().includes(searchLower)
+        );
+    });
 
     return (
         <div className="w-80 border-r border-white/5 flex flex-col bg-white/[0.02]">

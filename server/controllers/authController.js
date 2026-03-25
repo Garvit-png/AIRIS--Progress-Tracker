@@ -108,17 +108,20 @@ exports.googleLogin = async (req, res) => {
             audience: process.env.GOOGLE_CLIENT_ID
         });
 
-        const { email, name, picture } = ticket.getPayload();
+        const payload = ticket.getPayload();
+        const { email, name, picture, sub: googleId } = payload;
         const cleanEmail = email.toLowerCase().trim();
 
         console.log(`Google Auth Payload: email="${email}", cleanEmail="${cleanEmail}", name="${name}"`);
 
-        // Check if user exists
-        let user = await User.findOne({ email: { $regex: new RegExp(`^${cleanEmail}$`, 'i') } });
+        // Check if user exists and is pre-authorized in parallel for maximum speed
+        const [user, isPreAuth] = await Promise.all([
+            User.findOne({ email: cleanEmail }),
+            ApprovedEmail.findOne({ email: cleanEmail })
+        ]);
 
         if (!user) {
             const isAdminEmail = cleanEmail === 'garvitgandhi10313@gmail.com' || cleanEmail === 'garvitgandhi0313@gmail.com';
-            const isPreAuth = await ApprovedEmail.findOne({ email: cleanEmail });
 
             let newRole = 'Member';
             let newStatus = 'pending';
@@ -143,12 +146,12 @@ exports.googleLogin = async (req, res) => {
                 isAdmin: newIsAdmin,
                 status: newStatus,
                 isVerified: true,
-                googleId: ticket.getPayload().sub,
+                googleId,
                 profilePicture: picture || ''
             });
         } else if (!user.googleId) {
             // Link Google ID if it isn't linked yet
-            user.googleId = ticket.getPayload().sub;
+            user.googleId = googleId;
             user.profilePicture = user.profilePicture || picture;
             await user.save();
         }

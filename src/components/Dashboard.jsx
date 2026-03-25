@@ -433,7 +433,37 @@ export default function Dashboard({ user: initialUser }) {
 
         return (
             <div className="flex flex-col gap-6 max-w-7xl mx-auto">
-                <MonthlySummary currentMonth={currentMonth} />
+                {/* Status Bar */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <motion.div 
+                        whileHover={{ scale: 1.01, y: -2 }}
+                        onClick={() => setActiveView('Chat')}
+                        className="p-6 bg-pink-500/5 border border-pink-500/20 rounded-3xl cursor-pointer hover:bg-pink-500/10 transition-all group relative overflow-hidden"
+                    >
+                        <div className="absolute top-0 right-0 p-4">
+                            <div className="flex gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-pink-400/20" />
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4 mb-4">
+                            <div className="p-3 bg-pink-500/10 rounded-2xl text-pink-500 group-hover:scale-110 transition-transform border border-pink-500/20">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6">
+                                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 className="text-xs font-black uppercase tracking-[0.25em] text-white">Secure Messages</h3>
+                                <p className="text-[9px] font-mono text-pink-400 uppercase mt-0.5 font-bold">Encrypted Terminal</p>
+                            </div>
+                        </div>
+                        <p className="text-[10px] text-white/40 uppercase tracking-widest leading-relaxed">Access the centralized communication hub for real-time collaboration.</p>
+                    </motion.div>
+
+                    <div className="lg:col-span-2">
+                        <MonthlySummary currentMonth={currentMonth} />
+                    </div>
+                </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                     {/* Left: Calendar */}
@@ -479,7 +509,7 @@ export default function Dashboard({ user: initialUser }) {
                     </div>
 
                     <div className="flex items-center gap-3 sm:gap-5 flex-shrink-0">
-                        {activeView !== 'Chat' && (
+                        {activeView !== 'Chat' && activeView !== 'Approvals' && (
                             <button 
                                 onClick={() => setActiveView('Chat')}
                                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-pink-500/10 border border-pink-500/20 text-pink-500 hover:bg-pink-500 hover:text-white transition-all text-[10px] font-bold uppercase tracking-widest"
