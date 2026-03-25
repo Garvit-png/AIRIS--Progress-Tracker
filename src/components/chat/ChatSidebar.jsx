@@ -188,8 +188,16 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
         return otherParticipant?.name?.toLowerCase().includes(searchLower);
     });
 
-    const discoveredProfiles = search && filteredConversations.length === 0 
-        ? allMembers.filter(m => m.name.toLowerCase().includes(search.toLowerCase()))
+    const discoveredProfiles = search
+        ? allMembers.filter(m => {
+            const match = m.name.toLowerCase().includes(search.toLowerCase());
+            if (!match) return false;
+            // Avoid duplicating users we already have a visible DM with
+            const inVisibleDM = filteredConversations.some(conv => 
+                !conv.isGroup && conv.participants.some(p => p._id === m._id)
+            );
+            return !inVisibleDM;
+        })
         : [];
 
     return (
