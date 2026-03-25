@@ -63,31 +63,39 @@ function ErrorBoundary({ children }) {
 export default function App() {
   const [phase, setPhase] = useState('loading') // loading -> app
   const [isVerifying, setIsVerifying] = useState(true)
-  
-  useEffect(() => {
-    // Force permanent dark mode
-    document.documentElement.setAttribute('data-theme', 'dark')
+    useEffect(() => {
+        // Force permanent dark mode
+        document.documentElement.setAttribute('data-theme', 'dark')
 
-    const checkAuth = async () => {
-      // Background Warmup: Wake up the backend immediately (especially useful on Render free tier)
-      // This prevents the "Google Login takes too long" issue by starting the cold boot here.
-      fetch(`${config.API_BASE_URL}/auth/me`).catch(() => {});
+        const checkAuth = async () => {
+            // Background Warmup: Wake up the backend immediately (especially useful on Render free tier)
+            fetch(`${config.API_BASE_URL}/auth/me`).catch(() => {});
 
-      const token = AuthService.getToken()
-      if (token) {
-        try {
-          const user = await AuthService.getCurrentUser()
-          if (!user) {
-            AuthService.logout()
-          }
-        } catch (err) {
-          AuthService.logout()
+            const token = AuthService.getToken()
+            const sessionUser = AuthService.getSession()
+
+            // FAST-PATH: If we have a local session, show the UI immediately.
+            // Verification will happen in the background.
+            if (token && sessionUser) {
+                setIsVerifying(false);
+            }
+
+            if (token) {
+                try {
+                    const user = await AuthService.getCurrentUser()
+                    if (!user) {
+                        AuthService.logout()
+                    }
+                } catch (err) {
+                    AuthService.logout()
+                }
+            }
+            
+            // Final check for new users (who don't have a fast-path session)
+            setIsVerifying(false)
         }
-      }
-      setIsVerifying(false)
-    }
 
-    checkAuth()
+        checkAuth()
 
     // Single Tab Enforcement: Listen for redirect requests from other tabs
     const channel = new BroadcastChannel('airis_auth_channel');

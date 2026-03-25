@@ -272,6 +272,8 @@ export const AuthService = {
             body: JSON.stringify({ idToken })
         });
 
+        const data = await safeJson(response);
+
         if (!response.ok) {
             throw new Error(data.message || 'Google login failed');
         }
