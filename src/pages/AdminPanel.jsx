@@ -5,11 +5,11 @@ import { Search, UserPlus, Shield, X, Check, ShieldAlert, Clock, Mail, Graduatio
 import Logo from '../components/Logo';
 import AdminPortalGate from '../components/AdminPortalGate';
 
-const AdminPanel = ({ isEmbedded = false }) => {
+const AdminPanel = ({ isEmbedded = false, initialTab = 'pending' }) => {
     const [emails, setEmails] = useState([]);
     const [pendingUsers, setPendingUsers] = useState([]);
     const [approvedUsers, setApprovedUsers] = useState([]);
-    const [activeTab, setActiveTab] = useState('pending'); // pending, whitelist, history, tasks
+    const [activeTab, setActiveTab] = useState(initialTab); // pending, whitelist, history, tasks
     const [tasks, setTasks] = useState([]);
     const [newEmail, setNewEmail] = useState('');
     const [whitelistRole, setWhitelistRole] = useState('Member');

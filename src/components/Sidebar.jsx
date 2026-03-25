@@ -62,6 +62,7 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
     const [collapsed, setCollapsed] = useState(false)
     const [sidebarWidth, setSidebarWidth] = useState(260)
     const [isResizing, setIsResizing] = useState(false)
+    const [isAdminExpanded, setIsAdminExpanded] = useState(false)
     const sidebarRef = useRef(null)
     const navigate = useNavigate()
 
@@ -174,24 +175,75 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
                         <span className="text-[11px] font-bold tracking-tight">Settings</span>
                     </button>
 
-                    {/* System Admin Portal */}
+                    {/* System Admin Group */}
                     {(user?.isAdmin || user?.role?.toLowerCase() === 'admin') && (
-                        <button
-                            onClick={() => setActiveView('Approvals')}
-                            className={`w-full flex items-center gap-3 px-6 py-3 rounded-2xl text-left transition-all duration-300 border ${
-                                activeView === 'Approvals'
-                                ? 'bg-pink-500/10 border-pink-500/30 text-pink-500 shadow-[0_4px_12px_rgba(255,45,120,0.1)]'
-                                : 'bg-white/[0.02] border-white/5 text-pink-500/80 hover:bg-white/[0.04] hover:border-white/10'
-                            }`}
-                        >
-                            <span className="flex-shrink-0">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
-                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                                </svg>
-                            </span>
-                            <span className="text-[11px] font-bold tracking-tight">System admin</span>
-                        </button>
+                        <div className="space-y-1">
+                            <button
+                                onClick={() => setIsAdminExpanded(!isAdminExpanded)}
+                                className={`w-full flex items-center justify-between px-6 py-3 rounded-2xl text-left transition-all duration-300 border ${
+                                    activeView === 'Approvals' || activeView === 'Members' || activeView === 'AdminTasks'
+                                    ? 'bg-pink-500/10 border-pink-500/30 text-pink-500 shadow-[0_4px_12px_rgba(255,45,120,0.1)]'
+                                    : 'bg-white/[0.02] border-white/5 text-pink-500/80 hover:bg-white/[0.04] hover:border-white/10'
+                                }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <span className="flex-shrink-0">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
+                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                        </svg>
+                                    </span>
+                                    <span className="text-[11px] font-bold tracking-tight uppercase">System admin</span>
+                                </div>
+                                <motion.span
+                                    animate={{ rotate: isAdminExpanded ? 90 : 0 }}
+                                    className="text-pink-500/40"
+                                >
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-2.5 h-2.5">
+                                        <polyline points="9 18 15 12 9 6" />
+                                    </svg>
+                                </motion.span>
+                            </button>
+
+                            <AnimatePresence>
+                                {isAdminExpanded && (
+                                    <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        className="overflow-hidden px-2 space-y-1"
+                                    >
+                                        <button
+                                            onClick={() => setActiveView('Approvals')}
+                                            className={`w-full flex items-center gap-3 px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                                activeView === 'Approvals' ? 'text-pink-500 bg-pink-500/5' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
+                                            }`}
+                                        >
+                                            <div className={`w-1 h-1 rounded-full ${activeView === 'Approvals' ? 'bg-pink-500 shadow-[0_0_8px_rgba(255,13,153,0.4)]' : 'bg-white/10'}`} />
+                                            Approvals
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveView('Members')}
+                                            className={`w-full flex items-center gap-3 px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                                activeView === 'Members' ? 'text-pink-500 bg-pink-500/5' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
+                                            }`}
+                                        >
+                                            <div className={`w-1 h-1 rounded-full ${activeView === 'Members' ? 'bg-pink-500 shadow-[0_0_8px_rgba(255,13,153,0.4)]' : 'bg-white/10'}`} />
+                                            Members
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveView('AdminTasks')}
+                                            className={`w-full flex items-center gap-3 px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                                activeView === 'AdminTasks' ? 'text-pink-500 bg-pink-500/5' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
+                                            }`}
+                                        >
+                                            <div className={`w-1 h-1 rounded-full ${activeView === 'AdminTasks' ? 'bg-pink-500 shadow-[0_0_8px_rgba(255,13,153,0.4)]' : 'bg-white/10'}`} />
+                                            Admin Tasks
+                                        </button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     )}
                 </div>
 
