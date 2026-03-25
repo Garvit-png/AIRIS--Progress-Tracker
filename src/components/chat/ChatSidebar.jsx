@@ -60,8 +60,8 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
             
             // Local Token Match (Instant)
             const matches = allMembers.filter(m => {
-                const nameLower = m.name.toLowerCase();
-                const roleLower = m.role.toLowerCase();
+                const nameLower = m.name ? m.name.toLowerCase() : '';
+                const roleLower = m.role ? m.role.toLowerCase() : '';
                 return queryParts.every(part => nameLower.includes(part) || roleLower.includes(part));
             });
             
@@ -86,8 +86,8 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
         if (participantSearch.trim().length >= 1) {
             const query = participantSearch.toLowerCase().trim();
             const matches = allMembers.filter(m => 
-                m.name.toLowerCase().includes(query) || 
-                m.role.toLowerCase().includes(query)
+                (m.name && m.name.toLowerCase().includes(query)) || 
+                (m.role && m.role.toLowerCase().includes(query))
             );
             setParticipantResults(matches);
         } else {
@@ -190,7 +190,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
 
     const discoveredProfiles = search
         ? allMembers.filter(m => {
-            const match = m.name.toLowerCase().includes(search.toLowerCase());
+            const match = m.name ? m.name.toLowerCase().includes(search.toLowerCase()) : false;
             if (!match) return false;
             // Avoid duplicating users we already have a visible DM with
             const inVisibleDM = filteredConversations.some(conv => 
