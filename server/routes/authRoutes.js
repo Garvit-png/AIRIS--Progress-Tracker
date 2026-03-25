@@ -9,7 +9,8 @@ const {
     verifyEmail,
     updateProfile,
     findUserByEmail,
-    searchUsersByName
+    searchUsersByName,
+    getApprovedMembers
 } = require('../controllers/authController');
 
 const router = express.Router();
@@ -26,5 +27,6 @@ router.get('/verify/:token', verifyEmail);
 router.put('/profile', protect, updateProfile);
 router.get('/users/search/:email', protect, findUserByEmail);
 router.get('/users/search-name/:query', protect, searchUsersByName);
+router.get('/members', protect, getApprovedMembers);
 
 module.exports = router;

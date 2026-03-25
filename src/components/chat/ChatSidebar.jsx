@@ -12,10 +12,29 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
     const [newChatName, setNewChatName] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [allMembers, setAllMembers] = useState([]);
     const [groupName, setGroupName] = useState('');
     const [groupParticipants, setGroupParticipants] = useState([]); // Array of user objects
     const [participantSearch, setParticipantSearch] = useState('');
     const [participantResults, setParticipantResults] = useState([]);
+
+    React.useEffect(() => {
+        fetchAllMembers();
+    }, []);
+
+    const fetchAllMembers = async () => {
+        try {
+            const res = await fetch(`${SOCKET_URL}/api/auth/members`, {
+                headers: { 'Authorization': `Bearer ${AuthService.getToken()}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                setAllMembers(data.members);
+            }
+        } catch (error) {
+            console.error('Failed to fetch members:', error);
+        }
+    };
 
     // Debounced search for DM
     React.useEffect(() => {
@@ -131,11 +150,12 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
         }
         
         const otherParticipant = conv.participants.find(p => p._id !== (user?.id || user?._id));
-        return (
-            otherParticipant?.name?.toLowerCase().includes(searchLower) ||
-            otherParticipant?.email?.toLowerCase().includes(searchLower)
-        );
+        return otherParticipant?.name?.toLowerCase().includes(searchLower);
     });
+
+    const discoveredProfiles = search && filteredConversations.length === 0 
+        ? allMembers.filter(m => m.name.toLowerCase().includes(search.toLowerCase()))
+        : [];
 
     return (
         <div className="w-80 border-r border-white/5 flex flex-col bg-white/[0.02]">
@@ -198,8 +218,9 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                     {isSearching && <div className="absolute right-3 top-2.5 w-3 h-3 border-2 border-pink-500/20 border-t-pink-500 rounded-full animate-spin" />}
                                 </div>
                                 
-                                {searchResults.length > 0 && (
+                                {newChatName.length >= 2 && searchResults.length > 0 && (
                                     <div className="max-h-40 overflow-y-auto rounded-lg border border-white/5 bg-black/40">
+                                        <p className="px-3 py-1.5 text-[8px] font-bold text-white/30 uppercase tracking-widest border-b border-white/5 bg-white/[0.02]">Matches</p>
                                         {searchResults.map(result => (
                                             <button 
                                                 key={result._id}
@@ -212,6 +233,29 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-[11px] font-bold text-white truncate">{result.name}</p>
                                                     <p className="text-[9px] text-white/30 truncate uppercase tracking-tighter">{result.role}</p>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                                {!newChatName && allMembers.length > 0 && (
+                                    <div className="max-h-60 overflow-y-auto rounded-lg border border-white/5 bg-black/40 shadow-2xl">
+                                        <p className="px-3 py-1.5 text-[8px] font-black text-pink-500/60 uppercase tracking-[0.2em] border-b border-white/5 bg-white/[0.02]">Recommended Members</p>
+                                        {allMembers.map(member => (
+                                            <button 
+                                                key={member._id}
+                                                onClick={() => handleStartDM(member)}
+                                                className="w-full flex items-center gap-3 p-3 hover:bg-white/[0.06] text-left transition-all group"
+                                            >
+                                                <div className="w-9 h-9 rounded-xl bg-white/5 overflow-hidden flex-shrink-0 border border-white/5 group-hover:border-pink-500/20">
+                                                    {member.profilePicture ? <img src={member.profilePicture} className="w-full h-full object-cover" /> : <User size={16} className="m-auto text-white/20" />}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-[11px] font-bold text-white truncate group-hover:text-pink-400">{member.name}</p>
+                                                    <p className="text-[9px] text-white/20 truncate uppercase tracking-widest">{member.role}</p>
+                                                </div>
+                                                <div className="w-6 h-6 rounded-lg bg-pink-500/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Plus size={12} className="text-pink-500" />
                                                 </div>
                                             </button>
                                         ))}
@@ -292,41 +336,67 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                         <p className="text-[10px] font-mono text-white/20 uppercase tracking-[0.2em]">No Conversations</p>
                     </div>
                 ) : (
-                    filteredConversations.map(conv => {
-                        const otherParticipant = conv.isGroup ? null : conv.participants.find(p => p._id !== user.id);
-                        const isActive = activeConversation?._id === conv._id;
+                    <>
+                        {filteredConversations.map(conv => {
+                            const otherParticipant = conv.isGroup ? null : conv.participants.find(p => p._id !== user.id);
+                            const isActive = activeConversation?._id === conv._id;
 
-                        return (
-                            <button
-                                key={conv._id}
-                                onClick={() => onSelectConversation(conv)}
-                                className={`w-full flex items-center gap-3 p-4 transition-all border-l-2 hover:bg-white/[0.04] ${isActive ? 'bg-pink-500/5 border-pink-500' : 'border-transparent'}`}
-                            >
-                                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center overflow-hidden flex-shrink-0">
-                                    {conv.isGroup ? (
-                                        conv.groupImage ? <img src={conv.groupImage} className="w-full h-full object-cover" /> : <Users size={20} className="text-white/40" />
-                                    ) : (
-                                        otherParticipant?.profilePicture ? <img src={otherParticipant.profilePicture} className="w-full h-full object-cover" /> : <User size={20} className="text-white/40" />
-                                    )}
-                                </div>
-                                <div className="flex-1 min-w-0 text-left">
-                                    <div className="flex items-center justify-between mb-0.5">
-                                        <h3 className="text-sm font-semibold text-white truncate">
-                                            {conv.isGroup ? conv.groupName : otherParticipant?.name}
-                                        </h3>
-                                        {conv.lastMessage && (
-                                            <span className="text-[9px] text-white/30 font-mono">
-                                                {new Date(conv.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
+                            return (
+                                <button
+                                    key={conv._id}
+                                    onClick={() => onSelectConversation(conv)}
+                                    className={`w-full flex items-center gap-3 p-4 transition-all border-l-2 hover:bg-white/[0.04] ${isActive ? 'bg-pink-500/5 border-pink-500' : 'border-transparent'}`}
+                                >
+                                    <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                        {conv.isGroup ? (
+                                            conv.groupImage ? <img src={conv.groupImage} className="w-full h-full object-cover" /> : <Users size={20} className="text-white/40" />
+                                        ) : (
+                                            otherParticipant?.profilePicture ? <img src={otherParticipant.profilePicture} className="w-full h-full object-cover" /> : <User size={20} className="text-white/40" />
                                         )}
                                     </div>
-                                    <p className="text-[11px] text-white/50 truncate">
-                                        {conv.lastMessage ? conv.lastMessage.text : 'No messages yet'}
-                                    </p>
-                                </div>
-                            </button>
-                        );
-                    })
+                                    <div className="flex-1 min-w-0 text-left">
+                                        <div className="flex items-center justify-between mb-0.5">
+                                            <h3 className="text-sm font-semibold text-white truncate">
+                                                {conv.isGroup ? conv.groupName : otherParticipant?.name}
+                                            </h3>
+                                            {conv.lastMessage && (
+                                                <span className="text-[9px] text-white/30 font-mono">
+                                                    {new Date(conv.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-[11px] text-white/50 truncate">
+                                            {conv.lastMessage ? conv.lastMessage.text : 'No messages yet'}
+                                        </p>
+                                    </div>
+                                </button>
+                            );
+                        })}
+
+                        {discoveredProfiles.length > 0 && (
+                            <div className="mt-4 pb-10">
+                                <p className="px-6 py-2 text-[9px] font-black text-white/30 uppercase tracking-[0.2em] flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-pink-500/40" />
+                                    Global Profiles
+                                </p>
+                                {discoveredProfiles.map(profile => (
+                                    <button
+                                        key={profile._id}
+                                        onClick={() => handleStartDM(profile)}
+                                        className="w-full flex items-center gap-3 px-6 py-3 hover:bg-white/[0.04] transition-all group"
+                                    >
+                                        <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center overflow-hidden shrink-0">
+                                            {profile.profilePicture ? <img src={profile.profilePicture} className="w-full h-full object-cover" /> : <User size={16} className="text-white/20" />}
+                                        </div>
+                                        <div className="flex-1 min-w-0 text-left">
+                                            <p className="text-xs font-bold text-white truncate group-hover:text-pink-400">{profile.name}</p>
+                                            <p className="text-[9px] text-white/20 uppercase tracking-widest">{profile.role}</p>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>

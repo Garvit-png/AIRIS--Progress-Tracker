@@ -366,3 +366,27 @@ exports.searchUsersByName = async (req, res) => {
         });
     }
 };
+
+// @desc    Get all approved members (for chat discovery)
+// @route   GET /api/auth/members
+// @access  Private
+exports.getApprovedMembers = async (req, res) => {
+    try {
+        const members = await User.find({
+            status: 'approved',
+            _id: { $ne: req.user.id } // Don't include self
+        })
+        .select('name profilePicture role')
+        .sort({ name: 1 });
+
+        res.status(200).json({
+            success: true,
+            members
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
