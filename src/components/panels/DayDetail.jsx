@@ -85,20 +85,20 @@ export default function DayDetail({ selectedDate }) {
     const completedCount = data.tasks.filter(t => t.completed).length;
 
     return (
-        <div className="flex flex-col gap-10 h-full p-0 relative">
+        <div className="flex flex-col gap-6 h-full p-2 relative">
             {isFuture && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center backdrop-blur-[2px] bg-black/40 rounded-[3rem] border border-pink-500/10">
+                <div className="absolute inset-0 z-50 flex items-center justify-center backdrop-blur-[2px] bg-black/40 rounded-3xl border border-pink-500/10 m-2">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="p-12 rounded-[2.5rem] bg-[#121212] border border-pink-500/20 shadow-2xl flex flex-col items-center text-center max-w-md"
+                        className="p-8 rounded-2xl bg-[#121212] border border-pink-500/20 shadow-2xl flex flex-col items-center text-center max-w-sm"
                     >
-                        <div className="w-20 h-20 rounded-full bg-pink-500/10 flex items-center justify-center mb-8 border border-pink-500/20">
-                            <Clock className="text-pink-400" size={40} />
+                        <div className="w-16 h-16 rounded-full bg-pink-500/10 flex items-center justify-center mb-6 border border-pink-500/20">
+                            <Clock className="text-pink-400" size={32} />
                         </div>
-                        <h3 className="text-xl font-bold uppercase tracking-widest text-white mb-4 italic">Chronal Barrier Active</h3>
-                        <p className="text-xs text-white/60 leading-relaxed font-mono uppercase tracking-[0.1em]">
-                            System data nodes for future cycles are currently locked. Modification is restricted to the current timeline.
+                        <h3 className="text-lg font-bold uppercase tracking-widest text-white mb-2">Chronal Barrier</h3>
+                        <p className="text-xs text-white/85 leading-relaxed font-mono">
+                            The system is currently restricted. Future data nodes are not yet accessible for modification.
                         </p>
                     </motion.div>
                 </div>
@@ -106,7 +106,7 @@ export default function DayDetail({ selectedDate }) {
 
             <DaySummaryCards data={data} completedCount={completedCount} />
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 flex-1 overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 overflow-hidden">
                 <TaskSection 
                     tasks={data.tasks}
                     isToday={isToday}

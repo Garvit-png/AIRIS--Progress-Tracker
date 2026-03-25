@@ -20,69 +20,73 @@ export default function MonthlySummary({ currentMonth }) {
     }, [currentMonth]);
 
     return (
-        <div className="flex flex-col gap-10 p-10 bg-white/[0.02] border border-white/5 rounded-[3rem] relative overflow-hidden backdrop-blur-md shadow-2xl">
-            <div className="absolute top-0 right-0 w-80 h-80 bg-pink-500/5 blur-[150px] -mr-40 -mt-40" />
-            <div className="absolute bottom-0 left-0 w-80 h-80 bg-pink-500/5 blur-[150px] -ml-40 -mb-40" />
-
-            <div className="flex items-center justify-between relative z-10">
-                <div className="flex flex-col gap-1">
-                    <p className="font-mono text-[11px] uppercase tracking-[0.4em] text-pink-500 font-black">MISSION STATUS</p>
-                    <h2 className="text-4xl font-black tracking-tighter text-white uppercase italic leading-none mt-1">Performance Metrics</h2>
+        <div className="flex flex-col gap-6 p-1">
+            <div className="flex items-center justify-between">
+                <div className="flex flex-col">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">MONTHLY REPORT</p>
+                    <h2 className="text-xl font-bold tracking-tight text-white">Performance Metrics</h2>
                 </div>
-                <div className="flex items-center gap-3 px-4 py-2 bg-pink-500/10 border border-pink-500/20 rounded-xl">
-                    <BarChart3 size={16} className="text-pink-500 animate-pulse" />
-                    <span className="text-[11px] font-mono text-white/80 uppercase tracking-widest font-bold">{format(currentMonth, 'MMMM yyyy')}</span>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-pink-500/20 rounded-lg">
+                    <BarChart3 size={14} className="text-pink-400" />
+                    <span className="text-[10px] font-mono text-white uppercase tracking-widest">{format(currentMonth, 'MMMM yyyy')}</span>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8 relative z-10">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <StatCard
                     label="Days active"
                     value={stats.activeDays}
-                    icon={<Zap size={18} />}
+                    icon={<Zap size={14} />}
                     accentColor="border-amber-500"
                     iconColor="text-amber-500"
                 />
                 <StatCard
                     label="Tasks completed"
                     value={stats.completedTasks}
-                    icon={<Target size={18} />}
+                    icon={<Target size={14} />}
                     accentColor="border-emerald-500"
                     iconColor="text-emerald-500"
                 />
                 <StatCard
                     label="Proofs verified"
                     value={stats.proofsUploaded}
-                    icon={<FileCheck size={18} />}
+                    icon={<FileCheck size={14} />}
                     accentColor="border-pink-500"
                     iconColor="text-pink-500"
                 />
                 <StatCard
                     label="Efficiency"
                     value={`${stats.efficiency}%`}
-                    icon={<Trophy size={18} />}
+                    icon={<Trophy size={14} />}
                     accentColor="border-blue-500"
                     iconColor="text-blue-500"
                 />
             </div>
 
             {/* Monthly Progress Bar */}
-            <div className="p-8 rounded-3xl bg-white/[0.015] border border-white/5 relative z-10">
-                <div className="flex justify-between items-end mb-6">
-                    <div className="flex flex-col gap-1">
-                        <span className="text-[11px] font-black uppercase tracking-[0.3em] text-white/20">Operational Efficiency</span>
-                        <p className="text-[10px] text-white/30 max-w-sm">Calculated based on objective completion for the current cycle.</p>
-                    </div>
-                    <span className="text-5xl font-mono font-bold text-white tracking-tighter">{stats.efficiency}%</span>
+            <div className="p-5 rounded-2xl bg-[#111113] border border-white/5">
+                <div className="flex justify-between items-center mb-4">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Mission efficiency</span>
+                    <span className="text-base font-mono font-bold text-white">{stats.efficiency}%</span>
                 </div>
-                <div className="relative h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                <div className="relative h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                    {/* Ticks */}
+                    <div className="absolute inset-0 flex justify-between px-[25%] pointer-events-none">
+                        <div className="w-[1px] h-full bg-white/10" />
+                        <div className="w-[1px] h-full bg-white/10" />
+                    </div>
+                    <div className="absolute inset-x-[50%] h-full w-[1px] bg-white/10 pointer-events-none" />
+                    
                     <motion.div
                         initial={{ width: '4px' }}
                         animate={{ width: `calc(${stats.efficiency}% + 4px)` }}
-                        transition={{ duration: 1.2, ease: "easeOut" }}
-                        className="h-full bg-pink-500 shadow-[0_0_20px_rgba(255,45,120,0.5)] rounded-full"
+                        transition={{ duration: 1, ease: "easeOut" }}
+                        className="h-full bg-[#FF2D78] shadow-[0_0_15px_rgba(255,45,120,0.3)] rounded-full"
                     />
                 </div>
+                <p className="mt-4 text-[10px] text-white/30">
+                    Calculated based on completed objectives vs total planned work for {format(currentMonth, 'MMMM')}.
+                </p>
             </div>
         </div>
     );
@@ -90,14 +94,13 @@ export default function MonthlySummary({ currentMonth }) {
 
 function StatCard({ label, value, icon, accentColor, iconColor }) {
     return (
-        <div className={`p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 border-l-[6px] ${accentColor} flex flex-col gap-6 group transition-all hover:bg-white/[0.05] hover:scale-[1.02] min-h-[160px] relative overflow-hidden shadow-xl`}>
-            <div className="absolute top-0 right-0 w-24 h-24 bg-white/[0.01] blur-3xl group-hover:bg-white/[0.03] transition-all" />
-            <div className={`${iconColor} opacity-40 group-hover:opacity-100 transition-opacity transform group-hover:scale-110 duration-500`}>
+        <div className={`p-4 rounded-xl bg-[#111113] border border-white/5 border-l-[3px] ${accentColor} flex flex-col gap-3 group transition-all`}>
+            <div className={`${iconColor} opacity-50 group-hover:opacity-100 transition-opacity`}>
                 {icon}
             </div>
-            <div className="relative z-10">
-                <p className="text-[11px] font-bold text-white/30 mb-2 uppercase tracking-widest">{label}</p>
-                <p className="text-4xl font-black tracking-tighter text-white">{value}</p>
+            <div>
+                <p className="text-[10px] text-white/40 mb-1">{label}</p>
+                <p className="text-2xl font-semibold tracking-tight text-white">{value}</p>
             </div>
         </div>
     );
