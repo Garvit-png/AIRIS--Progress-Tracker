@@ -123,12 +123,12 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
             />
 
             {/* User Profile Section */}
-            <div className="p-6">
+            <div className="p-4">
                 <button 
                     onClick={onProfileClick}
-                    className="w-full p-4 bg-white/[0.03] border border-white/10 rounded-[2rem] flex items-center gap-4 hover:bg-white/[0.05] hover:border-white/20 transition-all group group/profile"
+                    className="w-full flex items-center gap-3 p-2 bg-white/[0.03] border border-white/10 rounded-2xl hover:bg-white/[0.05] hover:border-white/20 transition-all group group/profile"
                 >
-                    <div className="w-12 h-12 rounded-full bg-pink-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-pink-500/20 overflow-hidden group-hover/profile:scale-105 transition-transform">
+                    <div className="w-8 h-8 rounded-xl bg-pink-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-pink-500/10 overflow-hidden group-hover/profile:scale-105 transition-transform shrink-0">
                         {user?.profilePicture ? (
                             <img src={user.profilePicture} alt="Profile" className="w-full h-full object-cover" />
                         ) : (
@@ -136,8 +136,8 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
                         )}
                     </div>
                     <div className="flex flex-col min-w-0 text-left">
-                        <span className="text-white font-bold text-sm truncate">{user?.name || user?.email.split('@')[0]}</span>
-                        <span className="text-pink-500 text-[10px] font-black uppercase tracking-widest">{user?.role || 'Member'}</span>
+                        <span className="text-white font-bold text-xs truncate leading-tight">{user?.name || user?.email.split('@')[0]}</span>
+                        <span className="text-pink-500/80 text-[9px] font-black uppercase tracking-widest">{user?.role || 'Member'}</span>
                     </div>
                 </button>
             </div>
@@ -148,31 +148,52 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
                     <button
                         key={item.label}
                         onClick={() => setActiveView(item.label)}
-                        className={`w-full group flex items-center gap-4 px-5 py-3 rounded-2xl transition-all duration-300 ${
+                        className={`w-full group flex items-center gap-4 px-5 py-2.5 rounded-xl transition-all duration-300 ${
                           activeView === item.label 
-                            ? 'bg-[#FF2D78] text-white shadow-[0_4px_12px_rgba(255,45,120,0.3)]'
+                            ? 'bg-pink-500/10 text-pink-500 shadow-[0_2px_8px_rgba(255,45,120,0.1)] border border-pink-500/20'
                             : 'bg-transparent text-white/40 hover:text-white/80 hover:bg-white/[0.03]'
                         }`}
                     >
-                        <span className={`${activeView === item.label ? 'text-white' : 'text-white/40 group-hover:text-white/60'} transition-colors`}>
+                        <span className={`${activeView === item.label ? 'text-pink-500' : 'text-white/40 group-hover:text-white/60'} transition-colors`}>
                             {item.icon}
                         </span>
                         <span className="text-sm font-semibold tracking-tight">{item.label}</span>
                     </button>
                 ))}
+            </nav>
 
-                {/* System Admin Section */}
+            {/* Bottom Section - Pinned to footer */}
+            <div className="mt-auto px-4 pb-6 space-y-4">
+                {/* Settings Shortcut */}
+                <button
+                    onClick={() => setActiveView('Settings')}
+                    className={`w-full group flex items-center gap-4 px-5 py-2.5 rounded-xl transition-all duration-300 ${
+                        activeView === 'Settings'
+                        ? 'bg-pink-500/10 text-pink-500 border border-pink-500/20'
+                        : 'bg-white/[0.02] text-white/40 border border-white/5 hover:bg-white/[0.05] hover:border-white/10'
+                    }`}
+                >
+                    <span className="text-white/40 group-hover:text-white/60">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-5 h-5">
+                            <circle cx="12" cy="12" r="3" />
+                            <path d="m19 9-4 4-4-4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m20.66 7-1.73 1" /><path d="m5.07 16-1.73 1" /><path d="m17.33 19 1.73 1" /><path d="m6.67 4-1.73 1" /><path d="m20.66 17 1.73-1" /><path d="m5.07 8 1.73-1" /><path d="m17.33 5-1.73-1" /><path d="m6.67 20-1.73-1" />
+                        </svg>
+                    </span>
+                    <span className="text-sm font-semibold tracking-tight">Account settings</span>
+                </button>
+
+                {/* System Admin Portal */}
                 {(user?.isAdmin || user?.role?.toLowerCase() === 'admin') && (
-                    <div className="pt-8 pb-4 space-y-4">
+                    <div className="space-y-4">
                         <div className="px-4">
                             <span className="text-[10px] font-bold text-white/20 uppercase tracking-[0.2em]">System admin</span>
                         </div>
                         
                         <button
                             onClick={() => setActiveView('Approvals')}
-                            className={`w-full flex items-center gap-4 px-5 py-3 rounded-2xl text-left transition-all duration-300 border ${
+                            className={`w-full flex items-center gap-4 px-5 py-2.5 rounded-xl text-left transition-all duration-300 border ${
                                 activeView === 'Approvals'
-                                ? 'bg-[#FF2D78] border-[#FF2D78] text-white shadow-[0_4px_12px_rgba(255,45,120,0.2)]'
+                                ? 'bg-pink-500/10 border-pink-500/30 text-pink-500'
                                 : 'bg-white/[0.02] border-white/5 text-pink-500/80 hover:bg-white/[0.04] hover:border-white/10'
                             }`}
                         >
@@ -186,21 +207,21 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
                         </button>
                     </div>
                 )}
-            </nav>
 
-            {/* Footer Section */}
-            <div className="p-4 border-t border-white/5 space-y-2">
-                <button 
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-4 px-5 py-3 rounded-2xl bg-white/[0.02] border border-white/5 text-white/40 hover:text-white/80 hover:bg-white/[0.04] hover:border-white/10 transition-all group"
-                >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4 opacity-40 group-hover:opacity-100 transition-opacity">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                        <polyline points="16 17 21 12 16 7" />
-                        <line x1="21" y1="12" x2="9" y2="12" />
-                    </svg>
-                    <span className="text-xs font-bold tracking-tight">Session exit</span>
-                </button>
+                {/* Logout button */}
+                <div className="pt-2 border-t border-white/5">
+                    <button 
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-4 px-5 py-2.5 rounded-xl bg-white/[0.02] border border-white/5 text-white/40 hover:text-white/80 hover:bg-white/[0.04] hover:border-white/10 transition-all group"
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4 opacity-40 group-hover:opacity-100 transition-opacity">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                            <polyline points="16 17 21 12 16 7" />
+                            <line x1="21" y1="12" x2="9" y2="12" />
+                        </svg>
+                        <span className="text-xs font-bold tracking-tight">Session exit</span>
+                    </button>
+                </div>
             </div>
         </motion.aside>
     )

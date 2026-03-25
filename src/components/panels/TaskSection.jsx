@@ -55,9 +55,9 @@ export default function TaskSection({
                         value={newTaskTitle}
                         onChange={(e) => setNewTaskTitle(e.target.value)}
                         placeholder="Add a mission objective..."
-                        className="w-full bg-white/5 border border-pink-500/20 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-pink-500/40 transition-colors pr-12"
+                        className="w-full bg-white/5 border-2 border-[#FF2D78]/20 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#FF2D78]/40 transition-colors pr-12 text-white"
                     />
-                    <button type="submit" className="absolute right-2 top-2 p-1.5 bg-white/10 rounded-lg hover:bg-white/20 transition-all">
+                    <button type="submit" className="absolute right-2 top-2 p-1.5 bg-white/10 rounded-lg hover:bg-white/20 text-[#FF2D78] transition-all">
                         <Plus size={16} />
                     </button>
                 </form>
@@ -110,7 +110,7 @@ export default function TaskSection({
                             {isToday && (
                                 <button 
                                     onClick={() => document.querySelector('input[placeholder="Add a mission objective..."]')?.focus()}
-                                    className="px-4 py-2 bg-[#FF2D78] hover:bg-[#FF2D78]/90 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all shadow-[0_4px_12px_rgba(255,45,120,0.2)]"
+                                    className="px-4 py-2 border-2 border-[#FF2D78] text-[#FF2D78] text-[10px] font-bold uppercase tracking-widest rounded-xl hover:bg-[#FF2D78]/10 transition-all shadow-[0_4px_12px_rgba(255,45,120,0.1)]"
                                 >
                                     + Add objective
                                 </button>

@@ -437,23 +437,18 @@ export default function Dashboard({ user: initialUser }) {
                 {/* Compact Banner Row */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <motion.div 
-                        whileHover={{ scale: 1.005, y: -1 }}
+                        whileHover={{ scale: 1.002, y: -0.5 }}
                         onClick={() => setActiveView('Chat')}
-                        className="lg:col-span-1 flex items-center gap-4 px-5 py-3 bg-[#111113] border border-white/5 rounded-2xl cursor-pointer hover:bg-white/[0.03] transition-all group relative overflow-hidden"
+                        className="lg:col-span-1 flex items-center gap-3 px-4 py-1.5 bg-[#111113] border border-white/5 rounded-xl cursor-pointer hover:bg-white/[0.03] transition-all group relative overflow-hidden"
                     >
-                        <div className="absolute top-0 right-0 p-3 opacity-20">
-                            <div className="flex gap-1">
-                                <span className="w-1 h-1 rounded-full bg-pink-500 animate-pulse" />
-                            </div>
-                        </div>
-                        <div className="p-2 bg-pink-500/10 rounded-xl text-pink-500 border border-pink-500/20 group-hover:scale-105 transition-transform">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                        <div className="p-1.5 bg-pink-500/10 rounded-lg text-pink-500 border border-pink-500/20 group-hover:scale-105 transition-transform shrink-0">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                             </svg>
                         </div>
                         <div className="flex flex-col min-w-0">
-                            <h3 className="text-[11px] font-bold text-white tracking-tight">Secure messages</h3>
-                            <p className="text-[9px] text-white/40 truncate">Access the centralized communication terminal</p>
+                            <h3 className="text-[10px] font-bold text-white tracking-tight leading-none mb-0.5">Secure messages</h3>
+                            <p className="text-[9px] text-white/40 truncate leading-none">Access the communication terminal</p>
                         </div>
                     </motion.div>
 
