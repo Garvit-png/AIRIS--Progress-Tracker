@@ -60,7 +60,7 @@ const NAV = [
 
 export default function Sidebar({ user, activeView, setActiveView, isPortalUnlocked, onProfileClick }) {
     const [collapsed, setCollapsed] = useState(false)
-    const [sidebarWidth, setSidebarWidth] = useState(260)
+    const [sidebarWidth, setSidebarWidth] = useState(220)
     const [isResizing, setIsResizing] = useState(false)
     const [isAdminExpanded, setIsAdminExpanded] = useState(false)
     const sidebarRef = useRef(null)
@@ -115,12 +115,12 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
             />
 
             {/* User Profile Section */}
-            <div className="p-4">
+            <div className="p-5">
                 <button 
                     onClick={onProfileClick}
                     className="w-full flex items-center gap-4 p-3 bg-white/[0.03] border border-white/5 rounded-2xl hover:bg-white/[0.05] hover:border-white/10 transition-all group group/profile"
                 >
-                    <div className="w-10 h-10 rounded-xl bg-pink-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-pink-500/10 overflow-hidden group-hover/profile:scale-105 transition-transform shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-pink-500 flex items-center justify-center text-white font-bold text-base shadow-lg shadow-pink-500/10 overflow-hidden group-hover/profile:scale-105 transition-transform shrink-0">
                         {user?.profilePicture ? (
                             <img src={user.profilePicture} alt="Profile" className="w-full h-full object-cover" />
                         ) : (
@@ -128,8 +128,8 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
                         )}
                     </div>
                     <div className="flex flex-col min-w-0 text-left">
-                        <span className="text-white font-bold text-sm truncate leading-tight uppercase tracking-tight">{user?.name || user?.email.split('@')[0]}</span>
-                        <span className="text-pink-500/60 text-[10px] font-black uppercase tracking-widest leading-none mt-1">{user?.role || 'Member'}</span>
+                        <span className="text-white font-bold text-base truncate leading-tight uppercase tracking-tight">{user?.name || user?.email.split('@')[0]}</span>
+                        <span className="text-pink-500/60 text-xs font-black uppercase tracking-widest leading-none mt-1">{user?.role || 'Member'}</span>
                     </div>
                 </button>
             </div>
