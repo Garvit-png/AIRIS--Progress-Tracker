@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Plus, Users, User } from 'lucide-react';
 import { AuthService } from '../../services/authService';
+import config from '../../config';
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002';
+const API_BASE = config.API_BASE_URL;
 
 export default function ChatSidebar({ conversations, activeConversation, onSelectConversation, user, loading, onNewConversation }) {
     const [search, setSearch] = useState('');
@@ -24,10 +25,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
 
     const fetchAllMembers = async () => {
         try {
-            const res = await fetch(`${SOCKET_URL}/api/auth/members`, {
-                headers: { 'Authorization': `Bearer ${AuthService.getToken()}` }
-            });
-            const data = await res.json();
+            const data = await AuthService.getMembers();
             if (data.success) {
                 setAllMembers(data.members);
             }
@@ -67,7 +65,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
     const performSearch = async (query, setResults) => {
         setIsSearching(true);
         try {
-            const res = await fetch(`${SOCKET_URL}/api/auth/users/search-name/${encodeURIComponent(query)}`, {
+            const res = await fetch(`${API_BASE}/auth/users/search-name/${encodeURIComponent(query)}`, {
                 headers: { 'Authorization': `Bearer ${AuthService.getToken()}` }
             });
             const data = await res.json();
@@ -83,7 +81,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
 
     const handleStartDM = async (targetUser) => {
         try {
-            const response = await fetch(`${SOCKET_URL}/api/chat/conversation/dm`, {
+            const response = await fetch(`${API_BASE}/chat/conversation/dm`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -121,7 +119,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
 
         try {
             const participantIds = groupParticipants.map(p => p._id);
-            const response = await fetch(`${SOCKET_URL}/api/chat/conversation/group`, {
+            const response = await fetch(`${API_BASE}/chat/conversation/group`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

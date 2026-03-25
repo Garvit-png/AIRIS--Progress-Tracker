@@ -194,6 +194,20 @@ export const AuthService = {
         return data.success ? data.data : '';
     },
 
+    getMembers: async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return { success: false, message: 'Not authenticated' };
+
+        try {
+            const response = await fetch(`${API_URL}/members`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            return await safeJson(response);
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    },
+
     getUsers: async () => {
         const token = localStorage.getItem('token');
         const response = await fetch(`${ADMIN_API_URL}/users`, {
