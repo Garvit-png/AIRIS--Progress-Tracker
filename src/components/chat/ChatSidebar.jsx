@@ -12,7 +12,9 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
     const [creationMode, setCreationMode] = useState('dm'); // 'dm' or 'group'
     const [newChatName, setNewChatName] = useState('');
     const [searchResults, setSearchResults] = useState([]);
-    const [isSearching, setIsSearching] = useState(false);
+    const [isSearchingMembers, setIsSearchingMembers] = useState(false);
+    const [isSearchingMessages, setIsSearchingMessages] = useState(false);
+    const [isSynced, setIsSynced] = useState(false);
     const [allMembers, setAllMembers] = useState([]);
     const [groupName, setGroupName] = useState('');
     const [groupParticipants, setGroupParticipants] = useState([]); // Array of user objects
@@ -33,9 +35,11 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
             const data = await AuthService.getMembers();
             if (data.success) {
                 setAllMembers(data.members);
+                setIsSynced(true);
             }
         } catch (error) {
             console.error('Failed to fetch members:', error);
+            setIsSynced(false);
         }
     };
 
@@ -43,15 +47,18 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
     React.useEffect(() => {
         const query = newChatName.toLowerCase().trim();
         if (query.length >= 1) {
-            // Local Match first (Instant)
-            const matches = allMembers.filter(m => 
-                m.name.toLowerCase().includes(query) || 
-                m.role.toLowerCase().includes(query)
-            );
+            const queryParts = query.split(/\s+/).filter(Boolean);
+            
+            // Local Token Match (Instant)
+            const matches = allMembers.filter(m => {
+                const nameLower = m.name.toLowerCase();
+                const roleLower = m.role.toLowerCase();
+                return queryParts.every(part => nameLower.includes(part) || roleLower.includes(part));
+            });
             
             if (matches.length > 0) {
                 setSearchResults(matches);
-                setIsSearching(false);
+                setIsSearchingMembers(false);
             } else {
                 // If local match fails, try network search (Fallback)
                 const timer = setTimeout(() => {
@@ -61,7 +68,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
             }
         } else {
             setSearchResults([]);
-            setIsSearching(false);
+            setIsSearchingMembers(false);
         }
     }, [newChatName, allMembers]);
 
@@ -80,7 +87,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
     }, [participantSearch, allMembers]);
 
     const performSearch = async (query, setResults) => {
-        setIsSearching(true);
+        setIsSearchingMembers(true);
         try {
             const res = await fetch(`${API_BASE}/auth/users/search-name/${encodeURIComponent(query)}`, {
                 headers: { 'Authorization': `Bearer ${AuthService.getToken()}` }
@@ -92,7 +99,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
         } catch (error) {
             console.error('Search failed:', error);
         } finally {
-            setIsSearching(false);
+            setIsSearchingMembers(false);
         }
     };
 
@@ -178,12 +185,16 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
 
     return (
         <div className="w-80 border-r border-white/5 flex flex-col bg-white/[0.02]">
+            {/* Header Area */}
             <div className="p-4 space-y-4">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-bold tracking-tight text-white">Messages</h2>
+                    <div className="flex items-center gap-2">
+                        <h2 className="text-lg font-bold tracking-tight text-white">Messages</h2>
+                        <div className={`w-1.5 h-1.5 rounded-full ${isSynced ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-pink-500 animate-pulse'}`} />
+                    </div>
                     <button 
                         onClick={() => setIsCreating(!isCreating)}
-                        className="p-2 hover:bg-white/5 rounded-full transition-all text-pink-500"
+                        className={`p-2 rounded-full transition-all ${isCreating ? 'bg-pink-500 text-white rotate-45' : 'hover:bg-white/5 text-pink-500'}`}
                     >
                         <Plus size={20} />
                     </button>
@@ -201,6 +212,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                 </div>
             </div>
 
+            {/* Creation Menu & List Area */}
             <div className="flex-1 overflow-y-auto custom-scrollbar">
                 {isCreating && (
                     <motion.div 
@@ -234,11 +246,11 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                         className="w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-[11px] outline-none focus:border-pink-500/50 text-white"
                                         autoFocus
                                     />
-                                    {isSearching && <div className="absolute right-3 top-2.5 w-3 h-3 border-2 border-pink-500/20 border-t-pink-500 rounded-full animate-spin" />}
+                                    {isSearchingMembers && <div className="absolute right-3 top-2.5 w-3 h-3 border-2 border-pink-500/20 border-t-pink-500 rounded-full animate-spin" />}
                                 </div>
                                 
-                                {allMembers.length === 0 && !isSearching && (
-                                    <p className="text-[8px] text-pink-500/40 text-center uppercase tracking-tighter">Syncing team directory...</p>
+                                {allMembers.length === 0 && !isSearchingMembers && isCreating && (
+                                    <p className="text-[8px] text-pink-500/60 text-center uppercase tracking-tighter animate-pulse">Establishing Deep Link to Mainframe...</p>
                                 )}
                                 
                                 {newChatName.length >= 1 && searchResults.length > 0 && (
@@ -355,7 +367,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                         ))}
                     </div>
                 ) : (
-                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                    <div className="flex-1">
                         {filteredConversations.length === 0 && discoveredProfiles.length === 0 && (
                             <div className="p-10 text-center space-y-2">
                                 <p className="text-[10px] font-mono text-white/20 uppercase tracking-[0.2em]">No Conversations</p>
@@ -364,7 +376,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                         )}
 
                         {filteredConversations.map(conv => {
-                            const otherParticipant = conv.isGroup ? null : conv.participants.find(p => p._id !== user.id);
+                            const otherParticipant = conv.isGroup ? null : conv.participants.find(p => p._id !== (user?.id || user?._id));
                             const isActive = activeConversation?._id === conv._id;
 
                             return (

@@ -347,10 +347,14 @@ exports.searchUsersByName = async (req, res) => {
             return res.status(200).json({ success: true, users: [] });
         }
 
+        // Split query into tokens for multi-part matching (e.g. "Japinder Kaur")
+        const tokens = query.split(/\s+/).filter(t => t.length > 0);
+        const searchRegex = tokens.map(t => new RegExp(t, 'i'));
+
         const users = await User.find({
-            name: { $regex: query, $options: 'i' },
+            name: { $all: searchRegex }, // Matches ALL tokens anywhere in the name
             status: 'approved',
-            _id: { $ne: req.user.id } // Don't find self
+            _id: { $ne: req.user.id }
         })
         .select('name email profilePicture role')
         .limit(10);

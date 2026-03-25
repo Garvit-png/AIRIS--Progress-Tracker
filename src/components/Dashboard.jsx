@@ -55,7 +55,7 @@ export default function Dashboard({ user: initialUser }) {
     }, [initialUser, activeView]);
 
     const handleViewChange = (view) => {
-        const restrictedViews = ['Approvals', 'Members'];
+        const restrictedViews = ['Approvals', 'AdminTasks'];
         const isAdmin = user?.isAdmin || user?.role?.toLowerCase() === 'admin';
 
         if (isAdmin && restrictedViews.includes(view) && !isPortalUnlocked) {
@@ -79,7 +79,7 @@ export default function Dashboard({ user: initialUser }) {
     const handleLockPortal = () => {
         setIsPortalUnlocked(false);
         sessionStorage.removeItem('admin_portal_unlocked');
-        if (['Approvals', 'Members'].includes(activeView)) {
+        if (['Approvals', 'AdminTasks'].includes(activeView)) {
             setActiveView('Dashboard');
         }
     };

@@ -123,13 +123,13 @@ export default function MembersList() {
                             <div className="p-2 bg-pink-500/10 rounded-xl border border-pink-500/20">
                                 <Users className="w-4 h-4 text-pink-400" />
                             </div>
-                            <p className="font-mono text-[9px] uppercase tracking-[0.4em] text-pink-400 font-bold">Registry Database</p>
+                            <p className="font-mono text-[9px] uppercase tracking-[0.4em] text-pink-400 font-bold">Workspace Personnel</p>
                         </div>
                         <div>
-                            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">Member <span className="text-white/95 font-light italic text-lg sm:text-xl">Directory</span></h1>
+                            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">Team <span className="text-white/95 font-light italic text-lg sm:text-xl">Directory</span></h1>
                             <p className="text-white/90 text-[9px] mt-1 font-mono uppercase tracking-widest flex items-center gap-2">
-                                <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-                                Synchronized with Mainframe
+                                <span className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+                                Synchronized with Workspace Hub
                             </p>
                         </div>
                     </div>
@@ -579,7 +579,7 @@ function StatBox({ label, value, highlight }) {
             highlight ? 'border-pink-500/30 bg-pink-500/5' : 'border-pink-500/15'
         }`}>
             <p className="text-[8px] font-mono uppercase tracking-[0.3em] text-white/80 mb-0.5">{label}</p>
-            <p className={`text-sm sm:text-base font-bold ${highlight ? 'text-pink-400' : 'text-white/90'}`}>{value}</p>
+            <p className={`text-sm sm:text-base font-bold ${highlight ? 'text-pink-400' : 'text-white/95'}`}>{value}</p>
         </div>
     );
 }
