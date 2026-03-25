@@ -56,15 +56,6 @@ const NAV = [
             </svg>
         ),
     },
-    {
-        label: 'Settings',
-        icon: (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-5 h-5">
-                <circle cx="12" cy="12" r="3" />
-                <path d="m19 9-4 4-4-4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m20.66 7-1.73 1" /><path d="m5.07 16-1.73 1" /><path d="m17.33 19 1.73 1" /><path d="m6.67 4-1.73 1" /><path d="m20.66 17 1.73-1" /><path d="m5.07 8 1.73-1" /><path d="m17.33 5-1.73-1" /><path d="m6.67 20-1.73-1" />
-            </svg>
-        ),
-    },
 ]
 
 export default function Sidebar({ user, activeView, setActiveView, isPortalUnlocked, onProfileClick }) {
@@ -113,7 +104,7 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
 
     return (
         <motion.aside
-            className={`h-full flex flex-col bg-[#050505] border-r border-white/5 overflow-hidden flex-shrink-0 relative z-10 select-none ${isResizing ? 'cursor-col-resize' : ''}`}
+            className={`h-screen flex flex-col bg-[#050505] border-r border-white/5 overflow-hidden flex-shrink-0 relative z-10 select-none ${isResizing ? 'cursor-col-resize' : ''}`}
             style={{ width: sidebarWidth }}
         >
             {/* Drag Handle */}
@@ -162,38 +153,34 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
                 ))}
             </nav>
 
-            {/* Bottom Section - Pinned to footer */}
-            <div className="mt-auto px-4 pb-6 space-y-4">
-                {/* Settings Shortcut */}
-                <button
-                    onClick={() => setActiveView('Settings')}
-                    className={`w-full group flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-300 ${
-                        activeView === 'Settings'
-                        ? 'bg-pink-500/10 text-pink-500 border border-pink-500/20'
-                        : 'bg-white/[0.02] text-white/40 border border-white/5 hover:bg-white/[0.05] hover:border-white/10'
-                    }`}
-                >
-                    <span className="text-white/40 group-hover:text-white/60">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-4 h-4">
-                            <circle cx="12" cy="12" r="3" />
-                            <path d="M2.707 14.293L5.414 17l1.414-1.414-2.707-2.707 1.414-1.414 2.707 2.707 1.414-1.414-2.707-2.707 1.414-1.414z" />
-                        </svg>
-                    </span>
-                    <span className="text-[11px] font-bold tracking-tight">Account settings</span>
-                </button>
+            {/* Bottom Section - Pinned to absolute footer */}
+            <div className="mt-auto pb-6 space-y-1">
+                <div className="px-4 space-y-1">
+                    {/* Settings */}
+                    <button
+                        onClick={() => setActiveView('Settings')}
+                        className={`w-full group flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-300 ${
+                            activeView === 'Settings'
+                            ? 'bg-pink-500/10 text-pink-500 border border-pink-500/20 shadow-[0_2px_8px_rgba(255,45,120,0.1)]'
+                            : 'bg-white/[0.02] text-white/40 border border-white/5 hover:bg-white/[0.05] hover:border-white/10'
+                        }`}
+                    >
+                        <span className={`${activeView === 'Settings' ? 'text-pink-500' : 'text-white/40 group-hover:text-white/60'} transition-colors`}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
+                        </span>
+                        <span className="text-[11px] font-bold tracking-tight">Settings</span>
+                    </button>
 
-                {/* System Admin Portal */}
-                {(user?.isAdmin || user?.role?.toLowerCase() === 'admin') && (
-                    <div className="space-y-4">
-                        <div className="px-4">
-                            <span className="text-[10px] font-bold text-white/20 uppercase tracking-[0.2em]">System admin</span>
-                        </div>
-                        
+                    {/* System Admin Portal */}
+                    {(user?.isAdmin || user?.role?.toLowerCase() === 'admin') && (
                         <button
                             onClick={() => setActiveView('Approvals')}
                             className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-left transition-all duration-300 border ${
                                 activeView === 'Approvals'
-                                ? 'bg-pink-500/10 border-pink-500/30 text-pink-500'
+                                ? 'bg-pink-500/10 border-pink-500/30 text-pink-500 shadow-[0_2px_8px_rgba(255,45,120,0.1)]'
                                 : 'bg-white/[0.02] border-white/5 text-pink-500/80 hover:bg-white/[0.04] hover:border-white/10'
                             }`}
                         >
@@ -203,13 +190,13 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
                                     <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                                 </svg>
                             </span>
-                            <span className="text-[11px] font-bold tracking-tight">Admin portal</span>
+                            <span className="text-[11px] font-bold tracking-tight">System admin</span>
                         </button>
-                    </div>
-                )}
+                    )}
+                </div>
 
                 {/* Logout button */}
-                <div className="pt-2 border-t border-white/5">
+                <div className="pt-1 mx-4 border-t border-white/5">
                     <button 
                         onClick={handleLogout}
                         className="w-full flex items-center gap-3 px-4 py-2 rounded-xl bg-white/[0.02] border border-white/5 text-white/40 hover:text-white/80 hover:bg-white/[0.04] hover:border-white/10 transition-all group"

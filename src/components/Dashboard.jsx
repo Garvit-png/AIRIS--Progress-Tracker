@@ -478,7 +478,7 @@ export default function Dashboard({ user: initialUser }) {
     }
 
     return (
-        <div className="flex h-full w-full overflow-hidden transition-colors duration-500" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
+        <div className="flex h-screen w-full overflow-hidden transition-colors duration-500" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
             <Sidebar 
                 user={user} 
                 activeView={activeView} 
