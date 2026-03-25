@@ -8,7 +8,8 @@ const {
     resetPassword,
     verifyEmail,
     updateProfile,
-    findUserByEmail
+    findUserByEmail,
+    searchUsersByName
 } = require('../controllers/authController');
 
 const router = express.Router();
@@ -24,5 +25,6 @@ router.put('/resetpassword/:resettoken', resetPassword);
 router.get('/verify/:token', verifyEmail);
 router.put('/profile', protect, updateProfile);
 router.get('/users/search/:email', protect, findUserByEmail);
+router.get('/users/search-name/:query', protect, searchUsersByName);
 
 module.exports = router;

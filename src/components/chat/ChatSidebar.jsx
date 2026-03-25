@@ -9,27 +9,57 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
     const [search, setSearch] = useState('');
     const [isCreating, setIsCreating] = useState(false);
     const [creationMode, setCreationMode] = useState('dm'); // 'dm' or 'group'
-    const [newChatEmail, setNewChatEmail] = useState('');
+    const [newChatName, setNewChatName] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
     const [groupName, setGroupName] = useState('');
-    const [groupParticipants, setGroupParticipants] = useState([]); // Array of emails
-    const [newParticipantEmail, setNewParticipantEmail] = useState('');
+    const [groupParticipants, setGroupParticipants] = useState([]); // Array of user objects
+    const [participantSearch, setParticipantSearch] = useState('');
+    const [participantResults, setParticipantResults] = useState([]);
 
-    const handleCreateDM = async (e) => {
-        e.preventDefault();
-        if (!newChatEmail.trim()) return;
+    // Debounced search for DM
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            if (newChatName.trim().length >= 2) {
+                performSearch(newChatName, setSearchResults);
+            } else {
+                setSearchResults([]);
+            }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [newChatName]);
 
+    // Debounced search for Group Participants
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            if (participantSearch.trim().length >= 2) {
+                performSearch(participantSearch, setParticipantResults);
+            } else {
+                setParticipantResults([]);
+            }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [participantSearch]);
+
+    const performSearch = async (query, setResults) => {
+        setIsSearching(true);
         try {
-            // Find user by email
-            const res = await fetch(`${SOCKET_URL}/api/auth/users/search/${newChatEmail.trim()}`, {
+            const res = await fetch(`${SOCKET_URL}/api/auth/users/search-name/${encodeURIComponent(query)}`, {
                 headers: { 'Authorization': `Bearer ${AuthService.getToken()}` }
             });
             const data = await res.json();
-            
-            if (!data.success) {
-                alert(data.message || 'User not registered in system');
-                return;
+            if (data.success) {
+                setResults(data.users);
             }
+        } catch (error) {
+            console.error('Search failed:', error);
+        } finally {
+            setIsSearching(false);
+        }
+    };
 
+    const handleStartDM = async (targetUser) => {
+        try {
             const response = await fetch(`${SOCKET_URL}/api/chat/conversation/dm`, {
                 method: 'POST',
                 headers: {
@@ -37,7 +67,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                     'Authorization': `Bearer ${AuthService.getToken()}`
                 },
                 body: JSON.stringify({
-                    userId: data.user._id
+                    userId: targetUser._id
                 })
             });
             const chatData = await response.json();
@@ -45,7 +75,8 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                 onSelectConversation(chatData.data);
                 onNewConversation();
                 setIsCreating(false);
-                setNewChatEmail('');
+                setNewChatName('');
+                setSearchResults([]);
             }
         } catch (error) {
             console.error('Failed to create DM:', error);
@@ -53,11 +84,11 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
         }
     };
 
-    const handleAddParticipant = (e) => {
-        e.preventDefault();
-        if (newParticipantEmail && !groupParticipants.includes(newParticipantEmail)) {
-            setGroupParticipants([...groupParticipants, newParticipantEmail]);
-            setNewParticipantEmail('');
+    const handleAddParticipant = (userToAdd) => {
+        if (!groupParticipants.find(p => p._id === userToAdd._id)) {
+            setGroupParticipants([...groupParticipants, userToAdd]);
+            setParticipantSearch('');
+            setParticipantResults([]);
         }
     };
 
@@ -66,16 +97,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
         if (!groupName || groupParticipants.length === 0) return;
 
         try {
-            // Find all participants by email
-            const participantIds = [];
-            for (const email of groupParticipants) {
-                const res = await fetch(`${SOCKET_URL}/api/auth/users/search/${email}`, {
-                    headers: { 'Authorization': `Bearer ${AuthService.getToken()}` }
-                });
-                const data = await res.json();
-                if (data.success) participantIds.push(data.user._id);
-            }
-
+            const participantIds = groupParticipants.map(p => p._id);
             const response = await fetch(`${SOCKET_URL}/api/chat/conversation/group`, {
                 method: 'POST',
                 headers: {
@@ -163,19 +185,42 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                         </div>
 
                         {creationMode === 'dm' ? (
-                            <form onSubmit={handleCreateDM} className="space-y-2">
-                                <input 
-                                    type="email"
-                                    placeholder="Friend's email..."
-                                    value={newChatEmail}
-                                    onChange={(e) => setNewChatEmail(e.target.value)}
-                                    className="w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-xs outline-none focus:border-pink-500/50 text-white"
-                                    required
-                                />
-                                <button className="w-full py-2 bg-pink-500 text-white text-[10px] font-bold uppercase rounded-lg">
-                                    Start Correspondence
-                                </button>
-                            </form>
+                            <div className="space-y-2">
+                                <div className="relative">
+                                    <input 
+                                        type="text"
+                                        placeholder="Search by name..."
+                                        value={newChatName}
+                                        onChange={(e) => setNewChatName(e.target.value)}
+                                        className="w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-xs outline-none focus:border-pink-500/50 text-white"
+                                        autoFocus
+                                    />
+                                    {isSearching && <div className="absolute right-3 top-2.5 w-3 h-3 border-2 border-pink-500/20 border-t-pink-500 rounded-full animate-spin" />}
+                                </div>
+                                
+                                {searchResults.length > 0 && (
+                                    <div className="max-h-40 overflow-y-auto rounded-lg border border-white/5 bg-black/40">
+                                        {searchResults.map(result => (
+                                            <button 
+                                                key={result._id}
+                                                onClick={() => handleStartDM(result)}
+                                                className="w-full flex items-center gap-3 p-2 hover:bg-white/5 text-left transition-all"
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-white/5 overflow-hidden flex-shrink-0">
+                                                    {result.profilePicture ? <img src={result.profilePicture} className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-white/20" />}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-[11px] font-bold text-white truncate">{result.name}</p>
+                                                    <p className="text-[9px] text-white/30 truncate uppercase tracking-tighter">{result.role}</p>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                                {newChatName.length >= 2 && !isSearching && searchResults.length === 0 && (
+                                    <p className="text-[9px] text-white/20 text-center py-2 italic">No spectral matches found</p>
+                                )}
+                            </div>
                         ) : (
                             <div className="space-y-3">
                                 <input 
@@ -185,23 +230,36 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                     onChange={(e) => setGroupName(e.target.value)}
                                     className="w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-xs outline-none focus:border-pink-500/50 text-white font-bold"
                                 />
-                                <form onSubmit={handleAddParticipant} className="flex gap-2">
+                                <div className="relative">
                                     <input 
-                                        type="email"
-                                        placeholder="Add email..."
-                                        value={newParticipantEmail}
-                                        onChange={(e) => setNewParticipantEmail(e.target.value)}
-                                        className="flex-1 bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-xs outline-none focus:border-pink-500/50 text-white"
+                                        type="text"
+                                        placeholder="Add members by name..."
+                                        value={participantSearch}
+                                        onChange={(e) => setParticipantSearch(e.target.value)}
+                                        className="w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-xs outline-none focus:border-pink-500/50 text-white"
                                     />
-                                    <button className="px-3 bg-white/10 text-white rounded-lg hover:bg-white/20">
-                                        +
-                                    </button>
-                                </form>
+                                    {participantResults.length > 0 && (
+                                        <div className="absolute top-full left-0 right-0 mt-1 z-50 max-h-40 overflow-y-auto rounded-lg border border-white/10 bg-[#161616] shadow-xl">
+                                            {participantResults.map(result => (
+                                                <button 
+                                                    key={result._id}
+                                                    onClick={() => handleAddParticipant(result)}
+                                                    className="w-full flex items-center gap-2 p-2 hover:bg-white/5 text-left transition-all"
+                                                >
+                                                    <div className="w-6 h-6 rounded-md bg-white/5 overflow-hidden">
+                                                        {result.profilePicture ? <img src={result.profilePicture} className="w-full h-full object-cover" /> : <User size={10} className="m-auto text-white/20" />}
+                                                    </div>
+                                                    <span className="text-[10px] text-white truncate">{result.name}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                                 <div className="flex flex-wrap gap-1">
-                                    {groupParticipants.map(email => (
-                                        <span key={email} className="px-2 py-1 bg-pink-500/20 text-pink-400 text-[9px] rounded-full flex items-center gap-1 border border-pink-500/20">
-                                            {email}
-                                            <button onClick={() => setGroupParticipants(groupParticipants.filter(e => e !== email))}>×</button>
+                                    {groupParticipants.map(p => (
+                                        <span key={p._id} className="px-2 py-1 bg-pink-500/20 text-pink-400 text-[9px] rounded-full flex items-center gap-1 border border-pink-500/20">
+                                            {p.name}
+                                            <button onClick={() => setGroupParticipants(groupParticipants.filter(e => e._id !== p._id))}>×</button>
                                         </span>
                                     ))}
                                 </div>

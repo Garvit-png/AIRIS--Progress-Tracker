@@ -336,3 +336,33 @@ exports.findUserByEmail = async (req, res) => {
         });
     }
 };
+
+// @desc    Search users by name (fuzzy search for starting chats)
+// @route   GET /api/auth/users/search-name/:query
+// @access  Private
+exports.searchUsersByName = async (req, res) => {
+    try {
+        const query = req.params.query.trim();
+        if (!query || query.length < 2) {
+            return res.status(200).json({ success: true, users: [] });
+        }
+
+        const users = await User.find({
+            name: { $regex: query, $options: 'i' },
+            status: 'approved',
+            _id: { $ne: req.user.id } // Don't find self
+        })
+        .select('name email profilePicture role')
+        .limit(10);
+
+        res.status(200).json({
+            success: true,
+            users
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
