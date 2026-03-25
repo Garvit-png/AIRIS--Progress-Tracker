@@ -23,6 +23,11 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
         fetchAllMembers();
     }, []);
 
+    // Also re-fetch when menu opens to ensure no stale data
+    React.useEffect(() => {
+        if (isCreating) fetchAllMembers();
+    }, [isCreating]);
+
     const fetchAllMembers = async () => {
         try {
             const data = await AuthService.getMembers();
@@ -34,17 +39,29 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
         }
     };
 
-    // Instant Local search for DM
+    // Instant Local search for DM with Network Fallback
     React.useEffect(() => {
-        if (newChatName.trim().length >= 1) {
-            const query = newChatName.toLowerCase().trim();
+        const query = newChatName.toLowerCase().trim();
+        if (query.length >= 1) {
+            // Local Match first (Instant)
             const matches = allMembers.filter(m => 
                 m.name.toLowerCase().includes(query) || 
                 m.role.toLowerCase().includes(query)
             );
-            setSearchResults(matches);
+            
+            if (matches.length > 0) {
+                setSearchResults(matches);
+                setIsSearching(false);
+            } else {
+                // If local match fails, try network search (Fallback)
+                const timer = setTimeout(() => {
+                    performSearch(newChatName, setSearchResults);
+                }, 300);
+                return () => clearTimeout(timer);
+            }
         } else {
             setSearchResults([]);
+            setIsSearching(false);
         }
     }, [newChatName, allMembers]);
 
@@ -211,14 +228,18 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                 <div className="relative">
                                     <input 
                                         type="text"
-                                        placeholder="Search by name..."
+                                        placeholder="Type teammate's name..."
                                         value={newChatName}
                                         onChange={(e) => setNewChatName(e.target.value)}
-                                        className="w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-xs outline-none focus:border-pink-500/50 text-white"
+                                        className="w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-[11px] outline-none focus:border-pink-500/50 text-white"
                                         autoFocus
                                     />
                                     {isSearching && <div className="absolute right-3 top-2.5 w-3 h-3 border-2 border-pink-500/20 border-t-pink-500 rounded-full animate-spin" />}
                                 </div>
+                                
+                                {allMembers.length === 0 && !isSearching && (
+                                    <p className="text-[8px] text-pink-500/40 text-center uppercase tracking-tighter">Syncing team directory...</p>
+                                )}
                                 
                                 {newChatName.length >= 1 && searchResults.length > 0 && (
                                     <div className="max-h-40 overflow-y-auto rounded-lg border border-white/5 bg-black/40 shadow-xl">
