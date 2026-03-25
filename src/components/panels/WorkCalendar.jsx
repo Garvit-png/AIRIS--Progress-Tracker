@@ -11,7 +11,7 @@ import {
     addMonths,
     subMonths
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, Activity } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Activity, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { workStore } from '../../services/workStore';
 
@@ -46,45 +46,36 @@ export default function WorkCalendar({ selectedDate, onDateSelect, currentMonth,
     const years = [2026, 2027, 2028, 2029, 2030];
 
     const renderHeader = () => (
-        <div className="flex flex-col gap-5 mb-8 px-2">
-            <div className="flex items-center justify-between">
-                <div className="flex flex-col gap-0.5">
-                    <p className="font-mono text-[9px] font-black uppercase tracking-[0.3em] text-pink-500/40">Work cycle</p>
-                    <h2 className="text-2xl font-bold tracking-tight text-white/95">{format(currentMonth, 'MMMM')}</h2>
+        <div className="flex flex-col gap-1 mb-8">
+            <div className="flex items-center">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-pink-500/10 rounded-full border border-pink-500/10">
+                    <div className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse" />
+                    <span className="font-mono text-[9px] font-black uppercase tracking-[0.2em] text-pink-500">Work cycle</span>
                 </div>
-                <div className="flex items-center gap-4">
-                    <div className="relative group">
-                        <select
-                            value={currentMonth.getFullYear()}
-                            onChange={(e) => setYear(parseInt(e.target.value))}
-                            className="appearance-none bg-white/[0.03] border border-white/10 hover:border-pink-500/40 rounded-2xl px-5 py-2.5 font-mono text-xs text-white/80 focus:text-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 transition-all pr-12 group-hover:bg-white/[0.05]"
-                        >
-                            {years.map(y => (
-                                <option key={y} value={y} className="bg-[#121212] tracking-widest">{y}</option>
-                            ))}
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/40 group-hover:text-pink-500/60 transition-colors">
-                            <ChevronRight size={14} className="rotate-90" />
-                        </div>
-                    </div>
-
-                    <div className="flex gap-2 p-1.5 bg-white/[0.02] border border-white/5 rounded-2xl">
-                        <button onClick={prevMonth} className="p-2.5 hover:bg-white/[0.05] hover:border-pink-500/20 rounded-xl transition-all border border-transparent text-white/40 hover:text-white group">
-                            <ChevronLeft size={18} className="group-hover:-translate-x-0.5 transition-transform" />
-                        </button>
-                        <button onClick={nextMonth} className="p-2.5 hover:bg-white/[0.05] hover:border-pink-500/20 rounded-xl transition-all border border-transparent text-white/40 hover:text-white group">
-                            <ChevronRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
-                        </button>
-                    </div>
+            </div>
+            
+            <h2 className="text-5xl font-black tracking-tighter text-white mt-4 mb-6">{format(currentMonth, 'MMMM')}</h2>
+            
+            <div className="flex items-center gap-2">
+                <div className="bg-white/[0.03] border border-white/5 rounded-2xl px-4 py-2 font-mono text-xs font-bold text-white/40">
+                    {currentMonth.getFullYear()}
+                </div>
+                <div className="flex gap-1 bg-white/[0.03] border border-white/5 rounded-2xl p-1">
+                    <button onClick={prevMonth} className="p-2 hover:bg-white/[0.05] rounded-xl transition-all text-white/40 hover:text-white">
+                        <ChevronLeft size={14} />
+                    </button>
+                    <button onClick={nextMonth} className="p-2 hover:bg-white/[0.05] rounded-xl transition-all text-white/40 hover:text-white">
+                        <ChevronRight size={14} />
+                    </button>
                 </div>
             </div>
         </div>
     );
 
     const renderDays = () => (
-        <div className="grid grid-cols-7 border-b border-white/5 pb-2 mb-2">
+        <div className="grid grid-cols-7 mb-8">
             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
-                <div key={idx} className="text-center font-mono text-[10px] font-black text-white/20">
+                <div key={idx} className="text-center font-mono text-[11px] font-bold text-white/20">
                     {day}
                 </div>
             ))}
@@ -92,7 +83,7 @@ export default function WorkCalendar({ selectedDate, onDateSelect, currentMonth,
     );
 
     const renderCells = () => (
-        <div className="grid grid-cols-7 border-collapse">
+        <div className="grid grid-cols-7 gap-y-4 mb-10">
             {calendarDays.map((day, idx) => {
                 const dateStr = format(day, 'yyyy-MM-dd');
                 const dayData = workData[dateStr];
@@ -101,64 +92,83 @@ export default function WorkCalendar({ selectedDate, onDateSelect, currentMonth,
                 const isToday = isSameDay(day, new Date());
 
                 const taskCount = dayData?.tasks?.length || 0;
-                const completedCount = dayData?.tasks?.filter(t => t.completed).length || 0;
-                const progress = taskCount > 0 ? (completedCount / taskCount) * 100 : 0;
-                const hasProofs = dayData?.proofs?.length > 0;
 
                 return (
                     <button
                         key={day.toString()}
                         onClick={() => onDateSelect(day)}
                         className={`
-                            relative h-16 flex flex-col items-center justify-center transition-all duration-300 group
-                            border border-white/[0.03] -ml-[1px] -mt-[1px]
-                            ${!isCurrentMonth ? 'bg-black/20 opacity-10 hover:opacity-20' : 'bg-transparent'}
-                            ${isSelected ? 'z-10 bg-pink-500/[0.03]' : 'hover:bg-white/[0.02]'}
+                            relative group flex flex-col items-center justify-start py-2
+                            ${!isCurrentMonth ? 'opacity-10' : 'opacity-100'}
                         `}
                     >
-                        {/* Precision Border Highlight */}
-                        <div className={`absolute inset-0 transition-all duration-300 pointer-events-none
-                            ${isSelected ? 'border border-pink-500/40 shadow-[inset_0_0_15px_rgba(255,45,120,0.05)]' : 'border border-transparent group-hover:border-white/10'}
-                        `} />
-
                         <div className={`
-                            relative flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-500
-                            ${isToday ? 'bg-pink-500 text-white font-black shadow-[0_0_20px_rgba(255,45,120,0.5)] scale-110' : ''}
-                            ${isSelected && !isToday ? 'text-pink-500 scale-105' : 'text-white/60 group-hover:text-white'}
+                            relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-500
+                            ${isSelected ? 'bg-pink-500 text-white font-black shadow-[0_4px_20px_rgba(255,45,120,0.6)] scale-110' : 'text-white/80 hover:text-white'}
                         `}>
-                            <span className="text-xs font-mono relative z-10 tracking-tighter">
+                            <span className="text-sm font-bold relative z-10 tracking-tighter">
                                 {format(day, 'd')}
                             </span>
-                            
-                            {/* Selected Indicator Ring */}
-                            {isSelected && !isToday && (
-                                <motion.div 
-                                    layoutId="calendarSelect"
-                                    className="absolute inset-0 border-2 border-pink-500/30 rounded-xl"
-                                />
-                            )}
                         </div>
 
-                        {/* Status Dots */}
-                        <div className="absolute bottom-2 flex gap-1.5 justify-center w-full">
-                            {taskCount > 0 && (
-                                <div className={`w-1 h-1 rounded-full transition-all duration-500 ${progress === 100 ? 'bg-emerald-400 shadow-[0_0_5px_rgba(52,211,153,0.5)]' : 'bg-white/20'}`} />
-                            )}
-                            {hasProofs && (
-                                <div className="w-1 h-1 rounded-full bg-pink-500/60 shadow-[0_0_5px_rgba(255,45,120,0.5)]" />
-                            )}
-                        </div>
+                        {/* Task Dot Indicator */}
+                        {taskCount > 0 && (
+                            <div className={`w-1 h-1 rounded-full mt-1.5 transition-all duration-300 ${isSelected ? 'bg-white scale-125' : 'bg-pink-500/60'}`} />
+                        )}
                     </button>
                 );
             })}
         </div>
     );
 
+    const renderEvents = () => {
+        const dateStr = format(selectedDate, 'yyyy-MM-dd');
+        const tasks = workData[dateStr]?.tasks || [];
+        const isToday = isSameDay(selectedDate, new Date());
+
+        return (
+            <div className="mt-8 pt-8 border-t border-white/5">
+                <div className="flex items-center justify-between mb-6">
+                    <p className="font-mono text-[9px] font-black uppercase tracking-[0.2em] text-white/30">
+                        {isToday ? 'Today' : format(selectedDate, 'EEEE')} • {format(selectedDate, 'MMM d').toUpperCase()}
+                    </p>
+                </div>
+
+                <div className="space-y-3">
+                    {tasks.length > 0 ? (
+                        tasks.map((task, idx) => (
+                            <div 
+                                key={idx}
+                                className="group flex items-center justify-between p-4 bg-white/[0.02] border border-white/5 rounded-2xl hover:bg-white/[0.04] hover:border-white/10 transition-all"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className={`w-2 h-2 rounded-full ${idx % 2 === 0 ? 'bg-pink-500 shadow-[0_0_8px_rgba(255,45,120,0.4)]' : 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.4)]'}`} />
+                                    <div className="flex flex-col">
+                                        <span className="text-[13px] font-bold text-white/90 group-hover:text-white transition-colors">{task.title}</span>
+                                        <span className="text-[10px] font-mono text-white/30">10:00 — 11:30 AM</span>
+                                    </div>
+                                </div>
+                                <div className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-tight ${idx % 2 === 0 ? 'bg-pink-500/10 text-pink-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                    {idx % 2 === 0 ? 'Work' : 'Review'}
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="py-8 text-center bg-white/[0.01] border border-dashed border-white/5 rounded-2xl opacity-20">
+                            <p className="font-mono text-[10px] uppercase tracking-widest">No active nodes</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
     return (
-        <div className="p-6 rounded-2xl bg-[#121212]/50 border border-pink-500/10 backdrop-blur-xl h-fit">
+        <div className="p-8 rounded-[2.5rem] bg-[#080808] border border-white/5 h-fit shadow-2xl">
             {renderHeader()}
             {renderDays()}
             {renderCells()}
+            {renderEvents()}
         </div>
     );
 }
