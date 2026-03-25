@@ -139,29 +139,29 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
                     <button
                         key={item.label}
                         onClick={() => setActiveView(item.label)}
-                        className={`w-full group flex items-center gap-4 px-5 py-2.5 rounded-xl transition-all duration-300 ${
+                        className={`w-full group flex items-center gap-4 px-6 py-3 rounded-2xl transition-all duration-300 ${
                           activeView === item.label 
-                            ? 'bg-pink-500/10 text-pink-500 shadow-[0_2px_8px_rgba(255,45,120,0.1)] border border-pink-500/20'
+                            ? 'bg-pink-500/10 text-pink-500 shadow-[0_4px_12px_rgba(255,45,120,0.1)] border border-pink-500/20'
                             : 'bg-transparent text-white/40 hover:text-white/80 hover:bg-white/[0.03]'
                         }`}
                     >
                         <span className={`${activeView === item.label ? 'text-pink-500' : 'text-white/40 group-hover:text-white/60'} transition-colors`}>
                             {item.icon}
                         </span>
-                        <span className="text-sm font-semibold tracking-tight">{item.label}</span>
+                        <span className="text-sm font-bold tracking-tight">{item.label}</span>
                     </button>
                 ))}
             </nav>
 
             {/* Bottom Section - Pinned to absolute footer */}
-            <div className="mt-auto pb-6 space-y-1">
-                <div className="px-4 space-y-1">
+            <div className="mt-auto pb-6 space-y-2">
+                <div className="px-4 space-y-2">
                     {/* Settings */}
                     <button
                         onClick={() => setActiveView('Settings')}
-                        className={`w-full group flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-300 ${
+                        className={`w-full group flex items-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 ${
                             activeView === 'Settings'
-                            ? 'bg-pink-500/10 text-pink-500 border border-pink-500/20 shadow-[0_2px_8px_rgba(255,45,120,0.1)]'
+                            ? 'bg-pink-500/10 text-pink-500 border border-pink-500/20 shadow-[0_4px_12px_rgba(255,45,120,0.1)]'
                             : 'bg-white/[0.02] text-white/40 border border-white/5 hover:bg-white/[0.05] hover:border-white/10'
                         }`}
                     >
@@ -178,9 +178,9 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
                     {(user?.isAdmin || user?.role?.toLowerCase() === 'admin') && (
                         <button
                             onClick={() => setActiveView('Approvals')}
-                            className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-left transition-all duration-300 border ${
+                            className={`w-full flex items-center gap-3 px-6 py-3 rounded-2xl text-left transition-all duration-300 border ${
                                 activeView === 'Approvals'
-                                ? 'bg-pink-500/10 border-pink-500/30 text-pink-500 shadow-[0_2px_8px_rgba(255,45,120,0.1)]'
+                                ? 'bg-pink-500/10 border-pink-500/30 text-pink-500 shadow-[0_4px_12px_rgba(255,45,120,0.1)]'
                                 : 'bg-white/[0.02] border-white/5 text-pink-500/80 hover:bg-white/[0.04] hover:border-white/10'
                             }`}
                         >
@@ -196,10 +196,10 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
                 </div>
 
                 {/* Logout button */}
-                <div className="pt-1 mx-4 border-t border-white/5">
+                <div className="pt-2 mx-4 border-t border-white/5">
                     <button 
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-4 py-2 rounded-xl bg-white/[0.02] border border-white/5 text-white/40 hover:text-white/80 hover:bg-white/[0.04] hover:border-white/10 transition-all group"
+                        className="w-full flex items-center gap-3 px-6 py-3 rounded-2xl bg-white/[0.02] border border-white/5 text-white/40 hover:text-white/80 hover:bg-white/[0.04] hover:border-white/10 transition-all group"
                     >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5 opacity-40 group-hover:opacity-100 transition-opacity">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
