@@ -16,9 +16,20 @@ const { protect, requireApproved } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
+// Middleware to restrict access to admins only
+const authorize = (req, res, next) => {
+    if (req.user && req.user.isAdmin) {
+        return next();
+    }
+    return res.status(403).json({
+        success: false,
+        message: 'Access denied: Admin privileges required'
+    });
+};
+
 router.use(protect);
 router.use(requireApproved);
-router.use(authorize('admin'));
+router.use(authorize);
 
 router.get('/approved', getApprovedEmails);
 router.post('/approve', addApprovedEmail);
