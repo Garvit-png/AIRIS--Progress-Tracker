@@ -9,23 +9,7 @@ import AdminPanel from '../pages/AdminPanel'
 import AdminPortalGate from './AdminPortalGate'
 import ChatPanel from './panels/ChatPanel'
 import { AuthService } from '../services/authService'
-import { Camera, X, Upload, Save, User as UserIcon, Lock, Unlock, Clock as ClockIcon } from 'lucide-react'
-
-const Clock = () => {
-    const [time, setTime] = React.useState(new Date())
-    React.useEffect(() => {
-        const timer = setInterval(() => setTime(new Date()), 1000)
-        return () => clearInterval(timer)
-    }, [])
-    return (
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.03] border border-white/10 rounded-lg">
-            <ClockIcon size={12} className="text-pink-500" />
-            <span className="text-[10px] font-mono text-white/60 tracking-wider">
-                {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-            </span>
-        </div>
-    )
-}
+import { Camera, X, Upload, Save, User as UserIcon, Lock, Unlock } from 'lucide-react'
 
 export default function Dashboard({ user: initialUser }) {
     const [user, setUser] = useState(initialUser)
@@ -450,30 +434,27 @@ export default function Dashboard({ user: initialUser }) {
         return (
             <div className="flex flex-col gap-6 max-w-7xl mx-auto">
                 {/* Status Bar */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Compact Banner Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <motion.div 
-                        whileHover={{ scale: 1.01, y: -2 }}
+                        whileHover={{ scale: 1.005, y: -1 }}
                         onClick={() => setActiveView('Chat')}
-                        className="p-4 bg-pink-500/5 border border-pink-500/20 rounded-2xl cursor-pointer hover:bg-pink-500/10 transition-all group relative overflow-hidden h-[120px]"
+                        className="lg:col-span-1 flex items-center gap-4 px-5 py-3 bg-[#111113] border border-white/5 rounded-2xl cursor-pointer hover:bg-white/[0.03] transition-all group relative overflow-hidden"
                     >
-                        <div className="absolute top-0 right-0 p-3">
+                        <div className="absolute top-0 right-0 p-3 opacity-20">
                             <div className="flex gap-1">
                                 <span className="w-1 h-1 rounded-full bg-pink-500 animate-pulse" />
-                                <span className="w-1 h-1 rounded-full bg-pink-400/20" />
                             </div>
                         </div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-pink-500/10 rounded-xl text-pink-500 group-hover:scale-105 transition-transform border border-pink-500/20">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
-                                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Secure Messages</h3>
-                                <p className="text-[8px] font-mono text-pink-400 uppercase mt-0.5 font-bold">Encrypted Terminal</p>
-                            </div>
+                        <div className="p-2 bg-pink-500/10 rounded-xl text-pink-500 border border-pink-500/20 group-hover:scale-105 transition-transform">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                            </svg>
                         </div>
-                        <p className="text-[10px] text-white/40 uppercase tracking-widest leading-normal line-clamp-2">Access the centralized communication hub for real-time collaboration.</p>
+                        <div className="flex flex-col min-w-0">
+                            <h3 className="text-[11px] font-bold text-white tracking-tight">Secure messages</h3>
+                            <p className="text-[9px] text-white/40 truncate">Access the centralized communication terminal</p>
+                        </div>
                     </motion.div>
 
                     <div className="lg:col-span-2">
@@ -481,9 +462,9 @@ export default function Dashboard({ user: initialUser }) {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr_1fr] gap-4 items-start">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                     {/* Left: Calendar */}
-                    <div className="sticky top-0">
+                    <div className="lg:col-span-4 xl:col-span-3 sticky top-0">
                         <WorkCalendar
                             selectedDate={selectedDate}
                             onDateSelect={setSelectedDate}
@@ -493,7 +474,7 @@ export default function Dashboard({ user: initialUser }) {
                     </div>
 
                     {/* Right: Day Detail */}
-                    <div className="lg:col-span-2 min-h-[500px]">
+                    <div className="lg:col-span-8 xl:col-span-9 min-h-[600px]">
                         <DayDetail selectedDate={selectedDate} />
                     </div>
                 </div>
@@ -516,32 +497,29 @@ export default function Dashboard({ user: initialUser }) {
                     initial={{ opacity: 0, y: -12 }}
                     animate={headerVisible ? { opacity: 1, y: 0 } : {}}
                     transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                    className="flex items-center justify-between px-4 sm:px-6 py-0 h-[60px] min-h-[60px] border-b backdrop-blur-sm transition-colors duration-500 flex-shrink-0"
+                    className="flex items-center justify-between px-4 sm:px-6 py-0 h-[48px] min-h-[48px] border-b backdrop-blur-sm transition-colors duration-500 flex-shrink-0"
                     style={{ borderColor: 'var(--border)', backgroundColor: 'rgba(var(--bg-rgb), 0.6)' }}
                 >
                     <div className="flex items-baseline gap-2 min-w-0">
-                        <h1 className="text-sm font-semibold tracking-widest uppercase truncate" style={{ color: 'var(--text)' }}>{activeView}</h1>
-                        <span className="font-mono text-[10px] hidden sm:inline opacity-90" style={{ color: 'var(--text)' }}>/ Workspace Console</span>
+                        <h1 className="text-[11px] font-bold tracking-[0.2em] uppercase truncate" style={{ color: 'var(--text)' }}>{activeView}</h1>
+                        <span className="font-mono text-[9px] hidden sm:inline opacity-40" style={{ color: 'var(--text)' }}>/ workspace console</span>
                     </div>
 
-                    <div className="flex items-center gap-3 sm:gap-5 flex-shrink-0">
+                    <div className="flex items-center gap-3 flex-shrink-0">
                         {activeView !== 'Chat' && activeView !== 'Approvals' && (
                             <button 
                                 onClick={() => setActiveView('Chat')}
-                                className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-pink-500/10 border border-pink-500/20 text-pink-500 hover:bg-pink-500 hover:text-white transition-all text-[9px] font-bold uppercase tracking-widest"
+                                className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-pink-500/10 border border-pink-500/20 text-pink-500 hover:bg-[#FF2D78] hover:text-white transition-all text-[9px] font-bold uppercase tracking-wider"
                             >
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3">
-                                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                                 </svg>
-                                <span>Quick Chat</span>
+                                <span>Quick chat</span>
                             </button>
                         )}
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/5 border border-green-500/10 rounded-lg">
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
-                            <p className="text-[9px] font-mono uppercase text-green-500/80 font-bold tracking-widest">Active Session</p>
-                        </div>
-                        <div className="hidden md:block">
-                            <Clock />
+                        <div className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-white/[0.03] border border-white/5 text-white/40 text-[9px] font-bold uppercase tracking-wider">
+                            <span className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />
+                            <span>Active session</span>
                         </div>
                     </div>
                 </motion.header>

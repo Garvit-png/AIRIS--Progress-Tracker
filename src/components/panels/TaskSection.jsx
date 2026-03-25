@@ -19,7 +19,7 @@ export default function TaskSection({
         <div className="flex flex-col gap-4 bg-white/5 border border-pink-500/10 rounded-2xl p-5 overflow-hidden">
             <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-1">
-                    <h3 className="text-sm font-bold tracking-tight text-white/90">Active To-Do</h3>
+                    <h3 className="text-sm font-bold tracking-tight">Active to-do</h3>
                     <div className="flex items-center gap-2 h-4">
                         <AnimatePresence mode="wait">
                             {isSyncingTasks ? (
@@ -31,7 +31,7 @@ export default function TaskSection({
                                     className="flex items-center gap-1.5"
                                 >
                                     <div className="w-1 h-1 rounded-full bg-green-400 animate-pulse" />
-                                    <span className="text-[9px] font-mono text-green-400 uppercase tracking-tighter">Syncing Status...</span>
+                                    <span className="text-[9px] font-mono text-emerald-400 capitalize tracking-tighter">Syncing status...</span>
                                 </motion.div>
                             ) : (
                                 <motion.span
@@ -64,7 +64,7 @@ export default function TaskSection({
             ) : isPast ? (
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-white/5 border border-pink-500/10 opacity-80">
                     <Clock size={14} className="text-white/95" />
-                    <span className="text-[10px] uppercase tracking-widest font-mono text-white/95">Work Archive Locked (Read Only)</span>
+                    <span className="text-[10px] tracking-wide font-mono text-white/40">Work archive locked (Read only)</span>
                 </div>
             ) : null}
 
@@ -77,17 +77,17 @@ export default function TaskSection({
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             key={task.id}
-                            className={`group flex items-center justify-between p-3 rounded-xl border transition-all duration-300 ${task.completed ? 'bg-green-500/5 border-green-500/10' : 'bg-white/5 border-pink-500/10 hover:border-pink-500/30'
+                            className={`group flex items-center justify-between p-3 rounded-xl border transition-all duration-300 ${task.completed ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-white/5 border-white/5 hover:border-pink-500/30'
                                 }`}
                         >
                             <div className="flex items-center gap-3">
                                 <button
                                     onClick={() => handleToggleTask(task.id)}
-                                    className={`transition-colors duration-300 ${task.completed ? 'text-green-500' : 'text-white/60 hover:text-white/95'}`}
+                                    className={`transition-colors duration-300 ${task.completed ? 'text-emerald-500' : 'text-white/40 hover:text-white/90'}`}
                                 >
-                                    {task.completed ? <CheckCircle2 size={18} /> : <Circle size={18} />}
+                                    {task.completed ? <CheckCircle2 size={16} /> : <Circle size={16} />}
                                 </button>
-                                <span className={`text-xs transition-all duration-300 ${task.completed ? 'text-white/95 line-through' : 'text-white'}`}>
+                                <span className={`text-[11px] transition-all duration-300 ${task.completed ? 'text-white/40 line-through' : 'text-white/90'}`}>
                                     {task.title}
                                 </span>
                             </div>
@@ -96,24 +96,23 @@ export default function TaskSection({
                                     onClick={() => deleteTask(task.id)}
                                     className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-500/10 text-red-500/40 hover:text-red-500 rounded-lg transition-all"
                                 >
-                                    <Trash2 size={14} />
+                                    <Trash2 size={12} />
                                 </button>
                             )}
                         </motion.div>
                     ))}
                     {tasks.length === 0 && (
-                        <div className="flex-1 flex flex-col items-center justify-center p-8 border-2 border-dashed border-pink-500/10 rounded-2xl bg-pink-500/[0.02] group/empty transition-all hover:border-pink-500/20">
-                            <div className="w-12 h-12 rounded-full bg-pink-500/5 flex items-center justify-center mb-4 group-hover/empty:scale-110 transition-transform">
-                                <Trophy size={24} className="text-pink-500/40" />
+                        <div className="flex-1 flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed border-pink-500/10 bg-pink-500/[0.02]">
+                            <div className="w-12 h-12 rounded-full bg-pink-500/5 flex items-center justify-center mb-4">
+                                <Trophy size={20} className="text-pink-500/40" />
                             </div>
-                            <p className="text-[10px] uppercase tracking-[0.2em] text-white/20 font-bold mb-4">No objectives for this cycle</p>
+                            <p className="text-[11px] text-white/40 mb-5 font-medium">No objectives for this cycle</p>
                             {isToday && (
                                 <button 
-                                    onClick={() => document.querySelector('input[placeholder*="mission objective"]')?.focus()}
-                                    className="flex items-center gap-2 px-4 py-2 bg-pink-500/10 border border-pink-500/20 rounded-lg text-pink-500 text-[9px] font-black uppercase tracking-widest hover:bg-pink-500 hover:text-white transition-all shadow-lg shadow-pink-500/10"
+                                    onClick={() => document.querySelector('input[placeholder="Add a mission objective..."]')?.focus()}
+                                    className="px-4 py-2 bg-[#FF2D78] hover:bg-[#FF2D78]/90 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all shadow-[0_4px_12px_rgba(255,45,120,0.2)]"
                                 >
-                                    <Plus size={12} />
-                                    <span>Add Objective</span>
+                                    + Add objective
                                 </button>
                             )}
                         </div>
