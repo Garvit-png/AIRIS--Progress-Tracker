@@ -60,7 +60,7 @@ const NAV = [
 
 export default function Sidebar({ user, activeView, setActiveView, isPortalUnlocked, onProfileClick }) {
     const [collapsed, setCollapsed] = useState(false)
-    const [sidebarWidth, setSidebarWidth] = useState(240)
+    const [sidebarWidth, setSidebarWidth] = useState(210)
     const [isResizing, setIsResizing] = useState(false)
     const [isAdminExpanded, setIsAdminExpanded] = useState(false)
     const sidebarRef = useRef(null)
@@ -115,12 +115,12 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
             />
 
             {/* User Profile Section */}
-            <div className="p-4 px-5">
+            <div className="p-3">
                 <button 
                     onClick={onProfileClick}
-                    className="w-full flex items-center gap-4 p-2.5 bg-white/[0.03] border border-white/5 rounded-2xl hover:bg-white/[0.05] hover:border-white/10 transition-all group group/profile"
+                    className="w-full flex items-center gap-2.5 p-1.5 bg-white/[0.03] border border-white/5 rounded-xl hover:bg-white/[0.05] hover:border-white/10 transition-all group group/profile"
                 >
-                    <div className="w-11 h-11 rounded-xl bg-pink-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-pink-500/10 overflow-hidden group-hover/profile:scale-105 transition-transform shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-pink-500 flex items-center justify-center text-white font-bold text-[10px] shadow-lg shadow-pink-500/10 overflow-hidden group-hover/profile:scale-105 transition-transform shrink-0">
                         {user?.profilePicture ? (
                             <img src={user.profilePicture} alt="Profile" className="w-full h-full object-cover" />
                         ) : (
@@ -128,19 +128,19 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
                         )}
                     </div>
                     <div className="flex flex-col min-w-0 text-left">
-                        <span className="text-white font-bold text-sm truncate leading-tight uppercase tracking-tight">{user?.name || user?.email.split('@')[0]}</span>
-                        <span className="text-pink-500/60 text-[10px] font-black uppercase tracking-widest leading-none mt-1">{user?.role || 'Member'}</span>
+                        <span className="text-white font-bold text-[11px] truncate leading-tight uppercase tracking-tight">{user?.name || user?.email.split('@')[0]}</span>
+                        <span className="text-pink-500/60 text-[8px] font-black uppercase tracking-widest leading-none mt-0.5">{user?.role || 'Member'}</span>
                     </div>
                 </button>
             </div>
 
             {/* Navigation List */}
-            <nav className="flex-1 px-4 space-y-3 overflow-y-auto custom-scrollbar">
+            <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar">
                 {NAV.map((item) => (
                     <button
                         key={item.label}
                         onClick={() => setActiveView(item.label)}
-                        className={`w-full group flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 ${
+                        className={`w-full group flex items-center gap-3 px-6 py-2.5 rounded-xl transition-all duration-300 ${
                           activeView === item.label 
                             ? 'bg-pink-500/10 text-pink-500 shadow-[0_4px_12px_rgba(255,45,120,0.1)] border border-pink-500/20'
                             : 'bg-transparent text-white/40 hover:text-white/80 hover:bg-white/[0.03]'
@@ -160,7 +160,7 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
                     {/* Settings */}
                     <button
                         onClick={() => setActiveView('Settings')}
-                        className={`w-full group flex items-center gap-3 px-6 py-4 rounded-2xl transition-all duration-300 ${
+                        className={`w-full group flex items-center gap-3 px-6 py-2.5 rounded-xl transition-all duration-300 ${
                             activeView === 'Settings'
                             ? 'bg-pink-500/10 text-pink-500 border border-pink-500/20 shadow-[0_4px_12px_rgba(255,45,120,0.1)]'
                             : 'bg-white/[0.02] text-white/40 border border-white/5 hover:bg-white/[0.05] hover:border-white/10'
