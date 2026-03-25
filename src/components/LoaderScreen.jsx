@@ -165,7 +165,7 @@ const LoaderScreen = memo(({ onComplete, user }) => {
 
                     </motion.div>
                 </motion.div>
-            ) : !exiting ? (
+            ) : (
                 <motion.div
                     key="loader"
                     initial={{ opacity: 1 }}
@@ -241,7 +241,7 @@ const LoaderScreen = memo(({ onComplete, user }) => {
                         )}
                     </AnimatePresence>
                 </motion.div>
-            ) : null}
+            )}
         </AnimatePresence>
     )
 })
