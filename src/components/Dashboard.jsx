@@ -450,24 +450,8 @@ export default function Dashboard({ user: initialUser }) {
             <div className="flex flex-col gap-6 max-w-7xl mx-auto">
                 {/* Status Bar */}
                 {/* Compact Banner Row */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <motion.div 
-                        whileHover={{ scale: 1.002, y: -0.5 }}
-                        onClick={() => setActiveView('Chat')}
-                        className="lg:col-span-1 flex items-center gap-3 px-4 py-1.5 bg-[#111113] border border-white/5 rounded-xl cursor-pointer hover:bg-white/[0.03] transition-all group relative overflow-hidden"
-                    >
-                        <div className="p-1.5 bg-pink-500/10 rounded-lg text-pink-500 border border-pink-500/20 group-hover:scale-105 transition-transform shrink-0">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                            </svg>
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                            <h3 className="text-[10px] font-bold text-white tracking-tight leading-none mb-0.5">Secure messages</h3>
-                            <p className="text-[9px] text-white/40 truncate leading-none">Access the communication terminal</p>
-                        </div>
-                    </motion.div>
-
-                    <div className="lg:col-span-2">
+                <div className="grid grid-cols-1 gap-6">
+                    <div className="w-full">
                         <MonthlySummary currentMonth={currentMonth} />
                     </div>
                 </div>
@@ -516,17 +500,6 @@ export default function Dashboard({ user: initialUser }) {
                     </div>
 
                     <div className="flex items-center gap-3 flex-shrink-0">
-                        {activeView !== 'Chat' && activeView !== 'Approvals' && (
-                            <button 
-                                onClick={() => setActiveView('Chat')}
-                                className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-pink-500/10 border border-pink-500/20 text-pink-500 hover:bg-[#FF2D78] hover:text-white transition-all text-[9px] font-bold uppercase tracking-wider"
-                            >
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3">
-                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                                </svg>
-                                <span>Quick chat</span>
-                            </button>
-                        )}
                         <div className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-white/[0.03] border border-white/5 text-white/40 text-[9px] font-bold uppercase tracking-wider">
                             <span className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />
                             <span>Active session</span>
