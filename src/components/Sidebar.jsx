@@ -135,12 +135,12 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
             </div>
 
             {/* Navigation List */}
-            <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar">
+            <nav className="flex-1 px-4 space-y-3 overflow-y-auto custom-scrollbar py-4">
                 {NAV.map((item) => (
                     <button
                         key={item.label}
                         onClick={() => setActiveView(item.label)}
-                        className={`w-full group flex items-center gap-4 px-6 py-3 rounded-2xl transition-all duration-300 ${
+                        className={`w-full group flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 ${
                           activeView === item.label 
                             ? 'bg-pink-500/10 text-pink-500 shadow-[0_4px_12px_rgba(255,45,120,0.1)] border border-pink-500/20'
                             : 'bg-transparent text-white/40 hover:text-white/80 hover:bg-white/[0.03]'
@@ -155,12 +155,12 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
             </nav>
 
             {/* Bottom Section - Pinned to absolute footer */}
-            <div className="mt-auto pb-6 space-y-2">
-                <div className="px-4 space-y-2">
+            <div className="mt-auto pb-10 space-y-4">
+                <div className="px-4 space-y-4">
                     {/* Settings */}
                     <button
                         onClick={() => setActiveView('Settings')}
-                        className={`w-full group flex items-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 ${
+                        className={`w-full group flex items-center gap-3 px-6 py-4 rounded-2xl transition-all duration-300 ${
                             activeView === 'Settings'
                             ? 'bg-pink-500/10 text-pink-500 border border-pink-500/20 shadow-[0_4px_12px_rgba(255,45,120,0.1)]'
                             : 'bg-white/[0.02] text-white/40 border border-white/5 hover:bg-white/[0.05] hover:border-white/10'
