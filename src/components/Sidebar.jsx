@@ -114,19 +114,32 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
     return (
         <motion.aside
             className="h-full flex flex-col bg-[#050505] border-r border-white/5 overflow-hidden flex-shrink-0 relative z-10"
-            animate={{ width: 280 }}
+            style={{ width: sidebarWidth }}
         >
+            {/* Drag Handle */}
+            <div
+                onMouseDown={startResizing}
+                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-pink-500/20 active:bg-pink-500/40 z-50 transition-colors"
+            />
+
             {/* User Profile Section */}
             <div className="p-6">
-                <div className="p-4 bg-white/[0.03] border border-white/10 rounded-[2rem] flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-pink-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-pink-500/20">
-                        {initials}
+                <button 
+                    onClick={onProfileClick}
+                    className="w-full p-4 bg-white/[0.03] border border-white/10 rounded-[2rem] flex items-center gap-4 hover:bg-white/[0.05] hover:border-white/20 transition-all group group/profile"
+                >
+                    <div className="w-12 h-12 rounded-full bg-pink-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-pink-500/20 overflow-hidden group-hover/profile:scale-105 transition-transform">
+                        {user?.profilePicture ? (
+                            <img src={user.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                            initials
+                        )}
                     </div>
-                    <div className="flex flex-col min-w-0">
+                    <div className="flex flex-col min-w-0 text-left">
                         <span className="text-white font-bold text-sm truncate">{user?.name || user?.email.split('@')[0]}</span>
                         <span className="text-pink-500 text-[10px] font-black uppercase tracking-widest">{user?.role || 'Member'}</span>
                     </div>
-                </div>
+                </button>
             </div>
 
             {/* Navigation List */}
