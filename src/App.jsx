@@ -68,6 +68,10 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', 'dark')
 
     const checkAuth = async () => {
+      // Background Warmup: Wake up the backend immediately (especially useful on Render free tier)
+      // This prevents the "Google Login takes too long" issue by starting the cold boot here.
+      fetch(`${config.API_BASE_URL}/auth/me`).catch(() => {});
+
       const token = AuthService.getToken()
       if (token) {
         try {
