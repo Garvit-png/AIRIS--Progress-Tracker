@@ -36,29 +36,33 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
         }
     };
 
-    // Debounced search for DM
+    // Instant Local search for DM
     React.useEffect(() => {
-        const timer = setTimeout(() => {
-            if (newChatName.trim().length >= 2) {
-                performSearch(newChatName, setSearchResults);
-            } else {
-                setSearchResults([]);
-            }
-        }, 300);
-        return () => clearTimeout(timer);
-    }, [newChatName]);
+        if (newChatName.trim().length >= 1) {
+            const query = newChatName.toLowerCase().trim();
+            const matches = allMembers.filter(m => 
+                m.name.toLowerCase().includes(query) || 
+                m.role.toLowerCase().includes(query)
+            );
+            setSearchResults(matches);
+        } else {
+            setSearchResults([]);
+        }
+    }, [newChatName, allMembers]);
 
-    // Debounced search for Group Participants
+    // Instant Local search for Group Participants
     React.useEffect(() => {
-        const timer = setTimeout(() => {
-            if (participantSearch.trim().length >= 2) {
-                performSearch(participantSearch, setParticipantResults);
-            } else {
-                setParticipantResults([]);
-            }
-        }, 300);
-        return () => clearTimeout(timer);
-    }, [participantSearch]);
+        if (participantSearch.trim().length >= 1) {
+            const query = participantSearch.toLowerCase().trim();
+            const matches = allMembers.filter(m => 
+                m.name.toLowerCase().includes(query) || 
+                m.role.toLowerCase().includes(query)
+            );
+            setParticipantResults(matches);
+        } else {
+            setParticipantResults([]);
+        }
+    }, [participantSearch, allMembers]);
 
     const performSearch = async (query, setResults) => {
         setIsSearching(true);
@@ -218,9 +222,9 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                     {isSearching && <div className="absolute right-3 top-2.5 w-3 h-3 border-2 border-pink-500/20 border-t-pink-500 rounded-full animate-spin" />}
                                 </div>
                                 
-                                {newChatName.length >= 2 && searchResults.length > 0 && (
-                                    <div className="max-h-40 overflow-y-auto rounded-lg border border-white/5 bg-black/40">
-                                        <p className="px-3 py-1.5 text-[8px] font-bold text-white/30 uppercase tracking-widest border-b border-white/5 bg-white/[0.02]">Matches</p>
+                                {newChatName.length >= 1 && searchResults.length > 0 && (
+                                    <div className="max-h-40 overflow-y-auto rounded-lg border border-white/5 bg-black/40 shadow-xl">
+                                        <p className="px-3 py-1.5 text-[8px] font-bold text-white/30 uppercase tracking-widest border-b border-white/5 bg-white/[0.02]">Instant Matches</p>
                                         {searchResults.map(result => (
                                             <button 
                                                 key={result._id}
@@ -261,8 +265,8 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                         ))}
                                     </div>
                                 )}
-                                {newChatName.length >= 2 && !isSearching && searchResults.length === 0 && (
-                                    <p className="text-[9px] text-white/20 text-center py-2 italic">No spectral matches found</p>
+                                {newChatName.length >= 1 && searchResults.length === 0 && (
+                                    <p className="text-[9px] text-white/20 text-center py-2 italic font-mono">NO SPECTRAL DATA FOUND</p>
                                 )}
                             </div>
                         ) : (
