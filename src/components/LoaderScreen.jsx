@@ -36,7 +36,7 @@ const LoaderScreen = memo(({ onComplete, user }) => {
         const timers = [];
 
         // Progress bar and audio sweep logic
-        const duration = 600;
+        const duration = 450;
         const startTime = Date.now();
         
         const tick = () => {
@@ -65,7 +65,7 @@ const LoaderScreen = memo(({ onComplete, user }) => {
                     setLines(prev => [...prev, line]);
                     SystemAudio.playDataTick();
                 }
-            }, line.delay);
+            }, line.delay * 0.7); // Scale delay down
             timers.push(t);
         });
 
@@ -74,10 +74,10 @@ const LoaderScreen = memo(({ onComplete, user }) => {
             if (active) {
                 setExiting(true);
                 SystemAudio.stopAmbience();
-                const completeTimer = setTimeout(onComplete, 400);
+                const completeTimer = setTimeout(onComplete, 300);
                 timers.push(completeTimer);
             }
-        }, 1800);
+        }, 1100);
         timers.push(exitTimer);
 
         return () => {

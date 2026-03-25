@@ -108,12 +108,14 @@ export default function App() {
     setPhase('app')
   }, [])
 
+  const sessionUser = AuthService.getSession()
+
   if (phase === 'loading') {
-    const sessionUser = AuthService.getSession()
     return <LoaderScreen onComplete={handleLoaderComplete} user={sessionUser} />
   }
 
-  if (isVerifying) {
+  // Optimistic entry: if we have a session, show the app while verifying in background
+  if (isVerifying && !sessionUser) {
     return <SkeletonDashboard />
   }
 

@@ -35,6 +35,13 @@ export default function Dashboard({ user: initialUser }) {
     React.useEffect(() => {
         setHeaderVisible(true);
         
+        // Sync user state with props from App (for optimistic -> fresh update)
+        if (initialUser) {
+            setUser(initialUser);
+            setEditName(initialUser.name || '');
+            setEditPfp(initialUser.profilePicture || '');
+        }
+
         // Handle view from URL (for direct navigation)
         const params = new URLSearchParams(window.location.search);
         const viewParam = params.get('view');
@@ -45,7 +52,7 @@ export default function Dashboard({ user: initialUser }) {
         if (activeView === 'Tasks') {
             fetchMyTasks();
         }
-    }, [activeView]);
+    }, [initialUser, activeView]);
 
     const handleViewChange = (view) => {
         const restrictedViews = ['Approvals', 'Members'];
