@@ -9,9 +9,10 @@ const {
 
 const router = express.Router();
 
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requireApproved } = require('../middleware/authMiddleware');
 
 router.use(protect);
+router.use(requireApproved);
 
 router.get('/conversations', getConversations);
 router.post('/conversation/dm', getOrCreateDM);

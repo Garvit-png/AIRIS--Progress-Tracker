@@ -47,6 +47,9 @@ exports.removeApprovedEmail = async (req, res) => {
         }
 
         await item.deleteOne();
+        
+        // SYNC: Also demote any existing registered user to pending
+        await User.findOneAndUpdate({ email: cleanEmail }, { status: 'pending' });
 
         res.status(200).json({
             success: true,
@@ -128,6 +131,11 @@ exports.updateUserStatus = async (req, res) => {
 
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // SYNC: If status is being revoked (set to pending or rejected), remove from whitelist
+        if (status === 'pending' || status === 'rejected') {
+            await ApprovedEmail.deleteOne({ email: user.email.toLowerCase().trim() });
         }
 
         res.status(200).json({

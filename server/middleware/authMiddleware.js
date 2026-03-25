@@ -57,3 +57,16 @@ exports.protect = async (req, res, next) => {
         return res.status(401).json({ success: false, message: 'Not authorized to access this route' });
     }
 };
+
+// Middleware to restrict access to approved users only
+exports.requireApproved = (req, res, next) => {
+    if (req.user && req.user.status === 'approved') {
+        return next();
+    }
+    
+    return res.status(403).json({
+        success: false,
+        message: 'Access denied: Your account is pending approval or has been revoked.',
+        status: req.user ? req.user.status : 'unknown'
+    });
+};

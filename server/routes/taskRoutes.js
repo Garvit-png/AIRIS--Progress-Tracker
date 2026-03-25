@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const Task = require('../models/Task');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requireApproved } = require('../middleware/authMiddleware');
+router.use(protect);
+router.use(requireApproved);
 const path = require('path');
 
 // Middleware to check if user is Admin or President
@@ -18,7 +20,7 @@ const authorizeAdminOrPresident = (req, res, next) => {
 // @desc    Send task to a user
 // @route   POST /api/tasks/send
 // @access  Private (Admin/President)
-router.post('/send', protect, authorizeAdminOrPresident, async (req, res) => {
+router.post('/send', authorizeAdminOrPresident, async (req, res) => {
     try {
         const { targetEmail, title, description, deadline } = req.body;
         
@@ -63,7 +65,7 @@ router.post('/send', protect, authorizeAdminOrPresident, async (req, res) => {
 // @desc    Get tasks for the current user
 // @route   GET /api/tasks/my-tasks
 // @access  Private
-router.get('/my-tasks', protect, async (req, res) => {
+router.get('/my-tasks', async (req, res) => {
     try {
         const myTasks = await Task.find({ targetEmail: req.user.email.toLowerCase() });
         
@@ -79,7 +81,7 @@ router.get('/my-tasks', protect, async (req, res) => {
 // @desc    Get all tasks (for Admin/President to track progress)
 // @route   GET /api/tasks/all
 // @access  Private (Admin/President)
-router.get('/all', protect, authorizeAdminOrPresident, async (req, res) => {
+router.get('/all', authorizeAdminOrPresident, async (req, res) => {
     try {
         const allTasks = await Task.find();
         res.status(200).json({
@@ -94,7 +96,7 @@ router.get('/all', protect, authorizeAdminOrPresident, async (req, res) => {
 // @desc    Update task status
 // @route   PUT /api/tasks/:id/status
 // @access  Private
-router.put('/:id/status', protect, async (req, res) => {
+router.put('/:id/status', async (req, res) => {
     try {
         const { status } = req.body;
         const task = await Task.findByIdAndUpdate(req.params.id, { status }, {

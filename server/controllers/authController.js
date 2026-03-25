@@ -149,9 +149,18 @@ exports.googleLogin = async (req, res) => {
                 googleId,
                 profilePicture: picture || ''
             });
-        } else if (!user.googleId) {
+        } else {
+            // SYNC: If user is pending but is now in the whitelist, auto-approve them
+            if (user.status === 'pending' && isPreAuth) {
+                user.status = 'approved';
+                if (isPreAuth.role) user.role = isPreAuth.role;
+                if (isPreAuth.isAdmin !== undefined) user.isAdmin = isPreAuth.isAdmin;
+            }
+            
             // Link Google ID if it isn't linked yet
-            user.googleId = googleId;
+            if (!user.googleId) {
+                user.googleId = googleId;
+            }
             user.profilePicture = user.profilePicture || picture;
             await user.save();
         }

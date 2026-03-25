@@ -12,25 +12,12 @@ const {
     setupPortalPassword,
     verifyPortalPassword
 } = require('../controllers/adminController');
+const { protect, requireApproved } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-const { protect } = require('../middleware/authMiddleware');
-
-// Middleware to restrict access to admins only
-const authorize = (...roles) => {
-    return (req, res, next) => {
-        if (!req.user || !req.user.isAdmin) {
-            return res.status(403).json({
-                success: false,
-                message: `User is not authorized to access this route`
-            });
-        }
-        next();
-    };
-};
-
 router.use(protect);
+router.use(requireApproved);
 router.use(authorize('admin'));
 
 router.get('/approved', getApprovedEmails);
