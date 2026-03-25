@@ -62,20 +62,13 @@ export default function LoginPage() {
     const handleGoogleSuccess = async (credentialResponse) => {
         setError('')
         setIsLoading(true)
-        // We can use the error field for temporary status messages if we want, 
-        // but for now just let the button show the state
         try {
             await AuthService.googleLogin(credentialResponse.credential)
+            // Redirect to destination (dashboard), which will automatically
+            // route to /pending if the new user is not yet approved.
             navigate(from, { replace: true })
         } catch (err) {
-            if (err.code === 'USER_NOT_FOUND') {
-                setError('GMAIL NOT CONNECTED, REGISTER FIRST')
-                // Pre-fill registration if they choose to proceed
-                setEmail(err.email || email)
-                setUserData({ name: err.name, email: err.email })
-            } else {
-                setError(err.message.toUpperCase())
-            }
+            setError(err.message.toUpperCase())
         } finally {
             setIsLoading(false)
         }
@@ -123,7 +116,7 @@ export default function LoginPage() {
                 {step === 'email' ? (
                     <form onSubmit={handleEmailSubmit} className="space-y-4">
                         <div>
-                            <label className="font-mono text-[9px] uppercase tracking-widest opacity-70 mb-1.5 block">Approved Identifier</label>
+                            <label className="font-mono text-[9px] uppercase tracking-widest opacity-70 mb-1.5 block">Email Address</label>
                             <input
                                 type="email"
                                 autoFocus
@@ -133,7 +126,7 @@ export default function LoginPage() {
                                 onChange={(e) => { setEmail(e.target.value); setError(''); }}
                             />
                             <p className="mt-2 font-mono text-[8px] opacity-60 uppercase text-center">
-                                Use an approved email to proceed
+                                Enter your email to sign in or register
                             </p>
                         </div>
                         <button 

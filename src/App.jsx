@@ -12,6 +12,7 @@ import EmailVerification from './pages/EmailVerification'
 import ResetPassword from './pages/ResetPassword'
 import SecurityShield from './components/SecurityShield'
 import PendingApproval from './components/PendingApproval'
+import SkeletonDashboard from './components/SkeletonDashboard'
 import config from './config'
 
 import { AuthService } from './services/authService'
@@ -103,9 +104,17 @@ export default function App() {
     return () => channel.close();
   }, [])
 
-  if (phase === 'loading' || isVerifying) {
+  const handleLoaderComplete = React.useCallback(() => {
+    setPhase('app')
+  }, [])
+
+  if (phase === 'loading') {
     const sessionUser = AuthService.getSession()
-    return <LoaderScreen onComplete={() => setPhase('app')} user={sessionUser} />
+    return <LoaderScreen onComplete={handleLoaderComplete} user={sessionUser} />
+  }
+
+  if (isVerifying) {
+    return <SkeletonDashboard />
   }
 
   return (

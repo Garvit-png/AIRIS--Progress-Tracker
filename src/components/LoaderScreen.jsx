@@ -26,8 +26,11 @@ const LoaderScreen = memo(({ onComplete, user }) => {
     }
 
     // Unified boot sequence
+    const sequenceStarted = React.useRef(false)
+    
     useEffect(() => {
-        if (!isBooted) return;
+        if (!isBooted || sequenceStarted.current) return;
+        sequenceStarted.current = true;
 
         let active = true;
         const timers = [];
