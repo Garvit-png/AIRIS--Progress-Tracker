@@ -202,7 +202,7 @@ io.on('connection', (socket) => {
     // Handle typing status
     socket.on('typing', (data) => {
         const { conversationId, userId, isTyping } = data;
-        socket.to(conversationId).emit('user_typing', { userId, isTyping });
+        socket.to(conversationId).emit('user_typing', { conversationId, userId, isTyping });
     });
 
     socket.on('disconnect', () => {

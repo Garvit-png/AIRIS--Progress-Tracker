@@ -349,10 +349,10 @@ exports.searchUsersByName = async (req, res) => {
 
         // Split query into tokens for multi-part matching (e.g. "Japinder Kaur")
         const tokens = query.split(/\s+/).filter(t => t.length > 0);
-        const searchRegex = tokens.map(t => new RegExp(t, 'i'));
-
+        
+        // Match ALL tokens in the name using $and + $regex
         const users = await User.find({
-            name: { $all: searchRegex }, // Matches ALL tokens anywhere in the name
+            $and: tokens.map(t => ({ name: { $regex: t, $options: 'i' } })),
             status: 'approved',
             _id: { $ne: req.user.id }
         })

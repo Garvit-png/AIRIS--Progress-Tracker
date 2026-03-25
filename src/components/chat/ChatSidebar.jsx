@@ -30,16 +30,25 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
         if (isCreating) fetchAllMembers();
     }, [isCreating]);
 
-    const fetchAllMembers = async () => {
+    const fetchAllMembers = async (retryCount = 0) => {
         try {
             const data = await AuthService.getMembers();
-            if (data.success) {
+            if (data && data.success) {
                 setAllMembers(data.members);
                 setIsSynced(true);
+            } else {
+                console.warn('Sync attempt failed, retrying...', data?.message);
+                setIsSynced(false);
+                if (retryCount < 3) {
+                    setTimeout(() => fetchAllMembers(retryCount + 1), 2000);
+                }
             }
         } catch (error) {
             console.error('Failed to fetch members:', error);
             setIsSynced(false);
+            if (retryCount < 3) {
+                setTimeout(() => fetchAllMembers(retryCount + 1), 3000);
+            }
         }
     };
 
@@ -296,8 +305,8 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                         ))}
                                     </div>
                                 )}
-                                {newChatName.length >= 1 && searchResults.length === 0 && (
-                                    <p className="text-[9px] text-white/20 text-center py-2 italic font-mono">NO SPECTRAL DATA FOUND</p>
+                                {newChatName.length >= 1 && searchResults.length === 0 && !isSearchingMembers && (
+                                    <p className="text-[9px] text-white/20 text-center py-2 italic font-mono uppercase tracking-widest bg-white/[0.02] rounded-lg">No Spectral Match Found</p>
                                 )}
                             </div>
                         ) : (
