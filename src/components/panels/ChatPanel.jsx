@@ -66,6 +66,14 @@ export default function ChatPanel() {
             });
         });
 
+        newSocket.on('new_conversation', (conversation) => {
+            console.log('NEW CONVERSATION RECEIVED:', conversation);
+            setConversations(prev => {
+                if (prev.some(c => c._id === conversation._id)) return prev;
+                return [conversation, ...prev];
+            });
+        });
+
         return () => newSocket.close();
     }, [user?.id, user?._id]); // Only recreate if user changes
 
@@ -154,14 +162,8 @@ export default function ChatPanel() {
             if (data.success) {
                 const newMessage = data.data;
                 setMessages(prev => [...prev, newMessage]);
-                if (socket) {
-                    const participantIds = activeConversation.participants.map(p => p._id || p);
-                    socket.emit('send_message', {
-                        conversationId: activeConversation._id,
-                        message: newMessage,
-                        participantIds
-                    });
-                }
+                // Note: Socket emission is now handled by the backend!
+                // No need to manual emit here anymore.
                 // Update local conversation list
                 setConversations(prev => prev.map(conv => 
                     conv._id === activeConversation._id 

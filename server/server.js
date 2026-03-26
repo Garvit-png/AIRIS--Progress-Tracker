@@ -111,6 +111,12 @@ const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
 app.use('/uploads', express.static(UPLOADS_DIR));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+// Inject Socket.io into request
+app.use((req, res, next) => {
+    req.io = io;
+    next();
+});
+
 // Mount routers
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);

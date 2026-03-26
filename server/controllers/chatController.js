@@ -92,6 +92,13 @@ exports.createGroup = async (req, res) => {
         const populatedConversation = await Conversation.findById(conversation._id)
             .populate('participants', 'name email profilePicture');
 
+        // Emit socket event to all participants
+        if (req.io) {
+            allParticipants.forEach(participantId => {
+                req.io.to(participantId.toString()).emit('new_conversation', populatedConversation);
+            });
+        }
+
         res.status(201).json({
             success: true,
             data: populatedConversation
@@ -148,10 +155,18 @@ exports.sendMessage = async (req, res) => {
             .populate('sender', 'name email profilePicture');
 
         // Update conversation lastMessage
-        await Conversation.findByIdAndUpdate(conversationId, {
+        const conversation = await Conversation.findByIdAndUpdate(conversationId, {
             lastMessage: message._id,
             updatedAt: Date.now()
-        });
+        }, { new: true }).populate('participants', 'id _id');
+
+        // Emit socket event to all participants
+        if (req.io && conversation) {
+            conversation.participants.forEach(participant => {
+                const participantId = participant._id || participant.id || participant;
+                req.io.to(participantId.toString()).emit('receive_message', populatedMessage);
+            });
+        }
 
         res.status(201).json({
             success: true,
