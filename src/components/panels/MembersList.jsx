@@ -15,6 +15,7 @@ export default function MembersList() {
     const [editMode, setEditMode] = useState(false);
     const [editData, setEditData] = useState({ name: '', role: '', isAdmin: false });
     const [actionLoading, setActionLoading] = useState(false);
+    const [message, setMessage] = useState({ text: '', type: '' });
     const currentUser = AuthService.getSession();
     // Ref to track component mount status
     const isMounted = React.useRef(true);
@@ -55,6 +56,11 @@ export default function MembersList() {
         } finally {
             setActionLoading(false);
         }
+    };
+
+    const showMsg = (text, type = 'info') => {
+        setMessage({ text, type });
+        setTimeout(() => setMessage({ text: '', type: '' }), 3000);
     };
 
     const getInitials = (name) => {
@@ -462,6 +468,22 @@ export default function MembersList() {
                                                 {editMode ? 'CANCEL' : 'OVERRIDE'}
                                             </button>
                                         </div>
+
+                                        {message.text && (
+                                            <motion.div 
+                                                initial={{ opacity: 0, y: -10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -10 }}
+                                                className={`p-3 rounded-xl border text-[9px] font-bold uppercase tracking-widest mb-4 flex items-center gap-2 ${
+                                                    message.type === 'success' 
+                                                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                                                    : 'bg-pink-500/10 border-pink-500/20 text-pink-400'
+                                                }`}
+                                            >
+                                                <div className={`w-1 h-1 rounded-full animate-pulse ${message.type === 'success' ? 'bg-emerald-500' : 'bg-pink-500'}`} />
+                                                {message.text}
+                                            </motion.div>
+                                        )}
 
                                         {editMode ? (
                                             <div className="space-y-4">
