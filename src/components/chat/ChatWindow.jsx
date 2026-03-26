@@ -20,7 +20,8 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
     useEffect(() => {
         if (socket) {
             socket.on('user_typing', (data) => {
-                if (conversation && data.conversationId === conversation._id && data.userId !== user.id) {
+                const currentUserId = user?.id || user?._id;
+                if (conversation && data.conversationId === conversation._id && data.userId !== currentUserId) {
                     setTypingUser(data.isTyping ? data.userId : null);
                 }
             });
@@ -32,15 +33,17 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
         setNewMessage(e.target.value);
         
         if (!isTyping && socket) {
+            const currentUserId = user?.id || user?._id;
             setIsTyping(true);
-            socket.emit('typing', { conversationId: conversation._id, userId: user.id, isTyping: true });
+            socket.emit('typing', { conversationId: conversation._id, userId: currentUserId, isTyping: true });
         }
 
         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
         typingTimeoutRef.current = setTimeout(() => {
+            const currentUserId = user?.id || user?._id;
             setIsTyping(false);
             if (socket) {
-                socket.emit('typing', { conversationId: conversation._id, userId: user.id, isTyping: false });
+                socket.emit('typing', { conversationId: conversation._id, userId: currentUserId, isTyping: false });
             }
         }, 3000);
     };
@@ -48,11 +51,12 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!newMessage.trim()) return;
+        const currentUserId = user?.id || user?._id;
         onSendMessage(newMessage);
         setNewMessage('');
         setIsTyping(false);
         if (socket) {
-            socket.emit('typing', { conversationId: conversation._id, userId: user.id, isTyping: false });
+            socket.emit('typing', { conversationId: conversation._id, userId: currentUserId, isTyping: false });
         }
     };
 
@@ -81,9 +85,9 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center overflow-hidden">
                         {conversation.isGroup ? (
-                            conversation.groupImage ? <img src={conversation.groupImage} className="w-full h-full object-cover" /> : <Users size={16} className="text-white/40" />
+                            conversation.groupImage ? <img src={AuthService.getFileUrl(conversation.groupImage)} className="w-full h-full object-cover" /> : <Users size={16} className="text-white/40" />
                         ) : (
-                            otherParticipant?.profilePicture ? <img src={otherParticipant.profilePicture} className="w-full h-full object-cover" /> : <User size={16} className="text-white/40" />
+                            otherParticipant?.profilePicture ? <img src={AuthService.getFileUrl(otherParticipant.profilePicture)} className="w-full h-full object-cover" /> : <User size={16} className="text-white/40" />
                         )}
                     </div>
                     <div>
@@ -104,9 +108,12 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                 {messages.map((msg, index) => {
-                    const isOwn = msg.sender._id === user.id || msg.sender === user.id;
+                    const currentUserId = user?.id || user?._id;
+                    const isOwn = (msg.sender?._id || msg.sender) === currentUserId;
                     const prevMsg = messages[index - 1];
-                    const showHeader = !prevMsg || prevMsg.sender._id !== msg.sender._id;
+                    const prevSenderId = prevMsg?.sender?._id || prevMsg?.sender;
+                    const currentSenderId = msg.sender?._id || msg.sender;
+                    const showHeader = !prevMsg || prevSenderId !== currentSenderId;
 
                     return (
                         <div key={msg._id} className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>

@@ -440,6 +440,23 @@ export const AuthService = {
         const data = await safeJson(response);
         if (!data.success) throw new Error(data.message);
         return data;
+    },
+
+    /**
+     * Helper to get full URL for uploaded files
+     */
+    getFileUrl: (path) => {
+        if (!path) return '';
+        if (path.startsWith('http')) return path;
+        
+        // Base backend URL (without /api)
+        // If API_BASE_URL is '/api', it's relative to current origin
+        // In production, we assume the backend is on Render if we are on Vercel
+        const baseUrl = config.API_BASE_URL.includes('onrender.com') 
+            ? config.API_BASE_URL.replace('/api', '') 
+            : 'https://airis-backend.onrender.com';
+            
+        return `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`;
     }
 };
 

@@ -223,7 +223,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                                 className="w-full flex items-center gap-3 p-2 hover:bg-white/5 text-left transition-all"
                                             >
                                                 <div className="w-8 h-8 rounded-lg bg-white/5 overflow-hidden flex-shrink-0">
-                                                    {result.profilePicture ? <img src={result.profilePicture} className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-white/20" />}
+                                                    {result.profilePicture ? <img src={AuthService.getFileUrl(result.profilePicture)} className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-white/20" />}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-[11px] font-bold text-white truncate">{result.name?.split(' ')[0]}</p>
@@ -327,7 +327,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                         {conv.isGroup ? (
                                             conv.groupImage ? <img src={conv.groupImage} className="w-full h-full object-cover" /> : <Users size={20} className="text-white/40" />
                                         ) : (
-                                            otherParticipant?.profilePicture ? <img src={otherParticipant.profilePicture} className="w-full h-full object-cover" /> : <User size={20} className="text-white/40" />
+                                            otherParticipant?.profilePicture ? <img src={AuthService.getFileUrl(otherParticipant.profilePicture)} className="w-full h-full object-cover" /> : <User size={20} className="text-white/40" />
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0 text-left">
@@ -362,7 +362,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                         className="w-full flex items-center gap-3 px-6 py-3 hover:bg-white/[0.04] transition-all group"
                                     >
                                         <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-pink-500/20">
-                                            {profile.profilePicture ? <img src={profile.profilePicture} className="w-full h-full object-cover" /> : <User size={16} className="text-white/20" />}
+                                            {profile.profilePicture ? <img src={AuthService.getFileUrl(profile.profilePicture)} className="w-full h-full object-cover" /> : <User size={16} className="text-white/20" />}
                                         </div>
                                         <div className="flex-1 min-w-0 text-left">
                                             <p className="text-xs font-bold text-white truncate group-hover:text-pink-400">{profile.name?.split(' ')[0]}</p>

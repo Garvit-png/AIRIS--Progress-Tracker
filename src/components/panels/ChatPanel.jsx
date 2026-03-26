@@ -6,7 +6,9 @@ import config from '../../config';
 import ChatSidebar from '../chat/ChatSidebar';
 import ChatWindow from '../chat/ChatWindow';
 
-const SOCKET_URL = config.API_BASE_URL.replace('/api', '') || 'http://localhost:5002';
+const SOCKET_URL = config.API_BASE_URL.includes('onrender.com') 
+    ? config.API_BASE_URL.replace('/api', '') 
+    : 'https://airis-backend.onrender.com';
 
 export default function ChatPanel() {
     const [conversations, setConversations] = useState([]);
