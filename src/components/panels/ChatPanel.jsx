@@ -16,6 +16,7 @@ export default function ChatPanel() {
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [socket, setSocket] = useState(null);
+    const [isConnected, setIsConnected] = useState(false);
     const [allMembers, setAllMembers] = useState([]);
     const user = AuthService.getSession();
 
@@ -32,6 +33,16 @@ export default function ChatPanel() {
 
         newSocket.on('connect', () => {
             console.log('CONNECTED TO REAL-TIME SERVER');
+            setIsConnected(true);
+            newSocket.emit('join_user', currentUserId);
+        });
+
+        newSocket.on('disconnect', () => {
+            console.log('DISCONNECTED FROM REAL-TIME SERVER');
+            setIsConnected(false);
+        });
+
+        newSocket.on('reconnect', () => {
             newSocket.emit('join_user', currentUserId);
         });
 
@@ -40,15 +51,13 @@ export default function ChatPanel() {
             
             // Update active messages if this message belongs to current chat
             setMessages(prev => {
-                // Check if message already exists (to avoid duplicates from API + Socket)
-                if (prev.some(m => (m._id === message._id) || (m.tempId && m.tempId === message.tempId))) {
-                    // Update the existing optimistic message with the real one from server
+                const msgId = message._id || message.tempId;
+                if (prev.some(m => (m._id === msgId) || (m.tempId && m.tempId === message.tempId))) {
                     return prev.map(m => (m.tempId && m.tempId === message.tempId) ? message : m);
                 }
                 
-                // Compare IDs correctly
-                const msgConvId = message.conversation?._id || message.conversation;
-                const activeId = activeConversationRef.current?._id;
+                const msgConvId = String(message.conversation?._id || message.conversation);
+                const activeId = String(activeConversationRef.current?._id || '');
                 
                 if (msgConvId === activeId) {
                     return [...prev, message];
@@ -56,15 +65,19 @@ export default function ChatPanel() {
                 return prev;
             });
 
-            // Update conversations list (move to top and update last message)
             setConversations(prev => {
+                const msgConvId = String(message.conversation?._id || message.conversation);
                 const updated = prev.map(conv => {
-                    const msgConvId = message.conversation?._id || message.conversation;
-                    if (conv._id === msgConvId) {
+                    if (String(conv._id) === msgConvId) {
                         return { ...conv, lastMessage: message, updatedAt: new Date().toISOString() };
                     }
                     return conv;
                 });
+                
+                if (!prev.some(conv => String(conv._id) === msgConvId)) {
+                    // This covers the case where a new conversation was started
+                    return prev; 
+                }
                 return [...updated].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
             });
         });
@@ -213,23 +226,33 @@ export default function ChatPanel() {
     };
 
     return (
-        <div className="flex h-[calc(100vh-140px)] bg-black/20 rounded-3xl overflow-hidden border border-white/5 backdrop-blur-sm">
-            <ChatSidebar 
-                conversations={conversations} 
-                activeConversation={activeConversation}
-                onSelectConversation={setActiveConversation}
-                user={user}
-                loading={loading}
-                allMembers={allMembers}
-                onNewConversation={fetchConversations}
-            />
-            <ChatWindow 
-                conversation={activeConversation}
-                messages={messages}
-                onSendMessage={handleSendMessage}
-                user={user}
-                socket={socket}
-            />
+        <div className="flex flex-col h-[calc(100vh-140px)] bg-black/20 rounded-3xl overflow-hidden border border-white/5 backdrop-blur-sm relative">
+            {/* Real-time Status Indicator */}
+            <div className="absolute top-4 right-4 z-20 flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-white/5 backdrop-blur-md">
+                <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500 animate-pulse'}`} />
+                <span className="text-[9px] font-black uppercase tracking-widest text-white/40">
+                    {isConnected ? 'Active Session' : 'Offline'}
+                </span>
+            </div>
+
+            <div className="flex flex-1 overflow-hidden">
+                <ChatSidebar 
+                    conversations={conversations} 
+                    activeConversation={activeConversation}
+                    onSelectConversation={setActiveConversation}
+                    user={user}
+                    loading={loading}
+                    allMembers={allMembers}
+                    onNewConversation={fetchConversations}
+                />
+                <ChatWindow 
+                    conversation={activeConversation}
+                    messages={messages}
+                    onSendMessage={handleSendMessage}
+                    user={user}
+                    socket={socket}
+                />
+            </div>
         </div>
     );
 }
