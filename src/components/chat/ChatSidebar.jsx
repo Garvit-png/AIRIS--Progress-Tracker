@@ -235,29 +235,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                         ))}
                                     </div>
                                 )}
-                                {!newChatName && allMembers.length > 0 && (
-                                    <div className="max-h-60 overflow-y-auto rounded-lg border border-white/5 bg-black/40 shadow-2xl">
-                                        <p className="px-3 py-1.5 text-[8px] font-black text-pink-500/60 uppercase tracking-[0.2em] border-b border-white/5 bg-white/[0.02]">Recommended Members</p>
-                                        {allMembers.map(member => (
-                                            <button 
-                                                key={member._id}
-                                                onClick={() => handleStartDM(member)}
-                                                className="w-full flex items-center gap-3 p-3 hover:bg-white/[0.06] text-left transition-all group"
-                                            >
-                                                <div className="w-9 h-9 rounded-xl bg-white/5 overflow-hidden flex-shrink-0 border border-white/5 group-hover:border-pink-500/20">
-                                                    {member.profilePicture ? <img src={member.profilePicture} className="w-full h-full object-cover" /> : <User size={16} className="m-auto text-white/20" />}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-[11px] font-bold text-white truncate group-hover:text-pink-400">{member.name}</p>
-                                                    <p className="text-[9px] text-white/20 truncate uppercase tracking-widest">{member.role}</p>
-                                                </div>
-                                                <div className="w-6 h-6 rounded-lg bg-pink-500/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <Plus size={12} className="text-pink-500" />
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
+
                                 {newChatName.length >= 1 && searchResults.length === 0 && (
                                     <p className="text-[9px] text-white/20 text-center py-2 italic font-mono uppercase tracking-widest bg-white/[0.02] rounded-lg">No Spectral Match Found</p>
                                 )}
