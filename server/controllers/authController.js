@@ -378,7 +378,7 @@ exports.getApprovedMembers = async (req, res) => {
     try {
         const members = await User.find({
             status: 'approved',
-            _id: { $ne: req.user.id } // Don't include self
+            _id: { $ne: req.user._id || req.user.id } // Don't include self (handles both Mongoose and plain objects)
         })
         .select('name profilePicture role')
         .sort({ name: 1 });

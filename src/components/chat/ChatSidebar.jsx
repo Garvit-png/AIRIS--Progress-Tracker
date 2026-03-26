@@ -32,21 +32,32 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
 
     const fetchAllMembers = async (retryCount = 0) => {
         try {
-            const data = await AuthService.getMembers();
-            if (data && data.success) {
+            // Priority 1: Get optimized chat discovery list
+            let data = await AuthService.getMembers();
+            
+            // Priority 2: Fallback to main member directory if chat list is empty or fails
+            if (!data || !data.success || !data.members || data.members.length === 0) {
+                console.log('Chat members list empty, attempting fallback to team directory...');
+                const users = await AuthService.getUsers();
+                if (users && Array.isArray(users)) {
+                    data = { success: true, members: users.filter(u => u.status === 'approved' && u._id !== (user?.id || user?._id)) };
+                }
+            }
+
+            if (data && data.success && Array.isArray(data.members)) {
                 setAllMembers(data.members);
                 setIsSynced(true);
             } else {
                 console.warn('Sync attempt failed, retrying...', data?.message);
                 setIsSynced(false);
-                if (retryCount < 3) {
+                if (retryCount < 2) {
                     setTimeout(() => fetchAllMembers(retryCount + 1), 2000);
                 }
             }
         } catch (error) {
             console.error('Failed to fetch members:', error);
             setIsSynced(false);
-            if (retryCount < 3) {
+            if (retryCount < 2) {
                 setTimeout(() => fetchAllMembers(retryCount + 1), 3000);
             }
         }
@@ -59,9 +70,10 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
             const queryParts = query.split(/\s+/).filter(Boolean);
             
             // Local Token Match (Instant)
-            const matches = allMembers.filter(m => {
-                const nameLower = m.name ? m.name.toLowerCase() : '';
-                const roleLower = m.role ? m.role.toLowerCase() : '';
+            const membersList = Array.isArray(allMembers) ? allMembers : [];
+            const matches = membersList.filter(m => {
+                const nameLower = m && m.name ? m.name.toLowerCase() : '';
+                const roleLower = m && m.role ? m.role.toLowerCase() : '';
                 return queryParts.every(part => nameLower.includes(part) || roleLower.includes(part));
             });
             
@@ -85,9 +97,10 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
     React.useEffect(() => {
         if (participantSearch.trim().length >= 1) {
             const query = participantSearch.toLowerCase().trim();
-            const matches = allMembers.filter(m => 
-                (m.name && m.name.toLowerCase().includes(query)) || 
-                (m.role && m.role.toLowerCase().includes(query))
+            const membersList = Array.isArray(allMembers) ? allMembers : [];
+            const matches = membersList.filter(m => 
+                (m && m.name && m.name.toLowerCase().includes(query)) || 
+                (m && m.role && m.role.toLowerCase().includes(query))
             );
             setParticipantResults(matches);
         } else {
@@ -188,13 +201,13 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
         return otherParticipant?.name?.toLowerCase().includes(searchLower);
     });
 
-    const discoveredProfiles = search
+    const discoveredProfiles = search && Array.isArray(allMembers)
         ? allMembers.filter(m => {
-            const match = m.name ? m.name.toLowerCase().includes(search.toLowerCase()) : false;
+            const match = m && m.name ? m.name.toLowerCase().includes(search.toLowerCase()) : false;
             if (!match) return false;
             // Avoid duplicating users we already have a visible DM with
             const inVisibleDM = filteredConversations.some(conv => 
-                !conv.isGroup && conv.participants.some(p => p._id === m._id)
+                !conv.isGroup && conv.participants && conv.participants.some(p => p._id === m._id)
             );
             return !inVisibleDM;
         })
