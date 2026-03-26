@@ -147,13 +147,11 @@ if (process.env.NODE_ENV === 'production' && hasFrontend) {
     });
 
     // In development or if frontend missing
-    app.get('*', (req, res) => {
-        if (!req.path.startsWith('/api/')) {
-            res.status(404).json({
-                success: false,
-                message: `Route ${req.path} not found. If this is the API, ensure you use the /api/ prefix.`
-            });
-        }
+    app.all('*', (req, res) => {
+        res.status(404).json({
+            success: false,
+            message: `Route ${req.method} ${req.path} not found.`
+        });
     });
 }
 
