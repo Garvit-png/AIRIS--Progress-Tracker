@@ -13,8 +13,16 @@ const messageSchema = new mongoose.Schema({
     },
     text: {
         type: String,
-        required: true,
+        required: function() {
+            return !this.file;
+        },
         trim: true
+    },
+    file: {
+        url: { type: String },
+        name: { type: String },
+        fileType: { type: String },
+        size: { type: Number }
     },
     tempId: {
         type: String

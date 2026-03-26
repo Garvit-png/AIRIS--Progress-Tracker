@@ -134,22 +134,51 @@ exports.getMessages = async (req, res) => {
     }
 };
 
+// @desc    Upload a file
+// @route   POST /api/chat/upload
+// @access  Private
+exports.uploadFile = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'No file uploaded' });
+        }
+
+        const fileData = {
+            url: `/uploads/chat/${req.file.filename}`,
+            name: req.file.originalname,
+            fileType: req.file.mimetype,
+            size: req.file.size
+        };
+
+        res.status(200).json({
+            success: true,
+            data: fileData
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
 // @desc    Send a message
 // @route   POST /api/chat/message
 // @access  Private
 exports.sendMessage = async (req, res) => {
-    const { conversationId, text, tempId } = req.body;
+    const { conversationId, text, tempId, file } = req.body;
 
-    if (!conversationId || !text) {
-        return res.status(400).json({ success: false, message: 'Conversation ID and text are required' });
+    if (!conversationId || (!text && !file)) {
+        return res.status(400).json({ success: false, message: 'Conversation ID and either text or file are required' });
     }
 
     try {
         const message = await Message.create({
             conversation: conversationId,
             sender: req.user.id,
-            text,
-            tempId
+            text: text || '',
+            tempId,
+            file
         });
 
         const populatedMessage = await Message.findById(message._id)

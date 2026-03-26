@@ -372,7 +372,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                             )}
                                         </div>
                                         <p className="text-[11px] text-white/50 truncate">
-                                            {conv.lastMessage ? conv.lastMessage.text : 'No messages yet'}
+                                            {conv.lastMessage ? (conv.lastMessage.text || 'Sent an attachment') : 'No messages yet'}
                                         </p>
                                     </div>
                                 </button>

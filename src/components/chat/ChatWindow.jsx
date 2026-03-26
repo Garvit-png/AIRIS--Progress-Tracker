@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, User, Users, MoreVertical, Paperclip, Smile } from 'lucide-react';
+import { Send, User, Users, MoreVertical, Paperclip, Smile, File, FileText, Download, X } from 'lucide-react';
+import EmojiPicker from 'emoji-picker-react';
 import { AuthService } from '../../services/authService';
+import config from '../../config';
 
 // Helper for avatar initials
 const getInitials = (name) => {
@@ -15,8 +17,12 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
     const [newMessage, setNewMessage] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [typingUser, setTypingUser] = useState(null);
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     const messagesEndRef = useRef(null);
     const typingTimeoutRef = useRef(null);
+    const fileInputRef = useRef(null);
+    const emojiPickerRef = useRef(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -37,6 +43,17 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
         }
         return () => socket?.off('user_typing');
     }, [socket, conversation, user.id]);
+
+    // Close emoji picker when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
+                setShowEmojiPicker(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const handleTyping = (e) => {
         setNewMessage(e.target.value);
@@ -59,6 +76,47 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
         }, 3000);
     };
 
+    const onEmojiClick = (emojiData) => {
+        setNewMessage(prev => prev + emojiData.emoji);
+    };
+
+    const handleFileSelect = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch(`${config.API_BASE_URL}/chat/upload`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${AuthService.getToken()}`
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                // Send message with file
+                onSendMessage('', data.data);
+            } else {
+                alert('Upload failed: ' + data.message);
+            }
+        } catch (error) {
+            console.error('File upload error:', error);
+            alert('PROTOCOL ERROR: Uplink failed');
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!newMessage.trim()) return;
@@ -66,10 +124,55 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
         const participantIds = conversation.participants.map(p => p._id || p);
         onSendMessage(newMessage);
         setNewMessage('');
+        setShowEmojiPicker(false);
         setIsTyping(false);
         if (socket) {
             socket.emit('typing', { conversationId: conversation._id, userId: currentUserId, isTyping: false, participantIds });
         }
+    };
+
+    const renderFileAttachment = (file) => {
+        if (!file) return null;
+
+        const isImage = file.fileType?.startsWith('image/');
+        const isPdf = file.fileType === 'application/pdf';
+        const fileUrl = AuthService.getFileUrl(file.url);
+
+        if (isImage) {
+            return (
+                <div className="mt-2 rounded-lg overflow-hidden border border-white/10 group relative">
+                    <img src={fileUrl} alt={file.name} className="max-w-full h-auto max-h-60 object-contain bg-black/20" />
+                    <a 
+                        href={fileUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                    >
+                        <Download size={20} className="text-white" />
+                    </a>
+                </div>
+            );
+        }
+
+        return (
+            <div className="mt-2 flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all group">
+                <div className="w-10 h-10 rounded-lg bg-pink-500/20 flex items-center justify-center text-pink-500">
+                    {isPdf ? <FileText size={20} /> : <File size={20} />}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold text-white truncate uppercase tracking-wider">{file.name}</p>
+                    <p className="text-[8px] text-white/30 uppercase">{(file.size / 1024).toFixed(1)} KB</p>
+                </div>
+                <a 
+                    href={fileUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="p-2 hover:bg-white/10 rounded-full text-white/30 hover:text-white transition-all"
+                >
+                    <Download size={16} />
+                </a>
+            </div>
+        );
     };
 
     if (!conversation) {
@@ -150,7 +253,8 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
                                 ? 'bg-pink-500 text-white rounded-tr-none border-pink-400/20' 
                                 : 'bg-white/5 text-white/90 rounded-tl-none border-white/5'
                             }`}>
-                                {msg.text}
+                                {msg.text && <div>{msg.text}</div>}
+                                {msg.file && renderFileAttachment(msg.file)}
                             </div>
                             <p className={`text-[8px] font-mono text-white/20 uppercase mt-1.5 ${isOwn ? 'mr-1' : 'ml-1'}`}>
                                 {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -168,13 +272,51 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
                         Other terminal is typing...
                     </div>
                 )}
+                {isUploading && (
+                    <div className="flex items-center gap-2 text-[8px] font-mono text-pink-500 uppercase tracking-[0.2em] animate-pulse">
+                        <Paperclip size={10} />
+                        Uploading encrypted asset...
+                    </div>
+                )}
                 <div ref={messagesEndRef} />
             </div>
 
             {/* Input Area */}
-            <div className="p-6 border-t border-white/5">
+            <div className="p-6 border-t border-white/5 relative">
+                {/* Emoji Picker Container */}
+                <AnimatePresence>
+                    {showEmojiPicker && (
+                        <motion.div 
+                            ref={emojiPickerRef}
+                            initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                            className="absolute bottom-full mb-4 left-6 z-50 shadow-2xl border border-white/10 rounded-2xl overflow-hidden"
+                        >
+                            <EmojiPicker 
+                                theme="dark" 
+                                onEmojiClick={onEmojiClick}
+                                skinTonesDisabled
+                                searchPlaceholder="Search data..."
+                                width={300}
+                                height={400}
+                            />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
                 <form onSubmit={handleSubmit} className="flex gap-4 items-center bg-white/[0.03] border border-white/5 p-2 rounded-2xl focus-within:border-pink-500/30 transition-all">
-                    <button type="button" className="p-2.5 text-white/30 hover:text-white transition-all">
+                    <input 
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        className="hidden"
+                    />
+                    <button 
+                        type="button" 
+                        onClick={handleFileSelect}
+                        className="p-2.5 text-white/30 hover:text-white transition-all"
+                    >
                         <Paperclip size={20} />
                     </button>
                     <input 
@@ -184,12 +326,16 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
                         onChange={handleTyping}
                         className="flex-1 bg-transparent border-none outline-none text-sm text-white placeholder:text-white/20"
                     />
-                    <button type="button" className="p-2.5 text-white/30 hover:text-white transition-all">
+                    <button 
+                        type="button" 
+                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        className={`p-2.5 transition-all ${showEmojiPicker ? 'text-pink-500' : 'text-white/30 hover:text-white'}`}
+                    >
                         <Smile size={20} />
                     </button>
                     <button 
                         type="submit"
-                        disabled={!newMessage.trim()}
+                        disabled={!newMessage.trim() && !isUploading}
                         className="p-2.5 bg-pink-500 text-white rounded-xl hover:bg-pink-600 transition-all disabled:opacity-50 disabled:grayscale"
                     >
                         <Send size={20} />

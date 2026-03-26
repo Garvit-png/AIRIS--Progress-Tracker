@@ -159,15 +159,16 @@ export default function ChatPanel() {
         }
     };
 
-    const handleSendMessage = async (text) => {
-        if (!activeConversation || !text.trim()) return;
+    const handleSendMessage = async (text, file = null) => {
+        if (!activeConversation || (!text.trim() && !file)) return;
 
         const currentUserId = user?.id || user?._id;
         const tempId = `temp-${Date.now()}`;
         const optimisticMessage = {
             _id: tempId,
             tempId,
-            text,
+            text: text || '',
+            file,
             sender: {
                 _id: currentUserId,
                 name: user.name,
@@ -202,7 +203,8 @@ export default function ChatPanel() {
                 body: JSON.stringify({
                     conversationId: activeConversation._id,
                     text,
-                    tempId
+                    tempId,
+                    file
                 })
             });
             const data = await response.json();
