@@ -56,6 +56,19 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
             }
         } catch (error) {
             console.error('Failed to fetch members:', error);
+            
+            // EMERGENCY FALLBACK: If getMembers fails, immediately try getUsers
+            try {
+                const users = await AuthService.getUsers();
+                if (users && Array.isArray(users)) {
+                    setAllMembers(users.filter(u => u.status === 'approved' && u._id !== (user?.id || user?._id)));
+                    setIsSynced(true);
+                    return; // Successfully recovered
+                }
+            } catch (fallbackErr) {
+                console.error('Chat fallback also failed:', fallbackErr);
+            }
+
             setIsSynced(false);
             if (retryCount < 2) {
                 setTimeout(() => fetchAllMembers(retryCount + 1), 3000);
@@ -110,17 +123,23 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
 
     const performSearch = async (query, setResults) => {
         setIsSearchingMembers(true);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout for search
+
         try {
             const res = await fetch(`${API_BASE}/auth/users/search-name/${encodeURIComponent(query)}`, {
-                headers: { 'Authorization': `Bearer ${AuthService.getToken()}` }
+                headers: { 'Authorization': `Bearer ${AuthService.getToken()}` },
+                signal: controller.signal
             });
             const data = await res.json();
             if (data.success) {
                 setResults(data.users);
             }
         } catch (error) {
-            console.error('Search failed:', error);
+            console.error('Search failed or timed out:', error);
+            // On timeout/failure, we rely on the local matches from allMembers
         } finally {
+            clearTimeout(timeoutId);
             setIsSearchingMembers(false);
         }
     };

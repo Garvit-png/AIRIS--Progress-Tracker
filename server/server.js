@@ -38,6 +38,12 @@ app.get('/healthz', (req, res) => {
     res.json({ status: 'Server healthy' });
 });
 
+// Request logging to help debug deployment
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+});
+
 // Middleware to ensure DB is connected for all other routes
 app.use(async (req, res, next) => {
     // Only health and debug routes can truly work without MongoDB
@@ -49,23 +55,25 @@ app.use(async (req, res, next) => {
 
     try {
         if (!process.env.MONGO_URI) return next();
+        
+        // Non-blocking check for serverless efficiency
         if (mongoose.connection.readyState !== 1) {
-            await connectDB();
+            console.log('DB disconnected, attempting rapid connect for', req.url);
+            // Use a 5s limit for the request-time connection to prevent function timeout
+            await Promise.race([
+                connectDB(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('DB Connect Timeout')), 5000))
+            ]);
         }
         next();
     } catch (err) {
+        console.error('DB Middleware Error for', req.url, ':', err.message);
         res.status(503).json({
             success: false,
-            message: 'Database connection currently unavailable. Please try again in 5 seconds.',
+            message: 'Database connection currently unavailable.',
             error: err.message
         });
     }
-});
-
-// Request logging to help debug deployment
-app.use((req, res, next) => {
-    console.log(`${req.method} ${req.url}`);
-    next();
 });
 
 // Middleware
