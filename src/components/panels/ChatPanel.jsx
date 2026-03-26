@@ -14,6 +14,7 @@ export default function ChatPanel() {
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [socket, setSocket] = useState(null);
+    const [allMembers, setAllMembers] = useState([]);
     const user = AuthService.getSession();
 
     useEffect(() => {
@@ -44,7 +45,26 @@ export default function ChatPanel() {
 
     useEffect(() => {
         fetchConversations();
+        fetchMembers();
     }, []);
+
+    const fetchMembers = async () => {
+        try {
+            // Use the reliable getUsers which we know works for the Members tab
+            const users = await AuthService.getUsers();
+            if (users && Array.isArray(users)) {
+                setAllMembers(users.filter(u => u.status === 'approved' && u._id !== (user?.id || user?._id)));
+            } else {
+                // Secondary fallback to chat-specific endpoint
+                const data = await AuthService.getMembers();
+                if (data && data.success && Array.isArray(data.members)) {
+                    setAllMembers(data.members);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to pre-fetch members:', error);
+        }
+    };
 
     useEffect(() => {
         if (activeConversation) {
@@ -134,6 +154,7 @@ export default function ChatPanel() {
                 onSelectConversation={setActiveConversation}
                 user={user}
                 loading={loading}
+                allMembers={allMembers}
                 onNewConversation={fetchConversations}
             />
             <ChatWindow 

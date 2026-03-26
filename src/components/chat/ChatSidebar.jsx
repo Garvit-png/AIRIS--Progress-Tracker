@@ -6,77 +6,22 @@ import config from '../../config';
 
 const API_BASE = config.API_BASE_URL;
 
-export default function ChatSidebar({ conversations, activeConversation, onSelectConversation, user, loading, onNewConversation }) {
+export default function ChatSidebar({ conversations, activeConversation, onSelectConversation, user, loading, onNewConversation, allMembers = [] }) {
     const [search, setSearch] = useState('');
     const [isCreating, setIsCreating] = useState(false);
     const [creationMode, setCreationMode] = useState('dm'); // 'dm' or 'group'
     const [newChatName, setNewChatName] = useState('');
     const [searchResults, setSearchResults] = useState([]);
-    const [isSearchingMembers, setIsSearchingMembers] = useState(false);
     const [isSearchingMessages, setIsSearchingMessages] = useState(false);
-    const [isSynced, setIsSynced] = useState(false);
-    const [allMembers, setAllMembers] = useState([]);
     const [groupName, setGroupName] = useState('');
     const [groupParticipants, setGroupParticipants] = useState([]); // Array of user objects
     const [participantSearch, setParticipantSearch] = useState('');
     const [participantResults, setParticipantResults] = useState([]);
 
-    React.useEffect(() => {
-        fetchAllMembers();
-    }, []);
+    // Instant local sync
+    const isSynced = (allMembers && allMembers.length > 0);
 
-    // Also re-fetch when menu opens to ensure no stale data
-    React.useEffect(() => {
-        if (isCreating) fetchAllMembers();
-    }, [isCreating]);
-
-    const fetchAllMembers = async (retryCount = 0) => {
-        try {
-            // Priority 1: Get optimized chat discovery list
-            let data = await AuthService.getMembers();
-            
-            // Priority 2: Fallback to main member directory if chat list is empty or fails
-            if (!data || !data.success || !data.members || data.members.length === 0) {
-                console.log('Chat members list empty, attempting fallback to team directory...');
-                const users = await AuthService.getUsers();
-                if (users && Array.isArray(users)) {
-                    data = { success: true, members: users.filter(u => u.status === 'approved' && u._id !== (user?.id || user?._id)) };
-                }
-            }
-
-            if (data && data.success && Array.isArray(data.members)) {
-                setAllMembers(data.members);
-                setIsSynced(true);
-            } else {
-                console.warn('Sync attempt failed, retrying...', data?.message);
-                setIsSynced(false);
-                if (retryCount < 2) {
-                    setTimeout(() => fetchAllMembers(retryCount + 1), 2000);
-                }
-            }
-        } catch (error) {
-            console.error('Failed to fetch members:', error);
-            
-            // EMERGENCY FALLBACK: If getMembers fails, immediately try getUsers
-            try {
-                const users = await AuthService.getUsers();
-                if (users && Array.isArray(users)) {
-                    setAllMembers(users.filter(u => u.status === 'approved' && u._id !== (user?.id || user?._id)));
-                    setIsSynced(true);
-                    return; // Successfully recovered
-                }
-            } catch (fallbackErr) {
-                console.error('Chat fallback also failed:', fallbackErr);
-            }
-
-            setIsSynced(false);
-            if (retryCount < 2) {
-                setTimeout(() => fetchAllMembers(retryCount + 1), 3000);
-            }
-        }
-    };
-
-    // Instant Local search for DM with Network Fallback
+    // Instant local search for DM
     React.useEffect(() => {
         const query = newChatName.toLowerCase().trim();
         if (query.length >= 1) {
@@ -90,19 +35,9 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                 return queryParts.every(part => nameLower.includes(part) || roleLower.includes(part));
             });
             
-            if (matches.length > 0) {
-                setSearchResults(matches);
-                setIsSearchingMembers(false);
-            } else {
-                // If local match fails, try network search (Fallback)
-                const timer = setTimeout(() => {
-                    performSearch(newChatName, setSearchResults);
-                }, 300);
-                return () => clearTimeout(timer);
-            }
+            setSearchResults(matches);
         } else {
             setSearchResults([]);
-            setIsSearchingMembers(false);
         }
     }, [newChatName, allMembers]);
 
@@ -121,28 +56,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
         }
     }, [participantSearch, allMembers]);
 
-    const performSearch = async (query, setResults) => {
-        setIsSearchingMembers(true);
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout for search
 
-        try {
-            const res = await fetch(`${API_BASE}/auth/users/search-name/${encodeURIComponent(query)}`, {
-                headers: { 'Authorization': `Bearer ${AuthService.getToken()}` },
-                signal: controller.signal
-            });
-            const data = await res.json();
-            if (data.success) {
-                setResults(data.users);
-            }
-        } catch (error) {
-            console.error('Search failed or timed out:', error);
-            // On timeout/failure, we rely on the local matches from allMembers
-        } finally {
-            clearTimeout(timeoutId);
-            setIsSearchingMembers(false);
-        }
-    };
 
     const handleStartDM = async (targetUser) => {
         try {
@@ -295,10 +209,9 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                         className="w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-[11px] outline-none focus:border-pink-500/50 text-white"
                                         autoFocus
                                     />
-                                    {isSearchingMembers && <div className="absolute right-3 top-2.5 w-3 h-3 border-2 border-pink-500/20 border-t-pink-500 rounded-full animate-spin" />}
                                 </div>
                                 
-                                {allMembers.length === 0 && !isSearchingMembers && isCreating && (
+                                {allMembers.length === 0 && isCreating && (
                                     <p className="text-[8px] text-pink-500/60 text-center uppercase tracking-tighter animate-pulse">Establishing Deep Link to Mainframe...</p>
                                 )}
                                 
@@ -345,7 +258,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                         ))}
                                     </div>
                                 )}
-                                {newChatName.length >= 1 && searchResults.length === 0 && !isSearchingMembers && (
+                                {newChatName.length >= 1 && searchResults.length === 0 && (
                                     <p className="text-[9px] text-white/20 text-center py-2 italic font-mono uppercase tracking-widest bg-white/[0.02] rounded-lg">No Spectral Match Found</p>
                                 )}
                             </div>
