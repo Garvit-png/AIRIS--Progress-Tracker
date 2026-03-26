@@ -476,13 +476,27 @@ export default function MembersList() {
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-mono uppercase tracking-widest text-white/70 ml-2">Designation / Title</label>
-                                                    <input 
-                                                        type="text"
+                                                    <select 
                                                         value={editData.role}
-                                                        placeholder="President, Gen Sec, etc."
-                                                        onChange={(e) => setEditData({...editData, role: e.target.value})}
-                                                        className="w-full bg-white/[0.03] border border-pink-500/20 rounded-xl py-3 px-4 text-xs outline-none focus:border-pink-500/50 transition-all font-mono"
-                                                    />
+                                                        onChange={(e) => {
+                                                            const newRole = e.target.value;
+                                                            setEditData({
+                                                                ...editData, 
+                                                                role: newRole,
+                                                                isAdmin: newRole === 'Admin' ? true : editData.isAdmin
+                                                            });
+                                                        }}
+                                                        className="w-full bg-white/[0.03] border border-pink-500/20 rounded-xl py-3 px-4 text-xs outline-none focus:border-pink-500/50 transition-all font-mono text-white/90"
+                                                    >
+                                                        <option value="Member">Member</option>
+                                                        <option value="Core Member">Core Member</option>
+                                                        <option value="President">President</option>
+                                                        <option value="General Secretary">General Secretary</option>
+                                                        <option value="Joint Secretary">Joint Secretary</option>
+                                                        <option value="Coordinator">Coordinator</option>
+                                                        <option value="Lead">Lead</option>
+                                                        <option value="Admin">Admin</option>
+                                                    </select>
                                                 </div>
                                                 <div className="flex items-center justify-between p-3 bg-white/[0.03] border border-pink-500/10 rounded-xl">
                                                     <div className="flex items-center gap-2">

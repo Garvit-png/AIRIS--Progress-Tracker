@@ -19,10 +19,16 @@ exports.addApprovedEmail = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Email already approved' });
         }
 
+        // SYNC: If role is Admin, force isAdmin to true
+        let finalIsAdmin = isAdmin || false;
+        if (role === 'Admin') {
+            finalIsAdmin = true;
+        }
+
         const approved = await ApprovedEmail.create({
             email: cleanEmail,
             role: role || 'Member',
-            isAdmin: isAdmin || false,
+            isAdmin: finalIsAdmin,
             addedBy: req.user.id
         });
 
@@ -121,7 +127,14 @@ exports.updateUserStatus = async (req, res) => {
         const updates = {};
         if (status) updates.status = status;
         if (role) updates.role = role;
-        if (isAdmin !== undefined) updates.isAdmin = isAdmin;
+        
+        // SYNC: If role is Admin, force isAdmin to true
+        if (role === 'Admin') {
+            updates.isAdmin = true;
+        } else if (isAdmin !== undefined) {
+            updates.isAdmin = isAdmin;
+        }
+
         if (name) updates.name = name;
 
         const user = await User.findByIdAndUpdate(req.params.id, updates, {

@@ -18,6 +18,8 @@ const AdminPanel = ({ isEmbedded = false, initialTab = 'pending' }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
+    const [editingHistoryId, setEditingHistoryId] = useState(null);
+    const [editRole, setEditRole] = useState('Member');
     const [message, setMessage] = useState({ text: '', type: '' });
     
     // Portal Security
@@ -423,6 +425,7 @@ const AdminPanel = ({ isEmbedded = false, initialTab = 'pending' }) => {
                                                             <option value="President">President</option>
                                                             <option value="Coordinator">Coordinator</option>
                                                             <option value="Lead">Lead</option>
+                                                            <option value="Admin">Admin</option>
                                                         </select>
                                                     </div>
                                                     <button
@@ -631,21 +634,64 @@ const AdminPanel = ({ isEmbedded = false, initialTab = 'pending' }) => {
                                                     </div>
                                                 ) : activeTab === 'history' ? (
                                                     <div className="flex items-center gap-3">
-                                                        <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                                                            <Check className="w-3.5 h-3.5 text-emerald-500" />
-                                                            <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500/95">Approved {item.role}</span>
-                                                        </div>
-                                                        <button
-                                                            onClick={() => {
-                                                                if(window.confirm(`Revoke access for ${item.name} and send back to pending queue?`)) {
-                                                                    handleUserApproval(item._id, 'pending', 'Member', false);
-                                                                }
-                                                            }}
-                                                            title="Revoke Access"
-                                                            className="p-2.5 rounded-xl border border-pink-500/10 text-slate-600 hover:text-amber-500 hover:bg-amber-500/5 hover:border-amber-500/20 transition-all opacity-0 group-hover:opacity-100"
-                                                        >
-                                                            <X className="w-4 h-4" />
-                                                        </button>
+                                                        {editingHistoryId === item._id ? (
+                                                            <div className="flex items-center gap-1.5 p-1 bg-white/5 border border-white/10 rounded-xl">
+                                                                <select 
+                                                                    value={editRole}
+                                                                    onChange={(e) => setEditRole(e.target.value)}
+                                                                    className="bg-transparent text-[8px] font-mono text-white/80 outline-none px-2 py-0.5 border-r border-white/10"
+                                                                >
+                                                                    <option value="Member">Member</option>
+                                                                    <option value="Core Member">Core Member</option>
+                                                                    <option value="President">Pres</option>
+                                                                    <option value="General Secretary">GS</option>
+                                                                    <option value="Joint Secretary">JS</option>
+                                                                    <option value="Coordinator">Coord</option>
+                                                                    <option value="Lead">Lead</option>
+                                                                    <option value="Admin">Admin</option>
+                                                                </select>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        handleUserApproval(item._id, 'approved', editRole, editRole === 'Admin');
+                                                                        setEditingHistoryId(null);
+                                                                    }}
+                                                                    className="flex items-center gap-1.5 px-3 py-1 text-[8px] font-bold uppercase tracking-widest text-emerald-400 hover:text-white transition-all"
+                                                                >
+                                                                    Save
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setEditingHistoryId(null)}
+                                                                    className="p-1 px-2 border-l border-white/10 text-white/20 hover:text-red-500 transition-all"
+                                                                >
+                                                                    <X className="w-3 h-3" />
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        setEditingHistoryId(item._id);
+                                                                        setEditRole(item.role || 'Member');
+                                                                    }}
+                                                                    className="flex items-center gap-3 px-4 py-2 rounded-xl bg-emerald-500/5 border border-emerald-500/10 hover:border-emerald-500/30 transition-all group/edit"
+                                                                >
+                                                                    <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                                                    <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500/95">Approved {item.role}</span>
+                                                                    <Shield className="w-3 h-3 text-white/10 group-hover/edit:text-white/40 ml-1 transition-colors" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        if(window.confirm(`Revoke access for ${item.name} and send back to pending queue?`)) {
+                                                                            handleUserApproval(item._id, 'pending', 'Member', false);
+                                                                        }
+                                                                    }}
+                                                                    title="Revoke Access"
+                                                                    className="p-2.5 rounded-xl border border-pink-500/10 text-slate-600 hover:text-amber-500 hover:bg-amber-500/5 hover:border-amber-500/20 transition-all opacity-0 group-hover:opacity-100"
+                                                                >
+                                                                    <X className="w-4 h-4" />
+                                                                </button>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 ) : (
                                                     <button
