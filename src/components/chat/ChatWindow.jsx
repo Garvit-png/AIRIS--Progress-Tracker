@@ -88,7 +88,7 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
                     </div>
                     <div>
                         <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                            {conversation.isGroup ? conversation.groupName : otherParticipant?.name}
+                            {conversation.isGroup ? conversation.groupName : otherParticipant?.name?.split(' ')[0]}
                         </h3>
                         <p className="text-[9px] font-mono text-pink-400 uppercase tracking-widest flex items-center gap-2">
                             <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse" />
@@ -112,7 +112,7 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
                         <div key={msg._id} className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
                             {showHeader && !isOwn && (
                                 <p className="text-[9px] font-mono text-white/30 uppercase tracking-widest mb-2 ml-1">
-                                    {msg.sender.name}
+                                    {msg.sender?.name?.split(' ')[0]}
                                 </p>
                             )}
                             <div className={`max-w-[75%] p-3.5 rounded-2xl text-xs leading-relaxed shadow-xl border ${

@@ -226,7 +226,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                                     {result.profilePicture ? <img src={result.profilePicture} className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-white/20" />}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-[11px] font-bold text-white truncate">{result.name}</p>
+                                                    <p className="text-[11px] font-bold text-white truncate">{result.name?.split(' ')[0]}</p>
                                                     <p className="text-[9px] text-white/30 truncate uppercase tracking-tighter">{result.role}</p>
                                                 </div>
                                             </button>
@@ -333,7 +333,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                     <div className="flex-1 min-w-0 text-left">
                                         <div className="flex items-center justify-between mb-0.5">
                                             <h3 className="text-sm font-semibold text-white truncate">
-                                                {conv.isGroup ? conv.groupName : otherParticipant?.name}
+                                                {conv.isGroup ? conv.groupName : otherParticipant?.name?.split(' ')[0]}
                                             </h3>
                                             {conv.lastMessage && (
                                                 <span className="text-[9px] text-white/30 font-mono">
@@ -365,7 +365,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                             {profile.profilePicture ? <img src={profile.profilePicture} className="w-full h-full object-cover" /> : <User size={16} className="text-white/20" />}
                                         </div>
                                         <div className="flex-1 min-w-0 text-left">
-                                            <p className="text-xs font-bold text-white truncate group-hover:text-pink-400">{profile.name}</p>
+                                            <p className="text-xs font-bold text-white truncate group-hover:text-pink-400">{profile.name?.split(' ')[0]}</p>
                                             <p className="text-[9px] text-white/20 uppercase tracking-widest">{profile.role}</p>
                                         </div>
                                         <div className="px-2 py-0.5 rounded-lg bg-pink-500/10 text-pink-500 text-[8px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
