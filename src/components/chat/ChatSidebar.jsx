@@ -31,8 +31,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
             const membersList = Array.isArray(allMembers) ? allMembers : [];
             const matches = membersList.filter(m => {
                 const nameLower = m && m.name ? m.name.toLowerCase() : '';
-                const roleLower = m && m.role ? m.role.toLowerCase() : '';
-                return queryParts.every(part => nameLower.includes(part) || roleLower.includes(part));
+                return queryParts.every(part => nameLower.includes(part));
             });
             
             setSearchResults(matches);
@@ -47,8 +46,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
             const query = participantSearch.toLowerCase().trim();
             const membersList = Array.isArray(allMembers) ? allMembers : [];
             const matches = membersList.filter(m => 
-                (m && m.name && m.name.toLowerCase().includes(query)) || 
-                (m && m.role && m.role.toLowerCase().includes(query))
+                m && m.name && m.name.toLowerCase().includes(query)
             );
             setParticipantResults(matches);
         } else {
