@@ -43,16 +43,18 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
         
         if (!isTyping && socket) {
             const currentUserId = user?.id || user?._id;
+            const participantIds = conversation.participants.map(p => p._id || p);
             setIsTyping(true);
-            socket.emit('typing', { conversationId: conversation._id, userId: currentUserId, isTyping: true });
+            socket.emit('typing', { conversationId: conversation._id, userId: currentUserId, isTyping: true, participantIds });
         }
 
         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
         typingTimeoutRef.current = setTimeout(() => {
             const currentUserId = user?.id || user?._id;
+            const participantIds = conversation.participants.map(p => p._id || p);
             setIsTyping(false);
             if (socket) {
-                socket.emit('typing', { conversationId: conversation._id, userId: currentUserId, isTyping: false });
+                socket.emit('typing', { conversationId: conversation._id, userId: currentUserId, isTyping: false, participantIds });
             }
         }, 3000);
     };
@@ -61,11 +63,12 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
         e.preventDefault();
         if (!newMessage.trim()) return;
         const currentUserId = user?.id || user?._id;
+        const participantIds = conversation.participants.map(p => p._id || p);
         onSendMessage(newMessage);
         setNewMessage('');
         setIsTyping(false);
         if (socket) {
-            socket.emit('typing', { conversationId: conversation._id, userId: currentUserId, isTyping: false });
+            socket.emit('typing', { conversationId: conversation._id, userId: currentUserId, isTyping: false, participantIds });
         }
     };
 

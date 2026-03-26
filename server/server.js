@@ -186,29 +186,40 @@ const io = new Server(httpServer, {
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
-    // Join a conversation room
-    socket.on('join_conversation', (conversationId) => {
-        socket.join(conversationId);
-        console.log(`User ${socket.id} joined conversation: ${conversationId}`);
-    });
-
-    // Leave a conversation room
-    socket.on('leave_conversation', (conversationId) => {
-        socket.leave(conversationId);
-        console.log(`User ${socket.id} left conversation: ${conversationId}`);
+    // Join an individual user room (for receiving messages across any conversation)
+    socket.on('join_user', (userId) => {
+        socket.join(userId);
+        console.log(`User ${socket.id} joined their private room: ${userId}`);
     });
 
     // Handle sending a message
     socket.on('send_message', (data) => {
-        const { conversationId, message } = data;
-        // Broadcast to all users in the conversation room
-        socket.to(conversationId).emit('receive_message', message);
+        const { conversationId, message, participantIds } = data;
+        
+        // Broadcast to all participants in their private rooms
+        if (participantIds && Array.isArray(participantIds)) {
+            participantIds.forEach(id => {
+                // Emit to every participant (including sender so all their tabs sync)
+                io.to(id.toString()).emit('receive_message', message);
+            });
+        } else {
+            // Fallback to old behavior if participantIds not provided
+            socket.to(conversationId).emit('receive_message', message);
+        }
     });
 
-    // Handle typing status
+    // Handle typing status (still per-conversation is fine)
     socket.on('typing', (data) => {
-        const { conversationId, userId, isTyping } = data;
-        socket.to(conversationId).emit('user_typing', { conversationId, userId, isTyping });
+        const { conversationId, userId, isTyping, participantIds } = data;
+        if (participantIds && Array.isArray(participantIds)) {
+            participantIds.forEach(id => {
+                if (id !== userId) {
+                    io.to(id.toString()).emit('user_typing', { conversationId, userId, isTyping });
+                }
+            });
+        } else {
+            socket.to(conversationId).emit('user_typing', { conversationId, userId, isTyping });
+        }
     });
 
     socket.on('disconnect', () => {

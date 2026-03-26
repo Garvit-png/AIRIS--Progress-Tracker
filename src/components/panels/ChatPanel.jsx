@@ -20,30 +20,54 @@ export default function ChatPanel() {
     const user = AuthService.getSession();
 
     useEffect(() => {
+        const currentUserId = user?.id || user?._id;
+        if (!currentUserId) return;
+
         const newSocket = io(SOCKET_URL, {
-            withCredentials: true
+            withCredentials: true,
+            transports: ['websocket', 'polling']
         });
 
         setSocket(newSocket);
 
         newSocket.on('connect', () => {
-            console.log('Connected to socket server');
+            console.log('CONNECTED TO REAL-TIME SERVER');
+            newSocket.emit('join_user', currentUserId);
         });
 
         newSocket.on('receive_message', (message) => {
-            if (activeConversation && message.conversation === activeConversation._id) {
-                setMessages(prev => [...prev, message]);
-            }
-            // Update last message in conversations list
-            setConversations(prev => prev.map(conv => 
-                conv._id === message.conversation 
-                ? { ...conv, lastMessage: message, updatedAt: new Date().toISOString() }
-                : conv
-            ).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
+            console.log('REAL-TIME MESSAGE RECEIVED:', message);
+            
+            // Update active messages if this message belongs to current chat
+            setMessages(prev => {
+                // Check if message already exists (to avoid duplicates if sender)
+                if (prev.some(m => m._id === message._id)) return prev;
+                
+                // Compare IDs correctly
+                const msgConvId = message.conversation?._id || message.conversation;
+                const activeId = activeConversationRef.current?._id;
+                
+                if (msgConvId === activeId) {
+                    return [...prev, message];
+                }
+                return prev;
+            });
+
+            // Update conversations list (move to top and update last message)
+            setConversations(prev => {
+                const updated = prev.map(conv => {
+                    const msgConvId = message.conversation?._id || message.conversation;
+                    if (conv._id === msgConvId) {
+                        return { ...conv, lastMessage: message, updatedAt: new Date().toISOString() };
+                    }
+                    return conv;
+                });
+                return [...updated].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+            });
         });
 
         return () => newSocket.close();
-    }, [activeConversation]);
+    }, [user?.id, user?._id]); // Only recreate if user changes
 
     useEffect(() => {
         fetchConversations();
@@ -68,12 +92,12 @@ export default function ChatPanel() {
         }
     };
 
+    // Reference to active conversation for socket listener
+    const activeConversationRef = useRef(activeConversation);
     useEffect(() => {
+        activeConversationRef.current = activeConversation;
         if (activeConversation) {
             fetchMessages(activeConversation._id);
-            if (socket) {
-                socket.emit('join_conversation', activeConversation._id);
-            }
         }
     }, [activeConversation]);
 
@@ -131,9 +155,11 @@ export default function ChatPanel() {
                 const newMessage = data.data;
                 setMessages(prev => [...prev, newMessage]);
                 if (socket) {
+                    const participantIds = activeConversation.participants.map(p => p._id || p);
                     socket.emit('send_message', {
                         conversationId: activeConversation._id,
-                        message: newMessage
+                        message: newMessage,
+                        participantIds
                     });
                 }
                 // Update local conversation list
