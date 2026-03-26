@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, User, Users, MoreVertical, Paperclip, Smile } from 'lucide-react';
+import { AuthService } from '../../services/authService';
+
+// Helper for avatar initials
+const getInitials = (name) => {
+    if (!name) return '??';
+    const parts = name.split(' ').filter(Boolean);
+    if (parts.length === 0) return '??';
+    return parts.map(n => n[0]).join('').toUpperCase().substring(0, 2);
+};
 
 export default function ChatWindow({ conversation, messages, onSendMessage, user, socket }) {
     const [newMessage, setNewMessage] = useState('');
@@ -83,11 +92,22 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
             {/* Window Header */}
             <div className="p-4 border-b border-white/5 backdrop-blur-md flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center overflow-hidden">
+                    <div className="w-10 h-10 rounded-xl bg-pink-500 border border-white/5 flex items-center justify-center overflow-hidden text-xs font-bold text-white shadow-lg shadow-pink-500/10 shrink-0">
                         {conversation.isGroup ? (
                             conversation.groupImage ? <img src={AuthService.getFileUrl(conversation.groupImage)} className="w-full h-full object-cover" /> : <Users size={16} className="text-white/40" />
                         ) : (
-                            otherParticipant?.profilePicture ? <img src={AuthService.getFileUrl(otherParticipant.profilePicture)} className="w-full h-full object-cover" /> : <User size={16} className="text-white/40" />
+                            otherParticipant?.profilePicture ? (
+                                <img 
+                                    src={AuthService.getFileUrl(otherParticipant.profilePicture)} 
+                                    className="w-full h-full object-cover" 
+                                    onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.parentElement.innerHTML = getInitials(otherParticipant.name);
+                                    }}
+                                />
+                            ) : (
+                                getInitials(otherParticipant?.name)
+                            )
                         )}
                     </div>
                     <div>

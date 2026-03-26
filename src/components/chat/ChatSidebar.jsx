@@ -6,6 +6,14 @@ import config from '../../config';
 
 const API_BASE = config.API_BASE_URL;
 
+// Helper for avatar initials
+const getInitials = (name) => {
+    if (!name) return '??';
+    const parts = name.split(' ').filter(Boolean);
+    if (parts.length === 0) return '??';
+    return parts.map(n => n[0]).join('').toUpperCase().substring(0, 2);
+};
+
 export default function ChatSidebar({ conversations, activeConversation, onSelectConversation, user, loading, onNewConversation, allMembers = [] }) {
     const [search, setSearch] = useState('');
     const [isCreating, setIsCreating] = useState(false);
@@ -222,8 +230,19 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                                 onClick={() => handleStartDM(result)}
                                                 className="w-full flex items-center gap-3 p-2 hover:bg-white/5 text-left transition-all"
                                             >
-                                                <div className="w-8 h-8 rounded-lg bg-white/5 overflow-hidden flex-shrink-0">
-                                                    {result.profilePicture ? <img src={AuthService.getFileUrl(result.profilePicture)} className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-white/20" />}
+                                                <div className="w-8 h-8 rounded-lg bg-pink-500 overflow-hidden flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-white shadow-lg shadow-pink-500/10">
+                                                    {result.profilePicture ? (
+                                                        <img 
+                                                            src={AuthService.getFileUrl(result.profilePicture)} 
+                                                            className="w-full h-full object-cover" 
+                                                            onError={(e) => {
+                                                                e.target.style.display = 'none';
+                                                                e.target.parentElement.innerHTML = getInitials(result.name);
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        getInitials(result.name)
+                                                    )}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-[11px] font-bold text-white truncate">{result.name?.split(' ')[0]}</p>
@@ -323,11 +342,22 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                     onClick={() => onSelectConversation(conv)}
                                     className={`w-full flex items-center gap-3 p-4 transition-all border-l-2 hover:bg-white/[0.04] ${isActive ? 'bg-pink-500/5 border-pink-500' : 'border-transparent'}`}
                                 >
-                                    <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                    <div className="w-12 h-12 rounded-2xl bg-pink-500 border border-white/5 flex items-center justify-center overflow-hidden flex-shrink-0 text-sm font-bold text-white shadow-lg shadow-pink-500/10">
                                         {conv.isGroup ? (
                                             conv.groupImage ? <img src={conv.groupImage} className="w-full h-full object-cover" /> : <Users size={20} className="text-white/40" />
                                         ) : (
-                                            otherParticipant?.profilePicture ? <img src={AuthService.getFileUrl(otherParticipant.profilePicture)} className="w-full h-full object-cover" /> : <User size={20} className="text-white/40" />
+                                            otherParticipant?.profilePicture ? (
+                                                <img 
+                                                    src={AuthService.getFileUrl(otherParticipant.profilePicture)} 
+                                                    className="w-full h-full object-cover" 
+                                                    onError={(e) => {
+                                                        e.target.style.display = 'none';
+                                                        e.target.parentElement.innerHTML = getInitials(otherParticipant.name);
+                                                    }}
+                                                />
+                                            ) : (
+                                                getInitials(otherParticipant?.name)
+                                            )
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0 text-left">
@@ -361,8 +391,19 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                         onClick={() => handleStartDM(profile)}
                                         className="w-full flex items-center gap-3 px-6 py-3 hover:bg-white/[0.04] transition-all group"
                                     >
-                                        <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-pink-500/20">
-                                            {profile.profilePicture ? <img src={AuthService.getFileUrl(profile.profilePicture)} className="w-full h-full object-cover" /> : <User size={16} className="text-white/20" />}
+                                        <div className="w-10 h-10 rounded-xl bg-pink-500 border border-white/5 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-pink-500/20 text-xs font-bold text-white shadow-lg shadow-pink-500/10">
+                                            {profile.profilePicture ? (
+                                                <img 
+                                                    src={AuthService.getFileUrl(profile.profilePicture)} 
+                                                    className="w-full h-full object-cover" 
+                                                    onError={(e) => {
+                                                        e.target.style.display = 'none';
+                                                        e.target.parentElement.innerHTML = getInitials(profile.name);
+                                                    }}
+                                                />
+                                            ) : (
+                                                getInitials(profile.name)
+                                            )}
                                         </div>
                                         <div className="flex-1 min-w-0 text-left">
                                             <p className="text-xs font-bold text-white truncate group-hover:text-pink-400">{profile.name?.split(' ')[0]}</p>

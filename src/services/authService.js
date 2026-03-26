@@ -450,13 +450,17 @@ export const AuthService = {
         if (path.startsWith('http')) return path;
         
         // Base backend URL (without /api)
-        // If API_BASE_URL is '/api', it's relative to current origin
-        // In production, we assume the backend is on Render if we are on Vercel
         const baseUrl = config.API_BASE_URL.includes('onrender.com') 
             ? config.API_BASE_URL.replace('/api', '') 
             : 'https://airis-backend.onrender.com';
             
-        return `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`;
+        // Ensure path starts with /uploads/ if it's a relative asset
+        let cleanPath = path.startsWith('/') ? path : `/${path}`;
+        if (!cleanPath.startsWith('/uploads/') && !cleanPath.startsWith('/static/')) {
+            cleanPath = `/uploads${cleanPath}`;
+        }
+            
+        return `${baseUrl}${cleanPath}`;
     }
 };
 

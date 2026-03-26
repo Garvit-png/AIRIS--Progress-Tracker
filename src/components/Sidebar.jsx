@@ -131,7 +131,15 @@ export default function Sidebar({ user, activeView, setActiveView, isPortalUnloc
                 >
                     <div className="w-8 h-8 rounded-lg bg-pink-500 flex items-center justify-center text-white font-bold text-[10px] shadow-lg shadow-pink-500/10 overflow-hidden group-hover/profile:scale-105 transition-transform shrink-0">
                         {user?.profilePicture ? (
-                            <img src={user.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                            <img 
+                                src={AuthService.getFileUrl(user.profilePicture)} 
+                                alt="Profile" 
+                                className="w-full h-full object-cover" 
+                                onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.parentElement.innerHTML = initials;
+                                }}
+                            />
                         ) : (
                             initials
                         )}
