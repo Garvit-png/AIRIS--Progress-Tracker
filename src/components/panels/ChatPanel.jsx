@@ -40,8 +40,11 @@ export default function ChatPanel() {
             
             // Update active messages if this message belongs to current chat
             setMessages(prev => {
-                // Check if message already exists (to avoid duplicates if sender)
-                if (prev.some(m => m._id === message._id)) return prev;
+                // Check if message already exists (to avoid duplicates from API + Socket)
+                if (prev.some(m => (m._id === message._id) || (m.tempId && m.tempId === message.tempId))) {
+                    // Update the existing optimistic message with the real one from server
+                    return prev.map(m => (m.tempId && m.tempId === message.tempId) ? message : m);
+                }
                 
                 // Compare IDs correctly
                 const msgConvId = message.conversation?._id || message.conversation;
@@ -146,6 +149,36 @@ export default function ChatPanel() {
     const handleSendMessage = async (text) => {
         if (!activeConversation || !text.trim()) return;
 
+        const currentUserId = user?.id || user?._id;
+        const tempId = `temp-${Date.now()}`;
+        const optimisticMessage = {
+            _id: tempId,
+            tempId,
+            text,
+            sender: {
+                _id: currentUserId,
+                name: user.name,
+                profilePicture: user.profilePicture
+            },
+            conversation: activeConversation._id,
+            createdAt: new Date().toISOString(),
+            status: 'sending'
+        };
+
+        // 1. UPDATE UI INSTANTLY (Optimistic)
+        setMessages(prev => [...prev, optimisticMessage]);
+
+        // 2. BROADCAST VIA SOCKET INSTANTLY (Dual-Path Speed)
+        if (socket) {
+            const participantIds = activeConversation.participants.map(p => p._id || p);
+            socket.emit('send_message', {
+                conversationId: activeConversation._id,
+                message: optimisticMessage,
+                participantIds
+            });
+        }
+
+        // 3. PERSIST VIA API IN BACKGROUND
         try {
             const response = await fetch(`${SOCKET_URL}/api/chat/message`, {
                 method: 'POST',
@@ -155,24 +188,27 @@ export default function ChatPanel() {
                 },
                 body: JSON.stringify({
                     conversationId: activeConversation._id,
-                    text
+                    text,
+                    tempId
                 })
             });
             const data = await response.json();
             if (data.success) {
-                const newMessage = data.data;
-                setMessages(prev => [...prev, newMessage]);
-                // Note: Socket emission is now handled by the backend!
-                // No need to manual emit here anymore.
+                const realMessage = data.data;
+                // Replace optimistic message with real message
+                setMessages(prev => prev.map(m => m.tempId === tempId ? realMessage : m));
+                
                 // Update local conversation list
                 setConversations(prev => prev.map(conv => 
                     conv._id === activeConversation._id 
-                    ? { ...conv, lastMessage: newMessage, updatedAt: new Date().toISOString() }
+                    ? { ...conv, lastMessage: realMessage, updatedAt: new Date().toISOString() }
                     : conv
                 ).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
             }
         } catch (error) {
-            console.error('Failed to send message:', error);
+            console.error('Failed to persist message:', error);
+            // Mark as failed in UI
+            setMessages(prev => prev.map(m => m.tempId === tempId ? { ...m, status: 'error' } : m));
         }
     };
 

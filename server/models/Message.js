@@ -16,6 +16,9 @@ const messageSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
+    tempId: {
+        type: String
+    },
     readBy: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'

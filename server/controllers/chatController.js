@@ -138,7 +138,7 @@ exports.getMessages = async (req, res) => {
 // @route   POST /api/chat/message
 // @access  Private
 exports.sendMessage = async (req, res) => {
-    const { conversationId, text } = req.body;
+    const { conversationId, text, tempId } = req.body;
 
     if (!conversationId || !text) {
         return res.status(400).json({ success: false, message: 'Conversation ID and text are required' });
@@ -148,7 +148,8 @@ exports.sendMessage = async (req, res) => {
         const message = await Message.create({
             conversation: conversationId,
             sender: req.user.id,
-            text
+            text,
+            tempId
         });
 
         const populatedMessage = await Message.findById(message._id)
