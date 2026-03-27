@@ -191,7 +191,12 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
         );
     }
 
-    const otherParticipant = conversation.isGroup ? null : conversation.participants.find(p => p._id !== user.id);
+    const currentUserId = user?.id || user?._id;
+    const otherParticipant = conversation.isGroup 
+        ? null 
+        : (Array.isArray(conversation.participants) 
+            ? conversation.participants.find(p => (p?._id || p) !== currentUserId)
+            : null);
 
     return (
         <div className="flex-1 flex flex-col bg-black/40">
@@ -234,12 +239,12 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                 {messages.map((msg, index) => {
-                    const currentUserId = user?.id || user?._id;
-                    const isOwn = (msg.sender?._id || msg.sender) === currentUserId;
+                    const currentUserId = String(user?.id || user?._id || '');
+                    const msgSenderId = String(msg.sender?._id || msg.sender || '');
+                    const isOwn = msgSenderId === currentUserId;
                     const prevMsg = messages[index - 1];
-                    const prevSenderId = prevMsg?.sender?._id || prevMsg?.sender;
-                    const currentSenderId = msg.sender?._id || msg.sender;
-                    const showHeader = !prevMsg || prevSenderId !== currentSenderId;
+                    const prevSenderId = String(prevMsg?.sender?._id || prevMsg?.sender || '');
+                    const showHeader = !prevMsg || prevSenderId !== msgSenderId;
 
                     return (
                         <div key={msg._id} className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>

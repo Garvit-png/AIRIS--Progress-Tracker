@@ -88,12 +88,17 @@ export default function ChatPanel() {
             
             // Update messages cache
             queryClient.setQueryData(['messages', msgConvId], (old) => {
-                if (!old) return [message];
+                const currentData = old?.data || [];
                 const msgId = message._id || message.tempId;
-                if (old.some(m => (m._id === msgId) || (m.tempId && m.tempId === message.tempId))) {
-                    return old.map(m => (m.tempId && m.tempId === message.tempId) ? message : m);
+                
+                let newData;
+                if (currentData.some(m => (m._id === msgId) || (m.tempId && m.tempId === message.tempId))) {
+                    newData = currentData.map(m => (m.tempId && m.tempId === message.tempId) ? message : m);
+                } else {
+                    newData = [...currentData, message];
                 }
-                return [...old, message];
+                
+                return { success: true, data: newData };
             });
 
             // Update conversations cache (last message)
@@ -161,7 +166,10 @@ export default function ChatPanel() {
             };
 
             // Update messages cache optimism
-            queryClient.setQueryData(['messages', convId], (old) => [...(old || []), optimisticMessage]);
+            queryClient.setQueryData(['messages', convId], (old) => {
+                const currentData = old?.data || [];
+                return { success: true, data: [...currentData, optimisticMessage] };
+            });
 
             // Broadcast via socket immediately
             if (socket) {
@@ -183,9 +191,13 @@ export default function ChatPanel() {
             const convId = activeConversation._id;
             if (data.success) {
                 const realMessage = data.data;
-                queryClient.setQueryData(['messages', convId], (old) => 
-                    old.map(m => m.tempId === variables.tempId ? realMessage : m)
-                );
+                queryClient.setQueryData(['messages', convId], (old) => {
+                    if (!old || !old.data) return { success: true, data: [realMessage] };
+                    return {
+                        ...old,
+                        data: old.data.map(m => m.tempId === variables.tempId ? realMessage : m)
+                    };
+                });
                 
                 // Refresh conversations to get updated lastMessage
                 queryClient.invalidateQueries({ queryKey: ['conversations'] });
