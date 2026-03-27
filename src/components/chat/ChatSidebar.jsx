@@ -1,3 +1,5 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Plus, Users, User } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { AuthService } from '../../services/authService';
