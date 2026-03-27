@@ -16,7 +16,7 @@ const getInitials = (name) => {
 };
 
 // Memoized Conversation Item for ultra-smooth performance
-const ConversationItem = React.memo(({ conv, isActive, onSelect, onMouseEnter, user }) => {
+const ConversationItem = React.memo(({ conv, isActive, onSelect, onMouseEnter, user, unreadCount }) => {
     if (!conv) return null;
     const participants = Array.isArray(conv.participants) ? conv.participants : [];
     const otherParticipant = conv.isGroup ? null : participants.find(p => p?._id !== (user?.id || user?._id));
@@ -51,14 +51,20 @@ const ConversationItem = React.memo(({ conv, isActive, onSelect, onMouseEnter, u
                 {displayAvatar}
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-white truncate">{displayName}</p>
                 <p className="text-[10px] text-white/50 truncate">{lastMessageSender}{lastMessage}</p>
             </div>
+            {unreadCount > 0 && (
+                <div className="flex flex-col items-end gap-1">
+                    <div className="w-4 h-4 rounded-full bg-pink-500 flex items-center justify-center shadow-[0_0_10px_rgba(236,72,153,0.4)]">
+                        <span className="text-[9px] font-black text-white">{unreadCount}</span>
+                    </div>
+                </div>
+            )}
         </button>
     );
 });
 
-export default function ChatSidebar({ conversations, activeConversation, onSelectConversation, user, loading, onNewConversation, allMembers = [] }) {
+export default function ChatSidebar({ conversations, activeConversation, onSelectConversation, user, loading, onNewConversation, allMembers = [], unreadCounts = {} }) {
     const queryClient = useQueryClient();
     const [search, setSearch] = useState('');
     const [isCreating, setIsCreating] = useState(false);
@@ -366,6 +372,7 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                                 onSelect={onSelectConversation}
                                 onMouseEnter={handlePrefetchMessages}
                                 user={user}
+                                unreadCount={unreadCounts[conv._id]}
                             />
                         ))}
 

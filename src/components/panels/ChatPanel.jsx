@@ -22,6 +22,9 @@ export default function ChatPanel() {
     const queryClient = useQueryClient();
     const [activeConversation, setActiveConversation] = useState(null);
     const [isConnected, setIsConnected] = useState(false);
+    const [unreadCounts, setUnreadCounts] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('unread_counts') || '{}'); } catch(e) { return {}; }
+    });
     const user = AuthService.getSession();
     const currentUserId = user?.id || user?._id;
 
@@ -111,6 +114,25 @@ export default function ChatPanel() {
                     return dateB - dateA;
                 }) };
             });
+
+            // Track unreads
+            if (msgConvId !== activeConversation?._id) {
+                setUnreadCounts(prev => {
+                    const next = { ...prev, [msgConvId]: (prev[msgConvId] || 0) + 1 };
+                    localStorage.setItem('unread_counts', JSON.stringify(next));
+                    return next;
+                });
+            }
+        });
+
+        const cleanupRead = socketService.on('message_read', ({ conversationId }) => {
+            queryClient.setQueryData(['messages', conversationId], (old) => {
+                if (!old || !old.data) return old;
+                return {
+                    ...old,
+                    data: old.data.map(m => ({ ...m, status: 'read' }))
+                };
+            });
         });
 
         const cleanupConv = socketService.on('new_conversation', (conversation) => {
@@ -125,6 +147,7 @@ export default function ChatPanel() {
             cleanupConn();
             cleanupMsg();
             cleanupConv();
+            cleanupRead();
         };
     }, [currentUserId, queryClient]);
 
@@ -216,6 +239,18 @@ export default function ChatPanel() {
         }
     });
 
+    const handleSelectConversation = (conv) => {
+        setActiveConversation(conv);
+        if (conv?._id && unreadCounts[conv._id]) {
+            setUnreadCounts(prev => {
+                const next = { ...prev };
+                delete next[conv._id];
+                localStorage.setItem('unread_counts', JSON.stringify(next));
+                return next;
+            });
+        }
+    };
+
     const handleSendMessage = (text, file = null) => {
         if (!activeConversation || (!text.trim() && !file)) return;
         const tempId = `temp-${Date.now()}`;
@@ -236,7 +271,8 @@ export default function ChatPanel() {
                 <ChatSidebar 
                     conversations={conversations} 
                     activeConversation={activeConversation}
-                    onSelectConversation={setActiveConversation}
+                    onSelectConversation={handleSelectConversation}
+                    unreadCounts={unreadCounts}
                     user={user}
                     loading={convLoading}
                     allMembers={allMembers}

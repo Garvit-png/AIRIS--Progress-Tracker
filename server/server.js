@@ -233,6 +233,18 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Handle read receipt
+    socket.on('mark_read', (data) => {
+        const { conversationId, userId, participantIds } = data;
+        if (participantIds && Array.isArray(participantIds)) {
+            participantIds.forEach(id => {
+                if (id !== userId) {
+                    io.to(id.toString()).emit('message_read', { conversationId, userId });
+                }
+            });
+        }
+    });
+
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
     });

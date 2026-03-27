@@ -43,8 +43,14 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
             }
         });
         
+        // Emit mark_read when window is focused and messages are present
+        if (messages.length > 0) {
+            const participantIds = conversation.participants.map(p => p._id || p);
+            socketService.emit('mark_read', { conversationId: conversation._id, userId: currentUserId, participantIds });
+        }
+        
         return cleanup;
-    }, [conversation?._id, user?.id, user?._id]);
+    }, [conversation?._id, messages.length, user?.id, user?._id]);
 
     // Close emoji picker when clicking outside
     useEffect(() => {
@@ -269,8 +275,10 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
                                             <div className="w-2 h-2 rounded-full border border-white/20 border-t-white/60 animate-spin" />
                                         ) : (
                                             <div className="flex -space-x-1">
-                                                <Check size={8} className={msg.status === 'delivered' ? 'text-emerald-400' : 'text-white/40'} />
-                                                {msg.status === 'delivered' && <Check size={8} className="text-emerald-400" />}
+                                                <Check size={8} className={msg.status === 'read' ? 'text-pink-400' : (msg.status === 'delivered' ? 'text-emerald-400' : 'text-white/40')} />
+                                                {(msg.status === 'delivered' || msg.status === 'read') && (
+                                                    <Check size={8} className={msg.status === 'read' ? 'text-pink-400' : 'text-white/40'} />
+                                                )}
                                             </div>
                                         )}
                                     </div>
