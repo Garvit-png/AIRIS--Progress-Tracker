@@ -46,6 +46,10 @@ class SocketService {
         return this.socket;
     }
 
+    isConnected() {
+        return !!this.socket && this.socket.connected;
+    }
+
     disconnect() {
         if (this.socket) {
             this.socket.disconnect();

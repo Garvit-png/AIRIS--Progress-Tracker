@@ -14,9 +14,9 @@ const SOCKET_URL = config.API_BASE_URL.includes('onrender.com')
 export default function ChatPanel() {
     const queryClient = useQueryClient();
     const [activeConversation, setActiveConversation] = useState(null);
-    const [socket, setSocket] = useState(null);
     const [isConnected, setIsConnected] = useState(false);
     const user = AuthService.getSession();
+    const currentUserId = user?.id || user?._id;
 
     // 1. Fetch Conversations with React Query
     const { data: convData, isLoading: convLoading } = useQuery({
@@ -237,8 +237,7 @@ export default function ChatPanel() {
                     conversation={activeConversation}
                     messages={messages}
                     onSendMessage={handleSendMessage}
-                    user={user}
-                    socket={socket}
+                    isConnected={isConnected}
                 />
             </div>
         </div>

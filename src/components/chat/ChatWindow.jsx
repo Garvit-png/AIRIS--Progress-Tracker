@@ -4,6 +4,7 @@ import { Send, User, Users, MoreVertical, Paperclip, Smile, File, FileText, Down
 import EmojiPicker from 'emoji-picker-react';
 import { AuthService } from '../../services/authService';
 import config from '../../config';
+import socketService from '../../services/socketService';
 
 // Helper for avatar initials
 const getInitials = (name) => {
@@ -57,23 +58,21 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
 
     const handleTyping = (e) => {
         setNewMessage(e.target.value);
+        if (!socketService.isConnected()) return;
         
-        if (!isTyping && socket) {
-            const currentUserId = user?.id || user?._id;
-            const participantIds = conversation.participants.map(p => p._id || p);
+        const currentUserId = user?.id || user?._id;
+        const participantIds = conversation.participants.map(p => p._id || p);
+
+        if (!isTyping) {
             setIsTyping(true);
-            socket.emit('typing', { conversationId: conversation._id, userId: currentUserId, isTyping: true, participantIds });
+            socketService.emit('typing', { conversationId: conversation._id, userId: currentUserId, isTyping: true, participantIds });
         }
 
         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
         typingTimeoutRef.current = setTimeout(() => {
-            const currentUserId = user?.id || user?._id;
-            const participantIds = conversation.participants.map(p => p._id || p);
             setIsTyping(false);
-            if (socket) {
-                socket.emit('typing', { conversationId: conversation._id, userId: currentUserId, isTyping: false, participantIds });
-            }
-        }, 3000);
+            socketService.emit('typing', { conversationId: conversation._id, userId: currentUserId, isTyping: false, participantIds });
+        }, 2000);
     };
 
     const onEmojiClick = (emojiData) => {
@@ -126,9 +125,7 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
         setNewMessage('');
         setShowEmojiPicker(false);
         setIsTyping(false);
-        if (socket) {
-            socket.emit('typing', { conversationId: conversation._id, userId: currentUserId, isTyping: false, participantIds });
-        }
+        socketService.emit('typing', { conversationId: conversation._id, userId: currentUserId, isTyping: false, participantIds });
     };
 
     const renderFileAttachment = (file) => {
