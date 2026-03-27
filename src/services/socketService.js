@@ -13,9 +13,14 @@ class SocketService {
         if (this.socket && this.userId === userId) return this.socket;
         
         this.userId = userId;
-        const SOCKET_URL = config.API_BASE_URL.includes('onrender.com') 
-            ? config.API_BASE_URL.replace('/api', '') 
-            : (window.location.hostname === 'localhost' ? 'http://localhost:5002' : 'https://airis-backend.onrender.com');
+        const getSocketUrl = () => {
+            const apiBase = config.API_BASE_URL;
+            if (apiBase.startsWith('http')) {
+                return apiBase.replace(/\/api\/?$/, '');
+            }
+            return window.location.origin;
+        };
+        const SOCKET_URL = getSocketUrl();
 
         console.log('Connecting to Socket Signal at:', SOCKET_URL);
 

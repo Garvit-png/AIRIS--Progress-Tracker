@@ -486,9 +486,14 @@ export const AuthService = {
         if (path.startsWith('http')) return path;
         
         // Base backend URL (without /api)
-        const baseUrl = config.API_BASE_URL.includes('onrender.com') 
-            ? config.API_BASE_URL.replace('/api', '') 
-            : 'https://airis-backend.onrender.com';
+        const getBaseUrl = () => {
+            const apiBase = config.API_BASE_URL;
+            if (apiBase.startsWith('http')) {
+                return apiBase.replace(/\/api\/?$/, '');
+            }
+            return window.location.origin;
+        };
+        const baseUrl = getBaseUrl();
             
         // Ensure path starts with /uploads/ if it's a relative asset
         let cleanPath = path.startsWith('/') ? path : `/${path}`;

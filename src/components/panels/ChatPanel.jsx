@@ -7,9 +7,16 @@ import ChatSidebar from '../chat/ChatSidebar';
 import ChatWindow from '../chat/ChatWindow';
 import socketService from '../../services/socketService';
 
-const SOCKET_URL = config.API_BASE_URL.includes('onrender.com') 
-    ? config.API_BASE_URL.replace('/api', '') 
-    : (window.location.hostname === 'localhost' ? 'http://localhost:5002' : 'https://airis-backend.onrender.com');
+const getSocketUrl = () => {
+    const apiBase = config.API_BASE_URL;
+    if (apiBase.startsWith('http')) {
+        return apiBase.replace(/\/api\/?$/, '');
+    }
+    // Handle relative /api by deriving from current origin
+    return window.location.origin;
+};
+
+const SOCKET_URL = getSocketUrl();
 
 export default function ChatPanel() {
     const queryClient = useQueryClient();
@@ -149,8 +156,8 @@ export default function ChatPanel() {
                 file,
                 sender: {
                     _id: currentUserId,
-                    name: user.name,
-                    profilePicture: user.profilePicture
+                    name: user?.name || 'Local User',
+                    profilePicture: user?.profilePicture
                 },
                 conversation: convId,
                 createdAt: new Date().toISOString(),
@@ -163,7 +170,9 @@ export default function ChatPanel() {
                 return { success: true, data: [...currentData, optimisticMessage] };
             });
 
-            const participantIds = activeConversation.participants.map(p => p._id || p);
+            const participantIds = Array.isArray(activeConversation?.participants) 
+                ? activeConversation.participants.map(p => p?._id || p)
+                : [];
             // Broadcast via socket immediately for ultra-fast sync
             socketService.emit('send_message', {
                 conversationId: convId,
@@ -214,7 +223,7 @@ export default function ChatPanel() {
     };
 
     return (
-        <div className="flex flex-col h-[calc(100vh-140px)] bg-black/20 rounded-3xl overflow-hidden border border-white/5 backdrop-blur-sm relative">
+        <div className="flex flex-col h-[calc(100vh-140px)] bg-black/20 rounded-3xl border border-white/5 backdrop-blur-sm relative">
             {/* Real-time Status Indicator */}
             <div className="absolute top-4 right-4 z-20 flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-white/5 backdrop-blur-md">
                 <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500 animate-pulse'}`} />
