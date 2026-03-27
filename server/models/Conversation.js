@@ -35,8 +35,11 @@ const conversationSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true,
-    toJSON: { virtuals: true },
     toObject: { virtuals: true }
 });
+
+// Adding indexes for faster retrieval
+conversationSchema.index({ participants: 1 });
+conversationSchema.index({ updatedAt: -1 });
 
 module.exports = mongoose.model('Conversation', conversationSchema);

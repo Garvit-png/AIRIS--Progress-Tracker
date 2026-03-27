@@ -12,6 +12,9 @@
   "dependencies": {
     "@react-oauth/google": "^0.13.4",
     "@tailwindcss/vite": "^4.2.0",
+    "@tanstack/query-sync-storage-persister": "^5.95.2",
+    "@tanstack/react-query": "^5.95.2",
+    "@tanstack/react-query-persist-client": "^5.95.2",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",

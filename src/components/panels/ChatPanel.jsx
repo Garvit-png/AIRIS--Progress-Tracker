@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { io } from 'socket.io-client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AuthService } from '../../services/authService';
 import config from '../../config';
 import ChatSidebar from '../chat/ChatSidebar';
@@ -11,15 +12,59 @@ const SOCKET_URL = config.API_BASE_URL.includes('onrender.com')
     : 'https://airis-backend.onrender.com';
 
 export default function ChatPanel() {
-    const [conversations, setConversations] = useState([]);
+    const queryClient = useQueryClient();
     const [activeConversation, setActiveConversation] = useState(null);
-    const [messages, setMessages] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [socket, setSocket] = useState(null);
     const [isConnected, setIsConnected] = useState(false);
-    const [allMembers, setAllMembers] = useState([]);
     const user = AuthService.getSession();
 
+    // 1. Fetch Conversations with React Query
+    const { data: convData, isLoading: convLoading } = useQuery({
+        queryKey: ['conversations'],
+        queryFn: AuthService.getConversations,
+        select: (data) => data.success ? data.data : [],
+    });
+
+    const conversations = convData || [];
+
+    // Prefetch top 3 conversations' messages
+    useEffect(() => {
+        if (conversations.length > 0) {
+            conversations.slice(0, 3).forEach(conv => {
+                queryClient.prefetchQuery({
+                    queryKey: ['messages', conv._id],
+                    queryFn: () => AuthService.getMessages(conv._id),
+                    staleTime: 1000 * 60 * 2, // 2 minutes
+                });
+            });
+        }
+    }, [conversations, queryClient]);
+
+    // 2. Fetch Members with React Query
+    const { data: memberData } = useQuery({
+        queryKey: ['members'],
+        queryFn: AuthService.getUsers,
+        select: (users) => {
+            if (users && Array.isArray(users)) {
+                return users.filter(u => u.status === 'approved' && u._id !== (user?.id || user?._id));
+            }
+            return [];
+        }
+    });
+
+    const allMembers = memberData || [];
+
+    // 3. Fetch Messages with React Query
+    const { data: msgData } = useQuery({
+        queryKey: ['messages', activeConversation?._id],
+        queryFn: () => AuthService.getMessages(activeConversation?._id),
+        enabled: !!activeConversation?._id,
+        select: (data) => data.success ? data.data : [],
+    });
+
+    const messages = msgData || [];
+
+    // Socket Setup
     useEffect(() => {
         const currentUserId = user?.id || user?._id;
         if (!currentUserId) return;
@@ -32,199 +77,122 @@ export default function ChatPanel() {
         setSocket(newSocket);
 
         newSocket.on('connect', () => {
-            console.log('CONNECTED TO REAL-TIME SERVER');
             setIsConnected(true);
             newSocket.emit('join_user', currentUserId);
         });
 
-        newSocket.on('disconnect', () => {
-            console.log('DISCONNECTED FROM REAL-TIME SERVER');
-            setIsConnected(false);
-        });
-
-        newSocket.on('reconnect', () => {
-            newSocket.emit('join_user', currentUserId);
-        });
+        newSocket.on('disconnect', () => setIsConnected(false));
 
         newSocket.on('receive_message', (message) => {
-            console.log('REAL-TIME MESSAGE RECEIVED:', message);
+            const msgConvId = String(message.conversation?._id || message.conversation);
             
-            // Update active messages if this message belongs to current chat
-            setMessages(prev => {
+            // Update messages cache
+            queryClient.setQueryData(['messages', msgConvId], (old) => {
+                if (!old) return [message];
                 const msgId = message._id || message.tempId;
-                if (prev.some(m => (m._id === msgId) || (m.tempId && m.tempId === message.tempId))) {
-                    return prev.map(m => (m.tempId && m.tempId === message.tempId) ? message : m);
+                if (old.some(m => (m._id === msgId) || (m.tempId && m.tempId === message.tempId))) {
+                    return old.map(m => (m.tempId && m.tempId === message.tempId) ? message : m);
                 }
-                
-                const msgConvId = String(message.conversation?._id || message.conversation);
-                const activeId = String(activeConversationRef.current?._id || '');
-                
-                if (msgConvId === activeId) {
-                    return [...prev, message];
-                }
-                return prev;
+                return [...old, message];
             });
 
-            setConversations(prev => {
-                const msgConvId = String(message.conversation?._id || message.conversation);
-                const updated = prev.map(conv => {
+            // Update conversations cache (last message)
+            queryClient.setQueryData(['conversations'], (old) => {
+                if (!old || !old.data) return old;
+                const updated = old.data.map(conv => {
                     if (String(conv._id) === msgConvId) {
                         return { ...conv, lastMessage: message, updatedAt: new Date().toISOString() };
                     }
                     return conv;
                 });
-                
-                if (!prev.some(conv => String(conv._id) === msgConvId)) {
-                    // This covers the case where a new conversation was started
-                    return prev; 
-                }
-                return [...updated].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+                return { ...old, data: [...updated].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)) };
             });
         });
 
         newSocket.on('new_conversation', (conversation) => {
-            console.log('NEW CONVERSATION RECEIVED:', conversation);
-            setConversations(prev => {
-                if (prev.some(c => c._id === conversation._id)) return prev;
-                return [conversation, ...prev];
+            queryClient.setQueryData(['conversations'], (old) => {
+                if (!old || !old.data) return { success: true, data: [conversation] };
+                if (old.data.some(c => c._id === conversation._id)) return old;
+                return { ...old, data: [conversation, ...old.data] };
             });
         });
 
         return () => newSocket.close();
-    }, [user?.id, user?._id]); // Only recreate if user changes
+    }, [user?.id, user?._id, queryClient]);
 
-    useEffect(() => {
-        fetchConversations();
-        fetchMembers();
-    }, []);
-
-    const fetchMembers = async () => {
-        try {
-            // Use the reliable getUsers which we know works for the Members tab
-            const users = await AuthService.getUsers();
-            if (users && Array.isArray(users)) {
-                setAllMembers(users.filter(u => u.status === 'approved' && u._id !== (user?.id || user?._id)));
-            } else {
-                // Secondary fallback to chat-specific endpoint
-                const data = await AuthService.getMembers();
-                if (data && data.success && Array.isArray(data.members)) {
-                    setAllMembers(data.members);
-                }
-            }
-        } catch (error) {
-            console.error('Failed to pre-fetch members:', error);
-        }
-    };
-
-    // Reference to active conversation for socket listener
-    const activeConversationRef = useRef(activeConversation);
-    useEffect(() => {
-        activeConversationRef.current = activeConversation;
-        if (activeConversation) {
-            fetchMessages(activeConversation._id);
-        }
-    }, [activeConversation]);
-
-    const fetchConversations = async () => {
-        try {
-            const response = await fetch(`${SOCKET_URL}/api/chat/conversations`, {
-                headers: {
-                    'Authorization': `Bearer ${AuthService.getToken()}`
-                }
-            });
-            const data = await response.json();
-            if (data.success) {
-                setConversations(data.data);
-            }
-        } catch (error) {
-            console.error('Failed to fetch conversations:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchMessages = async (conversationId) => {
-        try {
-            const response = await fetch(`${SOCKET_URL}/api/chat/messages/${conversationId}`, {
-                headers: {
-                    'Authorization': `Bearer ${AuthService.getToken()}`
-                }
-            });
-            const data = await response.json();
-            if (data.success) {
-                setMessages(data.data);
-            }
-        } catch (error) {
-            console.error('Failed to fetch messages:', error);
-        }
-    };
-
-    const handleSendMessage = async (text, file = null) => {
-        if (!activeConversation || (!text.trim() && !file)) return;
-
-        const currentUserId = user?.id || user?._id;
-        const tempId = `temp-${Date.now()}`;
-        const optimisticMessage = {
-            _id: tempId,
-            tempId,
-            text: text || '',
-            file,
-            sender: {
-                _id: currentUserId,
-                name: user.name,
-                profilePicture: user.profilePicture
+    // Send Message Mutation
+    const sendMessageMutation = useMutation({
+        mutationFn: ({ text, file, tempId }) => fetch(`${SOCKET_URL}/api/chat/message`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${AuthService.getToken()}`
             },
-            conversation: activeConversation._id,
-            createdAt: new Date().toISOString(),
-            status: 'sending'
-        };
-
-        // 1. UPDATE UI INSTANTLY (Optimistic)
-        setMessages(prev => [...prev, optimisticMessage]);
-
-        // 2. BROADCAST VIA SOCKET INSTANTLY (Dual-Path Speed)
-        if (socket) {
-            const participantIds = activeConversation.participants.map(p => p._id || p);
-            socket.emit('send_message', {
+            body: JSON.stringify({
                 conversationId: activeConversation._id,
-                message: optimisticMessage,
-                participantIds
-            });
-        }
+                text,
+                tempId,
+                file
+            })
+        }).then(res => res.json()),
+        onMutate: async ({ text, file, tempId }) => {
+            const convId = activeConversation._id;
+            await queryClient.cancelQueries({ queryKey: ['messages', convId] });
+            const previousMessages = queryClient.getQueryData(['messages', convId]);
 
-        // 3. PERSIST VIA API IN BACKGROUND
-        try {
-            const response = await fetch(`${SOCKET_URL}/api/chat/message`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${AuthService.getToken()}`
+            const currentUserId = user?.id || user?._id;
+            const optimisticMessage = {
+                _id: tempId,
+                tempId,
+                text: text || '',
+                file,
+                sender: {
+                    _id: currentUserId,
+                    name: user.name,
+                    profilePicture: user.profilePicture
                 },
-                body: JSON.stringify({
-                    conversationId: activeConversation._id,
-                    text,
-                    tempId,
-                    file
-                })
-            });
-            const data = await response.json();
+                conversation: convId,
+                createdAt: new Date().toISOString(),
+                status: 'sending'
+            };
+
+            // Update messages cache optimism
+            queryClient.setQueryData(['messages', convId], (old) => [...(old || []), optimisticMessage]);
+
+            // Broadcast via socket immediately
+            if (socket) {
+                const participantIds = activeConversation.participants.map(p => p._id || p);
+                socket.emit('send_message', {
+                    conversationId: convId,
+                    message: optimisticMessage,
+                    participantIds
+                });
+            }
+
+            return { previousMessages };
+        },
+        onError: (err, variables, context) => {
+            const convId = activeConversation._id;
+            queryClient.setQueryData(['messages', convId], context.previousMessages);
+        },
+        onSuccess: (data, variables) => {
+            const convId = activeConversation._id;
             if (data.success) {
                 const realMessage = data.data;
-                // Replace optimistic message with real message
-                setMessages(prev => prev.map(m => m.tempId === tempId ? realMessage : m));
+                queryClient.setQueryData(['messages', convId], (old) => 
+                    old.map(m => m.tempId === variables.tempId ? realMessage : m)
+                );
                 
-                // Update local conversation list
-                setConversations(prev => prev.map(conv => 
-                    conv._id === activeConversation._id 
-                    ? { ...conv, lastMessage: realMessage, updatedAt: new Date().toISOString() }
-                    : conv
-                ).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
+                // Refresh conversations to get updated lastMessage
+                queryClient.invalidateQueries({ queryKey: ['conversations'] });
             }
-        } catch (error) {
-            console.error('Failed to persist message:', error);
-            // Mark as failed in UI
-            setMessages(prev => prev.map(m => m.tempId === tempId ? { ...m, status: 'error' } : m));
         }
+    });
+
+    const handleSendMessage = (text, file = null) => {
+        if (!activeConversation || (!text.trim() && !file)) return;
+        const tempId = `temp-${Date.now()}`;
+        sendMessageMutation.mutate({ text, file, tempId });
     };
 
     return (
@@ -243,9 +211,9 @@ export default function ChatPanel() {
                     activeConversation={activeConversation}
                     onSelectConversation={setActiveConversation}
                     user={user}
-                    loading={loading}
+                    loading={convLoading}
                     allMembers={allMembers}
-                    onNewConversation={fetchConversations}
+                    onNewConversation={() => queryClient.invalidateQueries({ queryKey: ['conversations'] })}
                 />
                 <ChatWindow 
                     conversation={activeConversation}

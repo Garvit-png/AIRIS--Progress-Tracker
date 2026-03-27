@@ -37,8 +37,11 @@ const messageSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true,
-    toJSON: { virtuals: true },
     toObject: { virtuals: true }
 });
+
+// Adding indexes for faster retrieval
+messageSchema.index({ conversation: 1, createdAt: 1 });
+messageSchema.index({ conversation: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Message', messageSchema);

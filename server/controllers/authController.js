@@ -263,7 +263,7 @@ exports.login = async (req, res, next) => {
 // @access  Private
 exports.getMe = async (req, res, next) => {
     try {
-        const user = await User.findById(req.user.id);
+        const user = await User.findById(req.user.id).lean();
         if (!user) throw new Error('User not found');
         
         res.status(200).json({ success: true, user });
@@ -319,7 +319,8 @@ exports.updateProfile = async (req, res, next) => {
 exports.findUserByEmail = async (req, res) => {
     try {
         const user = await User.findOne({ email: req.params.email.toLowerCase().trim() })
-            .select('name email profilePicture');
+            .select('name email profilePicture')
+            .lean();
 
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
@@ -357,7 +358,8 @@ exports.searchUsersByName = async (req, res) => {
             _id: { $ne: req.user.id }
         })
         .select('name email profilePicture role')
-        .limit(10);
+        .limit(10)
+        .lean();
 
         res.status(200).json({
             success: true,
@@ -381,7 +383,8 @@ exports.getApprovedMembers = async (req, res) => {
             _id: { $ne: req.user._id || req.user.id } // Don't include self (handles both Mongoose and plain objects)
         })
         .select('name profilePicture role')
-        .sort({ name: 1 });
+        .sort({ name: 1 })
+        .lean();
 
         res.status(200).json({
             success: true,

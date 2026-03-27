@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { Search, Plus, Users, User } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { AuthService } from '../../services/authService';
 import config from '../../config';
 
@@ -15,7 +14,16 @@ const getInitials = (name) => {
 };
 
 export default function ChatSidebar({ conversations, activeConversation, onSelectConversation, user, loading, onNewConversation, allMembers = [] }) {
+    const queryClient = useQueryClient();
     const [search, setSearch] = useState('');
+
+    const handlePrefetchMessages = React.useCallback((id) => {
+        queryClient.prefetchQuery({
+            queryKey: ['messages', id],
+            queryFn: () => AuthService.getMessages(id),
+            staleTime: 1000 * 60 * 2,
+        });
+    }, [queryClient]);
     const [isCreating, setIsCreating] = useState(false);
     const [creationMode, setCreationMode] = useState('dm'); // 'dm' or 'group'
     const [newChatName, setNewChatName] = useState('');
@@ -332,52 +340,16 @@ export default function ChatSidebar({ conversations, activeConversation, onSelec
                             </div>
                         )}
 
-                        {filteredConversations.map(conv => {
-                            const otherParticipant = conv.isGroup ? null : conv.participants.find(p => p._id !== (user?.id || user?._id));
-                            const isActive = activeConversation?._id === conv._id;
-
-                            return (
-                                <button
-                                    key={conv._id}
-                                    onClick={() => onSelectConversation(conv)}
-                                    className={`w-full flex items-center gap-3 p-4 transition-all border-l-2 hover:bg-white/[0.04] ${isActive ? 'bg-pink-500/5 border-pink-500' : 'border-transparent'}`}
-                                >
-                                    <div className="w-12 h-12 rounded-2xl bg-pink-500 border border-white/5 flex items-center justify-center overflow-hidden flex-shrink-0 text-sm font-bold text-white shadow-lg shadow-pink-500/10">
-                                        {conv.isGroup ? (
-                                            conv.groupImage ? <img src={conv.groupImage} className="w-full h-full object-cover" /> : <Users size={20} className="text-white/40" />
-                                        ) : (
-                                            otherParticipant?.profilePicture ? (
-                                                <img 
-                                                    src={AuthService.getFileUrl(otherParticipant.profilePicture)} 
-                                                    className="w-full h-full object-cover" 
-                                                    onError={(e) => {
-                                                        e.target.style.display = 'none';
-                                                        e.target.parentElement.innerHTML = getInitials(otherParticipant.name);
-                                                    }}
-                                                />
-                                            ) : (
-                                                getInitials(otherParticipant?.name)
-                                            )
-                                        )}
-                                    </div>
-                                    <div className="flex-1 min-w-0 text-left">
-                                        <div className="flex items-center justify-between mb-0.5">
-                                            <h3 className="text-sm font-semibold text-white truncate">
-                                                {conv.isGroup ? conv.groupName : otherParticipant?.name?.split(' ')[0]}
-                                            </h3>
-                                            {conv.lastMessage && (
-                                                <span className="text-[9px] text-white/30 font-mono">
-                                                    {new Date(conv.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="text-[11px] text-white/50 truncate">
-                                            {conv.lastMessage ? (conv.lastMessage.text || 'Sent an attachment') : 'No messages yet'}
-                                        </p>
-                                    </div>
-                                </button>
-                            );
-                        })}
+                        {filteredConversations.map(conv => (
+                            <ConversationItem 
+                                key={conv._id}
+                                conv={conv}
+                                isActive={activeConversation?._id === conv._id}
+                                onSelect={onSelectConversation}
+                                onMouseEnter={handlePrefetchMessages}
+                                user={user}
+                            />
+                        ))}
 
                         {discoveredProfiles.length > 0 && (
                             <div className="mt-4 pb-10">

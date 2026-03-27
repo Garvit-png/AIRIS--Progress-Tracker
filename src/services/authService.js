@@ -194,7 +194,43 @@ export const AuthService = {
         return data.success ? data.data : '';
     },
 
-    getMembers: async () => {
+    getConversations: async () => {
+         const token = localStorage.getItem('token');
+         if (!token) return { success: false, message: 'Not authenticated' };
+ 
+         const baseUrl = config.API_BASE_URL.includes('onrender.com') 
+             ? config.API_BASE_URL.replace('/api', '') 
+             : 'https://airis-backend.onrender.com';
+ 
+         try {
+             const response = await fetch(`${baseUrl}/api/chat/conversations`, {
+                 headers: { 'Authorization': `Bearer ${token}` }
+             });
+             return await safeJson(response);
+         } catch (error) {
+             return { success: false, message: error.message };
+         }
+     },
+ 
+     getMessages: async (conversationId) => {
+         const token = localStorage.getItem('token');
+         if (!token) return { success: false, message: 'Not authenticated' };
+ 
+         const baseUrl = config.API_BASE_URL.includes('onrender.com') 
+             ? config.API_BASE_URL.replace('/api', '') 
+             : 'https://airis-backend.onrender.com';
+ 
+         try {
+             const response = await fetch(`${baseUrl}/api/chat/messages/${conversationId}`, {
+                 headers: { 'Authorization': `Bearer ${token}` }
+             });
+             return await safeJson(response);
+         } catch (error) {
+             return { success: false, message: error.message };
+         }
+     },
+ 
+     getMembers: async () => {
         const token = localStorage.getItem('token');
         if (!token) return { success: false, message: 'Not authenticated' };
 

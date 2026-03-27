@@ -88,7 +88,9 @@ exports.getApprovedEmails = async (req, res) => {
 // @access  Private/Admin
 exports.getUsers = async (req, res) => {
     try {
-        const users = await User.find().select('-password');
+        const users = await User.find()
+            .select('name email role isAdmin status year profilePicture')
+            .lean();
 
         res.status(200).json({
             success: true,
@@ -105,7 +107,9 @@ exports.getUsers = async (req, res) => {
 // @access  Private/Admin
 exports.getPendingUsers = async (req, res) => {
     try {
-        const users = await User.find({ status: 'pending' }).select('-password -profilePicture');
+        const users = await User.find({ status: 'pending' })
+            .select('name email role year createdAt')
+            .lean();
 
         res.status(200).json({
             success: true,
@@ -185,7 +189,9 @@ exports.getUserPhoto = async (req, res) => {
 // @access  Private/Admin
 exports.getApprovedUsers = async (req, res) => {
     try {
-        const users = await User.find({ status: 'approved' }).select('-password');
+        const users = await User.find({ status: 'approved' })
+            .select('name email role isAdmin status year profilePicture')
+            .lean();
 
         res.status(200).json({
             success: true,

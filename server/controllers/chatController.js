@@ -12,7 +12,8 @@ exports.getConversations = async (req, res) => {
         })
         .populate('participants', 'name email profilePicture')
         .populate('lastMessage')
-        .sort({ updatedAt: -1 });
+        .sort({ updatedAt: -1 })
+        .lean();
 
         res.status(200).json({
             success: true,
@@ -120,7 +121,9 @@ exports.getMessages = async (req, res) => {
             conversation: req.params.conversationId
         })
         .populate('sender', 'name email profilePicture')
-        .sort({ createdAt: 1 });
+        .sort({ createdAt: 1 })
+        .limit(100)
+        .lean();
 
         res.status(200).json({
             success: true,
