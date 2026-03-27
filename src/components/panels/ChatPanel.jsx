@@ -237,6 +237,7 @@ export default function ChatPanel() {
                     conversation={activeConversation}
                     messages={messages}
                     onSendMessage={handleSendMessage}
+                    user={user}
                     isConnected={isConnected}
                 />
             </div>

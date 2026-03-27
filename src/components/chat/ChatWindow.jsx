@@ -14,7 +14,7 @@ const getInitials = (name) => {
     return parts.map(n => n[0]).join('').toUpperCase().substring(0, 2);
 };
 
-export default function ChatWindow({ conversation, messages, onSendMessage, user, socket }) {
+export default function ChatWindow({ conversation, messages, onSendMessage, user, isConnected }) {
     const [newMessage, setNewMessage] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [typingUser, setTypingUser] = useState(null);
@@ -34,16 +34,17 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
     }, [messages]);
 
     useEffect(() => {
-        if (socket) {
-            socket.on('user_typing', (data) => {
-                const currentUserId = user?.id || user?._id;
-                if (conversation && data.conversationId === conversation._id && data.userId !== currentUserId) {
-                    setTypingUser(data.isTyping ? data.userId : null);
-                }
-            });
-        }
-        return () => socket?.off('user_typing');
-    }, [socket, conversation, user.id]);
+        const currentUserId = user?.id || user?._id;
+        if (!currentUserId || !conversation) return;
+
+        const cleanup = socketService.on('user_typing', (data) => {
+            if (data.conversationId === conversation._id && String(data.userId) !== String(currentUserId)) {
+                setTypingUser(data.isTyping ? data.userId : null);
+            }
+        });
+        
+        return cleanup;
+    }, [conversation?._id, user?.id, user?._id]);
 
     // Close emoji picker when clicking outside
     useEffect(() => {
