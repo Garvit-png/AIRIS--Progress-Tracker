@@ -105,7 +105,11 @@ export default function ChatPanel() {
                     }
                     return conv;
                 });
-                return { ...old, data: [...updated].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)) };
+                return { ...old, data: [...updated].sort((a, b) => {
+                    const dateB = b.updatedAt ? new Date(b.updatedAt) : new Date(0);
+                    const dateA = a.updatedAt ? new Date(a.updatedAt) : new Date(0);
+                    return dateB - dateA;
+                }) };
             });
         });
 
