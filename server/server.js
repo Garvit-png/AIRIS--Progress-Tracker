@@ -194,8 +194,10 @@ io.on('connection', (socket) => {
 
     // Join an individual user room (for receiving messages across any conversation)
     socket.on('join_user', (userId) => {
-        socket.join(userId);
-        console.log(`User ${socket.id} joined their private room: ${userId}`);
+        if (!userId) return;
+        const roomId = `user_${userId}`;
+        socket.join(roomId);
+        console.log(`[SIGNAL] Client ${socket.id} joined secure room: ${roomId}`);
     });
 
     // Handle sending a message
@@ -205,8 +207,9 @@ io.on('connection', (socket) => {
         // Broadcast to all participants in their private rooms
         if (participantIds && Array.isArray(participantIds)) {
             participantIds.forEach(id => {
-                // Emit to every participant (including sender so all their tabs sync)
-                io.to(id.toString()).emit('receive_message', message);
+                if (!id) return;
+                const roomId = `user_${id.toString()}`;
+                io.to(roomId).emit('receive_message', message);
             });
         } else {
             // Fallback to old behavior if participantIds not provided
@@ -224,12 +227,10 @@ io.on('connection', (socket) => {
         const { conversationId, userId, isTyping, participantIds } = data;
         if (participantIds && Array.isArray(participantIds)) {
             participantIds.forEach(id => {
-                if (id !== userId) {
-                    io.to(id.toString()).emit('user_typing', { conversationId, userId, isTyping });
+                if (id && id.toString() !== userId?.toString()) {
+                    io.to(`user_${id.toString()}`).emit('user_typing', { conversationId, userId, isTyping });
                 }
             });
-        } else {
-            socket.to(conversationId).emit('user_typing', { conversationId, userId, isTyping });
         }
     });
 
@@ -238,8 +239,8 @@ io.on('connection', (socket) => {
         const { conversationId, userId, participantIds } = data;
         if (participantIds && Array.isArray(participantIds)) {
             participantIds.forEach(id => {
-                if (id !== userId) {
-                    io.to(id.toString()).emit('message_read', { conversationId, userId });
+                if (id && id.toString() !== userId?.toString()) {
+                    io.to(`user_${id.toString()}`).emit('message_read', { conversationId, userId });
                 }
             });
         }

@@ -35,6 +35,7 @@ class SocketService {
             console.log('Signal Established:', this.socket.id);
             this.isConnected = true;
             this.socket.emit('join_user', userId);
+            console.log(`[SIGNAL] Connection identified as: user_${userId}`);
             this._notifyListeners('connection_change', true);
         });
 
