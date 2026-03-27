@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { io } from 'socket.io-client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AuthService } from '../../services/authService';
 import config from '../../config';
 import ChatSidebar from '../chat/ChatSidebar';
 import ChatWindow from '../chat/ChatWindow';
+import socketService from '../../services/socketService';
 
 const SOCKET_URL = config.API_BASE_URL.includes('onrender.com') 
     ? config.API_BASE_URL.replace('/api', '') 
-    : 'https://airis-backend.onrender.com';
+    : (window.location.hostname === 'localhost' ? 'http://localhost:5002' : 'https://airis-backend.onrender.com');
 
 export default function ChatPanel() {
     const queryClient = useQueryClient();
@@ -66,24 +66,12 @@ export default function ChatPanel() {
 
     // Socket Setup
     useEffect(() => {
-        const currentUserId = user?.id || user?._id;
         if (!currentUserId) return;
 
-        const newSocket = io(SOCKET_URL, {
-            withCredentials: true,
-            transports: ['websocket', 'polling']
-        });
-
-        setSocket(newSocket);
-
-        newSocket.on('connect', () => {
-            setIsConnected(true);
-            newSocket.emit('join_user', currentUserId);
-        });
-
-        newSocket.on('disconnect', () => setIsConnected(false));
-
-        newSocket.on('receive_message', (message) => {
+        socketService.connect(currentUserId);
+        
+        const cleanupConn = socketService.on('connection_change', setIsConnected);
+        const cleanupMsg = socketService.on('receive_message', (message) => {
             const msgConvId = String(message.conversation?._id || message.conversation);
             
             // Update messages cache
@@ -118,7 +106,7 @@ export default function ChatPanel() {
             });
         });
 
-        newSocket.on('new_conversation', (conversation) => {
+        const cleanupConv = socketService.on('new_conversation', (conversation) => {
             queryClient.setQueryData(['conversations'], (old) => {
                 if (!old || !old.data) return { success: true, data: [conversation] };
                 if (old.data.some(c => c._id === conversation._id)) return old;
@@ -126,8 +114,12 @@ export default function ChatPanel() {
             });
         });
 
-        return () => newSocket.close();
-    }, [user?.id, user?._id, queryClient]);
+        return () => {
+            cleanupConn();
+            cleanupMsg();
+            cleanupConv();
+        };
+    }, [currentUserId, queryClient]);
 
     // Send Message Mutation
     const sendMessageMutation = useMutation({
@@ -171,15 +163,25 @@ export default function ChatPanel() {
                 return { success: true, data: [...currentData, optimisticMessage] };
             });
 
-            // Broadcast via socket immediately
-            if (socket) {
-                const participantIds = activeConversation.participants.map(p => p._id || p);
-                socket.emit('send_message', {
-                    conversationId: convId,
-                    message: optimisticMessage,
-                    participantIds
-                });
-            }
+            const participantIds = activeConversation.participants.map(p => p._id || p);
+            // Broadcast via socket immediately for ultra-fast sync
+            socketService.emit('send_message', {
+                conversationId: convId,
+                message: optimisticMessage,
+                participantIds
+            }, (ack) => {
+                if (ack?.success) {
+                    console.log('Mainframe Ack Received');
+                    // We could mark message as 'delivered' here
+                    queryClient.setQueryData(['messages', convId], (old) => {
+                        if (!old || !old.data) return old;
+                        return {
+                            ...old,
+                            data: old.data.map(m => m.tempId === tempId ? { ...m, status: 'delivered' } : m)
+                        };
+                    });
+                }
+            });
 
             return { previousMessages };
         },

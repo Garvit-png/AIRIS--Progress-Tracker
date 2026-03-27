@@ -199,7 +199,7 @@ io.on('connection', (socket) => {
     });
 
     // Handle sending a message
-    socket.on('send_message', (data) => {
+    socket.on('send_message', (data, callback) => {
         const { conversationId, message, participantIds } = data;
         
         // Broadcast to all participants in their private rooms
@@ -211,6 +211,11 @@ io.on('connection', (socket) => {
         } else {
             // Fallback to old behavior if participantIds not provided
             socket.to(conversationId).emit('receive_message', message);
+        }
+
+        // ACK for WhatsApp-level reliability
+        if (callback && typeof callback === 'function') {
+            callback({ success: true, timestamp: new Date(), msgId: message._id || message.tempId });
         }
     });
 

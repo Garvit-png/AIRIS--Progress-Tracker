@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, User, Users, MoreVertical, Paperclip, Smile, File, FileText, Download, X } from 'lucide-react';
+import { Send, User, Users, MoreVertical, Paperclip, Smile, File, FileText, Download, X, Check } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import { AuthService } from '../../services/authService';
 import config from '../../config';
@@ -261,9 +261,23 @@ export default function ChatWindow({ conversation, messages, onSendMessage, user
                                 {msg.text && <div>{msg.text}</div>}
                                 {msg.file && renderFileAttachment(msg.file)}
                             </div>
-                            <p className={`text-[8px] font-mono text-white/20 uppercase mt-1.5 ${isOwn ? 'mr-1' : 'ml-1'}`}>
-                                {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </p>
+                            <div className={`flex items-center gap-1.5 mt-1 ${isOwn ? 'justify-end mr-1' : 'ml-1'}`}>
+                                <p className="text-[8px] font-mono text-white/20 uppercase">
+                                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                                {isOwn && (
+                                    <div className="flex items-center">
+                                        {msg.status === 'sending' ? (
+                                            <div className="w-2 h-2 rounded-full border border-white/20 border-t-white/60 animate-spin" />
+                                        ) : (
+                                            <div className="flex -space-x-1">
+                                                <Check size={8} className={msg.status === 'delivered' ? 'text-emerald-400' : 'text-white/40'} />
+                                                {msg.status === 'delivered' && <Check size={8} className="text-emerald-400" />}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     );
                 })}
