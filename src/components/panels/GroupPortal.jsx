@@ -27,6 +27,7 @@ const GroupPortal = () => {
     // Only show blocking loader if we have NO cached data AND no groups in state
     const [loading, setLoading] = useState(!AuthService.cache.get('groups') && groups.length === 0);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [isLongSync, setIsLongSync] = useState(false);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('overview'); 
     
@@ -41,39 +42,51 @@ const GroupPortal = () => {
     const isAdmin = user?.isAdmin || ['president', 'general secretary', 'admin'].includes(user?.role?.toLowerCase());
 
     useEffect(() => {
+        let longSyncTimer;
+        
         const fetchAllData = async () => {
-            // PHASE 1: Groups (Highest Priority)
             const syncGroups = async () => {
                 setIsSyncing(true);
+                setError(null);
+                
+                // Set a timer to detect slow server response (Cold Start)
+                longSyncTimer = setTimeout(() => setIsLongSync(true), 3000);
+                
                 try {
                     const data = await AuthService.getGroups();
                     setGroups(data);
+                    setIsLongSync(false);
                 } catch (err) {
                     console.error('Group sync failed:', err);
-                    if (!groups.length) setError('Failed to retrieve project groups. Check connection.');
+                    if (!groups.length) {
+                        setError(err.message.includes('TIMEOUT') 
+                            ? 'The server is taking a while to wake up. Please wait or try again.' 
+                            : 'CONNECTION FAILED: Check your internet or server status.');
+                    }
                 } finally {
+                    clearTimeout(longSyncTimer);
                     setLoading(false);
                     setIsSyncing(false);
+                    setIsLongSync(false);
                 }
             };
 
-            // PHASE 2: Administrative Roster (Secondary - Background Only)
             const syncUsers = async () => {
                 if (!isAdmin) return;
                 try {
                     const data = await AuthService.getUsers();
                     setAllUsers(data);
                 } catch (err) {
-                    console.warn('User roster sync failed (background).', err);
+                    console.warn('User roster sync failed.', err);
                 }
             };
 
-            // Execute in order but don't let Phase 2 block Phase 1
             syncGroups();
             syncUsers();
         };
 
         fetchAllData();
+        return () => clearTimeout(longSyncTimer);
     }, [isAdmin]);
 
     // Manual refresh helper
@@ -501,7 +514,26 @@ const GroupPortal = () => {
     if (loading && groups.length === 0) {
         return (
             <div className="max-w-7xl mx-auto px-4 sm:px-6">
-                <div className="h-10 w-48 bg-white/5 rounded-xl mb-8 animate-pulse" />
+                <div className="flex items-center justify-between mb-8">
+                    <div className="h-10 w-48 bg-white/5 rounded-xl animate-pulse" />
+                    {isLongSync && (
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 px-4 py-2 bg-pink-500/10 border border-pink-500/20 rounded-full">
+                            <Clock size={12} className="text-pink-500 animate-spin-slow" />
+                            <span className="text-[10px] font-mono text-pink-500 font-bold uppercase tracking-widest">Establishing Uplink... (Server Waking Up)</span>
+                        </motion.div>
+                    )}
+                    {error && (
+                        <div className="flex items-center gap-4">
+                            <span className="text-[10px] font-mono text-white/30 uppercase">{error}</span>
+                            <button 
+                                onClick={() => window.location.reload()}
+                                className="px-4 py-2 bg-pink-500 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-pink-500/20"
+                            >
+                                Retry Connection
+                            </button>
+                        </div>
+                    )}
+                </div>
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                     {[1, 2, 3, 4].map(i => <GroupSkeleton key={i} />)}
                 </div>

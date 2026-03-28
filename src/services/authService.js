@@ -18,6 +18,26 @@ const safeJson = async (response) => {
     }
 };
 
+// Resilient fetch with timeout to prevent infinite hangs
+const fetchWithTimeout = async (url, options = {}, timeout = 10000) => {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+        clearTimeout(id);
+        return response;
+    } catch (error) {
+        clearTimeout(id);
+        if (error.name === 'AbortError') {
+            throw new Error('TIMEOUT: Connection took too long. Server might be waking up.');
+        }
+        throw error;
+    }
+};
+
 // Simple persistent cache for instant UI
 const cache = {
     get: (key) => {
@@ -262,9 +282,9 @@ export const AuthService = {
 
     getUsers: async () => {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${ADMIN_API_URL}/users`, {
+        const response = await fetchWithTimeout(`${ADMIN_API_URL}/users`, {
             headers: { 'Authorization': `Bearer ${token}` }
-        });
+        }, 12000); // 12s timeout for large user lists
         const data = await safeJson(response);
         if (data.success) {
             cache.set('users', data.data);
@@ -501,9 +521,9 @@ export const AuthService = {
     // Group Management
     getGroups: async () => {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${config.API_BASE_URL}/groups`, {
+        const response = await fetchWithTimeout(`${config.API_BASE_URL}/groups`, {
             headers: { 'Authorization': `Bearer ${token}` }
-        });
+        }, 10000); // 10s timeout
         const data = await safeJson(response);
         if (data.success) {
             cache.set('groups', data.data);
