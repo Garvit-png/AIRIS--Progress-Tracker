@@ -202,29 +202,62 @@ const GroupPortal = () => {
         const fetchRepoStats = async () => {
             if (!repoUrl) return;
             try {
-                const slug = repoUrl.replace('https://github.com/', '').split('/').slice(0, 2).join('/');
+                // Clean the URL to get the repo slug (owner/repo)
+                let slug = repoUrl.replace('https://github.com/', '');
+                if (slug.endsWith('.git')) slug = slug.slice(0, -4);
+                slug = slug.split('/').slice(0, 2).join('/');
                 if (!slug) return;
 
-                const response = await fetch(`https://api.github.com/repos/${slug}/stats/contributors`);
-                if (response.status === 202) return; // Still processing
+                // Concurrent fetching for Intelligence Streams
+                const [contribRes, repoRes, langRes] = await Promise.all([
+                    fetch(`https://api.github.com/repos/${slug}/stats/contributors`),
+                    fetch(`https://api.github.com/repos/${slug}`),
+                    fetch(`https://api.github.com/repos/${slug}/languages`)
+                ]);
+
+                // 202 status means GitHub is still computing stats
+                if (contribRes.status === 202) return;
                 
-                const data = await response.json();
+                const [contribData, repoData, langData] = await Promise.all([
+                    contribRes.json(),
+                    repoRes.json(),
+                    langRes.json()
+                ]);
                 
-                if (Array.isArray(data)) {
-                    const sorted = [...data].sort((a, b) => b.total - a.total);
+                if (Array.isArray(contribData)) {
+                    const sorted = [...contribData].sort((a, b) => b.total - a.total);
+                    
+                    // Process Language Profile (Top 3)
+                    const totalBytes = Object.values(langData).reduce((a, b) => a + b, 0);
+                    const languages = Object.entries(langData)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 3)
+                        .map(([name, bytes]) => ({
+                            name,
+                            percent: Math.round((bytes / totalBytes) * 100)
+                        }));
+
                     const newStats = {
-                        totalCommits: data.reduce((acc, curr) => acc + curr.total, 0),
+                        totalCommits: contribData.reduce((acc, curr) => acc + curr.total, 0),
                         contributors: sorted.map(c => ({
                             login: c.author.login,
                             avatar: c.author.avatar_url,
                             commits: c.total
-                        }))
+                        })),
+                        profile: {
+                            stars: repoData.stargazers_count,
+                            forks: repoData.forks_count,
+                            openIssues: repoData.open_issues_count,
+                            lastUpdated: repoData.pushed_at,
+                            primaryLanguage: repoData.language,
+                            languages
+                        }
                     };
                     setStats(newStats);
                     AuthService.cache.set(`github_${repoUrl}`, newStats);
                 }
             } catch (err) {
-                console.error('GitHub API error:', err);
+                console.error('GitHub Intelligence Error:', err);
             } finally {
                 setRepoLoading(false);
             }
@@ -235,20 +268,50 @@ const GroupPortal = () => {
 
         return (
             <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
+                <div className="flex flex-col gap-4">
+                    {/* Primary Intelligence Row */}
+                    <div className="flex flex-wrap items-center gap-3">
                         <div className="flex items-center gap-1.5 px-3 py-1 bg-pink-500/10 border border-pink-500/20 rounded-full">
                             <Github size={12} className="text-pink-500" />
-                            <span className="text-[10px] font-mono font-bold text-pink-400">{stats.totalCommits} TOTAL COMMITS</span>
+                            <span className="text-[10px] font-mono font-bold text-pink-400 uppercase tracking-tighter">{stats.totalCommits} COMMITS</span>
                         </div>
-                        <button 
-                            onClick={(e) => { e.stopPropagation(); setShowRoster(!showRoster); }}
-                            className="text-[10px] font-mono text-white/40 hover:text-white transition-all uppercase tracking-widest flex items-center gap-1"
-                        >
-                            {showRoster ? 'Hide Full Roster' : 'Check Contribution Detail'}
-                            <ChevronRight size={12} className={`transition-transform ${showRoster ? 'rotate-90' : ''}`} />
-                        </button>
+                        
+                        {stats.profile && (
+                            <>
+                                <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 rounded-full">
+                                    <Clock size={10} className="text-white/40" />
+                                    <span className="text-[9px] font-mono text-white/60 uppercase">
+                                        PULSE: {new Date(stats.profile.lastUpdated).toLocaleDateString()}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-3 text-[10px] font-mono text-white/30 ml-auto">
+                                    <span className="flex items-center gap-1"><CheckCircle2 size={10} className="text-green-500/50" /> {stats.profile.openIssues} ISSUES</span>
+                                    <span className="flex items-center gap-1"><Users size={10} /> {stats.profile.contributors.length} CONTRIBUTORS</span>
+                                </div>
+                            </>
+                        )}
                     </div>
+
+                    {/* Tech Stack Row */}
+                    {stats.profile?.languages && (
+                        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                            <span className="text-[9px] font-mono text-white/20 uppercase tracking-widest mr-1">Stack:</span>
+                            {stats.profile.languages.map(lang => (
+                                <div key={lang.name} className="flex items-center gap-1.5 px-2 py-0.5 bg-white/[0.03] border border-white/5 rounded-md shrink-0">
+                                    <span className="text-[9px] font-bold text-white/80">{lang.name.toUpperCase()}</span>
+                                    <span className="text-[8px] font-mono text-pink-500/60">{lang.percent}%</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); setShowRoster(!showRoster); }}
+                        className="text-[10px] font-mono text-white/40 hover:text-white transition-all uppercase tracking-widest flex items-center gap-1 w-fit group/btn"
+                    >
+                        {showRoster ? 'Collapse Intelligence' : 'Examine Contributor Roster'}
+                        <ChevronRight size={12} className={`transition-transform duration-300 ${showRoster ? 'rotate-90' : 'group-hover/btn:translate-x-1'}`} />
+                    </button>
                 </div>
 
                 <AnimatePresence>
