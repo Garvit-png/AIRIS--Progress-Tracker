@@ -18,7 +18,23 @@ const safeJson = async (response) => {
     }
 };
 
+// Simple persistent cache for instant UI
+const cache = {
+    get: (key) => {
+        try {
+            const data = localStorage.getItem(`cache_${key}`);
+            return data ? JSON.parse(data) : null;
+        } catch { return null; }
+    },
+    set: (key, value) => {
+        try {
+            localStorage.setItem(`cache_${key}`, JSON.stringify(value));
+        } catch (e) { console.warn('Cache write failed', e); }
+    }
+};
+
 export const AuthService = {
+    cache, // Expose cache for direct use if needed
     // Check if email is approved via backend (for now using the existing mock logic if backend doesn't have it yet, 
     // but the request was to integrate with the new auth system)
     isEmailApproved: async (email) => {
@@ -250,6 +266,10 @@ export const AuthService = {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await safeJson(response);
+        if (data.success) {
+            cache.set('users', data.data);
+            return data.data;
+        }
         return data.success ? data.data : [];
     },
 
@@ -485,6 +505,10 @@ export const AuthService = {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await safeJson(response);
+        if (data.success) {
+            cache.set('groups', data.data);
+            return data.data;
+        }
         if (!data.success) throw new Error(data.message);
         return data.data;
     },
