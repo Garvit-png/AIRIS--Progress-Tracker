@@ -77,7 +77,7 @@ exports.requireApproved = (req, res, next) => {
 exports.admin = (req, res, next) => {
     const isAdmin = req.user && (
         req.user.isAdmin || 
-        ['president', 'general secretary', 'admin'].includes(req.user.role?.toLowerCase())
+        ['president', 'general secretary', 'admin', 'gs'].includes(req.user.role?.toLowerCase())
     );
 
     if (isAdmin) {
