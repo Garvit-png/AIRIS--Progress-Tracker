@@ -119,14 +119,14 @@ app.use((req, res, next) => {
 });
 
 // Mount routers
-app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/tasks', taskRoutes);
-app.use('/api/chat', chatRoutes);
-app.use('/api/groups', groupRoutes);
+app.use(['/api/auth', '/auth'], authRoutes);
+app.use(['/api/admin', '/admin'], adminRoutes);
+app.use(['/api/tasks', '/tasks'], taskRoutes);
+app.use(['/api/chat', '/chat'], chatRoutes);
+app.use(['/api/groups', '/groups'], groupRoutes);
 
 // Debug endpoint for deployment
-app.get('/api/debug/status', (req, res) => {
+app.get(['/api/debug/status', '/debug/status'], (req, res) => {
     res.json({
         status: 'online',
         env: {
@@ -138,7 +138,26 @@ app.get('/api/debug/status', (req, res) => {
             DATA_DIR: process.env.DATA_DIR || 'default'
         },
         cwd: process.cwd(),
-        dir: __dirname
+        dir: __dirname,
+        request: {
+            url: req.url,
+            path: req.path,
+            originalUrl: req.originalUrl
+        }
+    });
+});
+
+// Diagnostic Pulse for Vercel debugging
+app.get(['/api/debug/pulse', '/debug/pulse'], (req, res) => {
+    res.json({
+        pulse: 'active',
+        timestamp: new Date().toISOString(),
+        request: {
+            url: req.url,
+            path: req.path,
+            originalUrl: req.originalUrl,
+            headers: req.headers
+        }
     });
 });
 
