@@ -212,104 +212,54 @@ if (process.env.NODE_ENV === 'production' && hasFrontend) {
     });
 }
 
+// GLOBAL ERROR HANDLER
 app.use((err, req, res, next) => {
-    console.error('Unhandled Error:', err);
-    res.status(500).json({
-        success: false,
-        message: 'INTERNAL SERVER ERROR',
-        error: err.message,
-        stack: process.env.NODE_ENV === 'production' ? null : err.stack
-    });
+    console.error('SERVER ERROR:', err);
+    res.status(500).json({ success: false, message: err.message });
 });
 
-const httpServer = http.createServer(app);
-const io = new Server(httpServer, {
-    cors: {
-        origin: allowedOrigins,
-        credentials: true
-    }
-});
-
-// Socket.io Real-time Chat Logic
-io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
-
-    // Join an individual user room (for receiving messages across any conversation)
-    socket.on('join_user', (userId) => {
-        if (!userId) return;
-        const roomId = `user_${userId}`;
-        socket.join(roomId);
-        console.log(`[SIGNAL] Client ${socket.id} joined secure room: ${roomId}`);
-    });
-
-    // Handle sending a message
-    socket.on('send_message', (data, callback) => {
-        const { conversationId, message, participantIds } = data;
-        
-        // Broadcast to all participants in their private rooms
-        if (participantIds && Array.isArray(participantIds)) {
-            participantIds.forEach(id => {
-                if (!id) return;
-                const roomId = `user_${id.toString()}`;
-                io.to(roomId).emit('receive_message', message);
-            });
-        } else {
-            // Fallback to old behavior if participantIds not provided
-            socket.to(conversationId).emit('receive_message', message);
-        }
-
-        // ACK for WhatsApp-level reliability
-        if (callback && typeof callback === 'function') {
-            callback({ success: true, timestamp: new Date(), msgId: message._id || message.tempId });
+// SERVERLESS SHIELD
+if (require.main === module) {
+    const httpServer = http.createServer(app);
+    const io_server = new Server(httpServer, {
+        cors: {
+            origin: function (origin, callback) {
+                if (!origin) return callback(null, true);
+                const isVercel = origin.endsWith('.vercel.app');
+                const isAllowed = allowedOrigins.indexOf(origin) !== -1 || isVercel;
+                if (isAllowed) return callback(null, true);
+                return callback(new Error('CORS blocked'), false);
+            },
+            credentials: true
         }
     });
 
-    // Handle typing status (still per-conversation is fine)
-    socket.on('typing', (data) => {
-        const { conversationId, userId, isTyping, participantIds } = data;
-        if (participantIds && Array.isArray(participantIds)) {
-            participantIds.forEach(id => {
-                if (id && id.toString() !== userId?.toString()) {
-                    io.to(`user_${id.toString()}`).emit('user_typing', { conversationId, userId, isTyping });
-                }
-            });
-        }
+    // In-memory socket logic (only for persistent server)
+    io_server.on('connection', (socket) => {
+        socket.on('join_user', (userId) => {
+            socket.join(`user_${userId}`);
+        });
+        socket.on('send_message', (data) => {
+            const { participantIds, message } = data;
+            if (participantIds) {
+                participantIds.forEach(id => {
+                    io_server.to(`user_${id}`).emit('receive_message', message);
+                });
+            }
+        });
+        socket.on('disconnect', () => console.log('User disconnected'));
     });
 
-    // Handle read receipt
-    socket.on('mark_read', (data) => {
-        const { conversationId, userId, participantIds } = data;
-        if (participantIds && Array.isArray(participantIds)) {
-            participantIds.forEach(id => {
-                if (id && id.toString() !== userId?.toString()) {
-                    io.to(`user_${id.toString()}`).emit('message_read', { conversationId, userId });
-                }
-            });
-        }
+    // Use specific io for requests in persistent mode
+    app.use((req, res, next) => {
+        req.io = io_server;
+        next();
     });
 
-    socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
+    const PORT = process.env.PORT || 5002;
+    connectDB().then(() => {
+        httpServer.listen(PORT, () => console.log(`SYSTEM LIVE ON PORT ${PORT}`));
     });
-});
+}
 
 module.exports = app;
-
-if (require.main === module) {
-    const PORT = process.env.PORT || 5002;
-
-    // Connect to DB once on startup to avoid buffering issues
-    connectDB()
-        .then(() => {
-            httpServer.listen(PORT, () => {
-                console.log(`Server running on port ${PORT}`);
-            });
-        })
-        .catch(err => {
-            console.error('CRITICAL: Failed to connect to MongoDB on startup:', err.message);
-            // Still start the server so we can return error responses to the client
-            httpServer.listen(PORT, () => {
-                console.log(`Server running on port ${PORT} (DB DISCONNECTED)`);
-            });
-        });
-}

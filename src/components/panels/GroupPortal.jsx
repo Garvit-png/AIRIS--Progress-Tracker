@@ -254,6 +254,7 @@ const GroupPortal = () => {
                         }
                     };
                     setStats(newStats);
+                    setShowRoster(true); // Auto-expand for Member Awareness
                     AuthService.cache.set(`github_${repoUrl}`, newStats);
                 }
             } catch (err) {
