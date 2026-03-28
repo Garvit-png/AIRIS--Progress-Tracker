@@ -19,17 +19,20 @@ import { AuthService } from '../../services/authService';
 
 const GroupPortal = () => {
     const [user, setUser] = useState(AuthService.getSession());
-    const [groups, setGroups] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [activeTab, setActiveTab] = useState('overview'); // overview, management (admin only)
     
-    // Create Group Modal
+    // INSTANT LOAD: Initialize from cache if available
+    const [groups, setGroups] = useState(AuthService.cache.get('groups') || []);
+    const [allUsers, setAllUsers] = useState(AuthService.cache.get('users') || []);
+    
+    // Only show blocking loader if we have NO cached data AND no groups in state
+    const [loading, setLoading] = useState(!AuthService.cache.get('groups') && groups.length === 0);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [error, setError] = useState(null);
+    const [activeTab, setActiveTab] = useState('overview'); 
+    
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [newGroup, setNewGroup] = useState({ name: '', description: '', repoUrl: '' });
     
-    // Member Management
-    const [allUsers, setAllUsers] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isAssignTaskModalOpen, setIsAssignTaskModalOpen] = useState(false);
     const [selectedGroup, setSelectedGroup] = useState(null);
@@ -38,30 +41,40 @@ const GroupPortal = () => {
     const isAdmin = user?.isAdmin || ['president', 'general secretary', 'admin'].includes(user?.role?.toLowerCase());
 
     useEffect(() => {
-        fetchGroups();
-        if (isAdmin) {
-            fetchAllUsers();
-        }
-    }, []);
+        const syncData = async () => {
+            setIsSyncing(true);
+            try {
+                // Parallelize all data fetching
+                const fetchPromises = [AuthService.getGroups()];
+                if (isAdmin) fetchPromises.push(AuthService.getUsers());
+                
+                const [groupsData, usersData] = await Promise.all(fetchPromises);
+                
+                setGroups(groupsData);
+                if (usersData) setAllUsers(usersData);
+            } catch (err) {
+                console.error('Background sync failed:', err);
+                // If it's our first load and it fails, show error
+                if (!groups.length) setError(err.message);
+            } finally {
+                setLoading(false);
+                setIsSyncing(false);
+            }
+        };
 
-    const fetchGroups = async () => {
-        setLoading(true);
+        syncData();
+    }, [isAdmin]);
+
+    // Manual refresh helper
+    const handleRefresh = async () => {
+        setIsSyncing(true);
         try {
             const data = await AuthService.getGroups();
             setGroups(data);
         } catch (err) {
             setError(err.message);
         } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchAllUsers = async () => {
-        try {
-            const data = await AuthService.getUsers();
-            setAllUsers(data);
-        } catch (err) {
-            console.error('Failed to fetch users:', err);
+            setIsSyncing(false);
         }
     };
 
@@ -125,8 +138,9 @@ const GroupPortal = () => {
     };
 
     const GitHubStats = ({ repoUrl }) => {
-        const [stats, setStats] = useState(null);
-        const [repoLoading, setRepoLoading] = useState(false);
+        // Use cached stats if available for instant render
+        const [stats, setStats] = useState(AuthService.cache.get(`github_${repoUrl}`));
+        const [repoLoading, setRepoLoading] = useState(!stats);
 
         useEffect(() => {
             if (repoUrl) fetchRepoStats();
@@ -134,25 +148,23 @@ const GroupPortal = () => {
 
         const fetchRepoStats = async () => {
             if (!repoUrl) return;
-            setRepoLoading(true);
             try {
-                // Example: Extracts 'owner/repo' from 'https://github.com/owner/repo'
                 const slug = repoUrl.replace('https://github.com/', '').split('/').slice(0, 2).join('/');
                 if (!slug) return;
 
                 const response = await fetch(`https://api.github.com/repos/${slug}/stats/contributors`);
-                if (response.status === 202) {
-                     // GitHub is recalculating, try again in a few seconds or just show empty
-                     return;
-                }
+                if (response.status === 202) return; // Still processing
+                
                 const data = await response.json();
                 
                 if (Array.isArray(data)) {
                     const top = data.sort((a, b) => b.total - a.total)[0];
-                    setStats({
+                    const newStats = {
                         totalCommits: data.reduce((acc, curr) => acc + curr.total, 0),
                         topContributor: top?.author?.login || 'N/A'
-                    });
+                    };
+                    setStats(newStats);
+                    AuthService.cache.set(`github_${repoUrl}`, newStats);
                 }
             } catch (err) {
                 console.error('GitHub API error:', err);
@@ -161,11 +173,12 @@ const GroupPortal = () => {
             }
         };
 
-        if (repoLoading) return <div className="animate-pulse h-4 w-20 bg-white/5 rounded" />;
+        if (repoLoading && !stats) return <div className="animate-pulse h-4 w-20 bg-white/5 rounded" />;
         if (!stats) return <span className="text-[10px] text-white/20">NO DATA</span>;
 
         return (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 relative">
+                {repoLoading && <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse" title="Refreshing stats..." />}
                 <div className="flex items-center gap-1.5">
                     <Github size={12} className="text-white/40" />
                     <span className="text-[10px] font-mono font-bold text-pink-400">{stats.totalCommits} COMMITS</span>
@@ -463,23 +476,47 @@ const GroupPortal = () => {
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
             {isAdmin && (
-                <div className="flex gap-2 mb-8 p-1.5 bg-pink-500/5 rounded-2xl w-fit border border-pink-500/20 backdrop-blur-xl">
-                    <button 
-                        onClick={() => setActiveTab('overview')}
-                        className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
-                            activeTab === 'overview' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/75 hover:text-white/90'
-                        }`}
-                    >
-                        My Groups
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('management')}
-                        className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
-                            activeTab === 'management' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/75 hover:text-white/90'
-                        }`}
-                    >
-                        Admin Command
-                    </button>
+                <div className="flex items-center justify-between mb-8 overflow-x-auto custom-scrollbar pb-2">
+                    <div className="flex gap-2 p-1.5 bg-pink-500/5 rounded-2xl w-fit border border-pink-500/20 backdrop-blur-xl shrink-0">
+                        <button 
+                            onClick={() => setActiveTab('overview')}
+                            className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
+                                activeTab === 'overview' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/75 hover:text-white/90'
+                            }`}
+                        >
+                            My Groups
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('management')}
+                            className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
+                                activeTab === 'management' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/75 hover:text-white/90'
+                            }`}
+                        >
+                            Admin Command
+                        </button>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                        {isSyncing && (
+                            <div className="flex items-center gap-2 px-3 py-1 bg-pink-500/10 border border-pink-500/20 rounded-full">
+                                <div className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse" />
+                                <span className="text-[9px] font-mono text-pink-500 font-bold uppercase tracking-widest">Live Sync</span>
+                            </div>
+                        )}
+                        <button 
+                            onClick={handleRefresh}
+                            className="p-2 border border-white/10 rounded-xl hover:bg-white/5 text-white/40 transition-all"
+                        >
+                            <Clock size={14} className={isSyncing ? 'animate-spin-slow' : ''} />
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {!isAdmin && isSyncing && (
+                <div className="fixed top-8 right-8 z-50 flex items-center gap-2 px-4 py-2 bg-[#0a0a0a] border border-pink-500/20 rounded-full shadow-2xl">
+                    <div className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" />
+                    <span className="text-[9px] font-mono text-pink-500/80 font-bold uppercase tracking-widest">Sychronizing Registry...</span>
                 </div>
             )}
 
