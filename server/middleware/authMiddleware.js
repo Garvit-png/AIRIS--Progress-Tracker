@@ -72,3 +72,20 @@ exports.requireApproved = (req, res, next) => {
         status: req.user ? req.user.status : 'unknown'
     });
 };
+
+// Middleware to restrict access to admins (President/GS/Admin) only
+exports.admin = (req, res, next) => {
+    const isAdmin = req.user && (
+        req.user.isAdmin || 
+        ['president', 'general secretary', 'admin'].includes(req.user.role?.toLowerCase())
+    );
+
+    if (isAdmin) {
+        return next();
+    }
+    
+    return res.status(403).json({
+        success: false,
+        message: 'Access denied: Administrative privileges required'
+    });
+};
