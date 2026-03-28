@@ -12,6 +12,7 @@ const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const groupRoutes = require('./routes/groupRoutes');
 const http = require('http');
 const { Server } = require('socket.io');
 
@@ -122,7 +123,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/chat', chatRoutes);
-app.use('/api/groups', require('./routes/groupRoutes'));
+app.use('/api/groups', groupRoutes);
 
 // Debug endpoint for deployment
 app.get('/api/debug/status', (req, res) => {
@@ -170,7 +171,6 @@ if (process.env.NODE_ENV === 'production' && hasFrontend) {
     });
 }
 
-// Global Error Handler
 app.use((err, req, res, next) => {
     console.error('Unhandled Error:', err);
     res.status(500).json({

@@ -9,11 +9,11 @@ const safeJson = async (response) => {
     try {
         return JSON.parse(text);
     } catch (e) {
-        console.error('SERVER RETURNED NON-JSON RESPONSE:', text.substring(0, 200));
+        console.error('SERVER RETURNED NON-JSON RESPONSE:', text.substring(0, 500));
         return { 
             success: false, 
-            message: 'SERVER COMMUNICATION FAILED',
-            debug: text.substring(0, 100)
+            message: 'SERVER COMMUNICATION FAILED (PROD_SYNC)',
+            debug: text.substring(0, 500)
         };
     }
 };
