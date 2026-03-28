@@ -39,6 +39,14 @@ const taskSchema = new mongoose.Schema({
         enum: ['pending', 'in-progress', 'completed', 'verified'],
         default: 'pending'
     },
+    isPriority: {
+        type: Boolean,
+        default: false
+    },
+    targetGroup: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Group'
+    },
     createdAt: {
         type: Date,
         default: Date.now

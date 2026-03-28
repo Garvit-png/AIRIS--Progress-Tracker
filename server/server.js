@@ -122,6 +122,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/groups', require('./routes/groupRoutes'));
 
 // Debug endpoint for deployment
 app.get('/api/debug/status', (req, res) => {

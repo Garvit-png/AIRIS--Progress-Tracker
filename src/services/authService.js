@@ -478,6 +478,73 @@ export const AuthService = {
         return data;
     },
 
+    // Group Management
+    getGroups: async () => {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${config.API_BASE_URL}/groups`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await safeJson(response);
+        if (!data.success) throw new Error(data.message);
+        return data.data;
+    },
+
+    createGroup: async (groupData) => {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${config.API_BASE_URL}/groups`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify(groupData)
+        });
+        const data = await safeJson(response);
+        if (!data.success) throw new Error(data.message);
+        return data.data;
+    },
+
+    updateGroup: async (groupId, groupData) => {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${config.API_BASE_URL}/groups/${groupId}`, {
+            method: 'PATCH',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify(groupData)
+        });
+        const data = await safeJson(response);
+        if (!data.success) throw new Error(data.message);
+        return data.data;
+    },
+
+    deleteGroup: async (groupId) => {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${config.API_BASE_URL}/groups/${groupId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await safeJson(response);
+        if (!data.success) throw new Error(data.message);
+        return true;
+    },
+
+    assignGroupTask: async (groupId, taskData) => {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${config.API_BASE_URL}/groups/${groupId}/tasks`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify(taskData)
+        });
+        const data = await safeJson(response);
+        if (!data.success) throw new Error(data.message);
+        return data.message;
+    },
+
     /**
      * Helper to get full URL for uploaded files
      */
@@ -504,10 +571,6 @@ export const AuthService = {
         return `${baseUrl}${cleanPath}`;
     }
 };
-
-if (typeof window !== 'undefined') {
-    window.AuthService = AuthService;
-}
 
 if (typeof window !== 'undefined') {
     window.AuthService = AuthService;
