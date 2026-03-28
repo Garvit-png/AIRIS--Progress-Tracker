@@ -535,14 +535,14 @@ export const AuthService = {
 
     createGroup: async (groupData) => {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${config.API_BASE_URL}/groups`, {
+        const response = await fetchWithTimeout(`${config.API_BASE_URL}/groups`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}` 
             },
             body: JSON.stringify(groupData)
-        });
+        }, 12000); // 12s timeout for creation
         const data = await safeJson(response);
         if (!data.success) throw new Error(data.message);
         return data.data;
@@ -550,14 +550,14 @@ export const AuthService = {
 
     updateGroup: async (groupId, groupData) => {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${config.API_BASE_URL}/groups/${groupId}`, {
+        const response = await fetchWithTimeout(`${config.API_BASE_URL}/groups/${groupId}`, {
             method: 'PATCH',
             headers: { 
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}` 
             },
             body: JSON.stringify(groupData)
-        });
+        }, 10000);
         const data = await safeJson(response);
         if (!data.success) throw new Error(data.message);
         return data.data;
@@ -565,10 +565,10 @@ export const AuthService = {
 
     deleteGroup: async (groupId) => {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${config.API_BASE_URL}/groups/${groupId}`, {
+        const response = await fetchWithTimeout(`${config.API_BASE_URL}/groups/${groupId}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
-        });
+        }, 10000);
         const data = await safeJson(response);
         if (!data.success) throw new Error(data.message);
         return true;
