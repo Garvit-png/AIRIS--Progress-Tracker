@@ -13,6 +13,14 @@ const adminRoutes = require('./routes/adminRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const groupRoutes = require('./routes/groupRoutes');
+const { 
+    createGroup, 
+    getGroups, 
+    updateGroup, 
+    deleteGroup, 
+    assignGroupTask 
+} = require('./controllers/groupController');
+const { protect, admin } = require('./middleware/authMiddleware');
 const http = require('http');
 const { Server } = require('socket.io');
 
@@ -103,6 +111,13 @@ app.use(cors({
     },
     credentials: true
 }));
+
+// FORCE JSON HEADERS FOR ALL API CALLS IN PRODUCTION
+app.use(['/api', '/groups', '/auth', '/tasks', '/admin'], (req, res, next) => {
+    res.setHeader('Content-Type', 'application/json');
+    next();
+});
+
 app.use(express.json({ limit: '50mb' }));
 app.use(fileUpload());
 
@@ -123,7 +138,14 @@ app.use(['/api/auth', '/auth'], authRoutes);
 app.use(['/api/admin', '/admin'], adminRoutes);
 app.use(['/api/tasks', '/tasks'], taskRoutes);
 app.use(['/api/chat', '/chat'], chatRoutes);
-app.use(['/api/groups', '/groups'], groupRoutes);
+// INLINED GROUP ROUTES FOR PRODUCTION STABILITY
+const groupRouter = express.Router();
+groupRouter.use(protect);
+groupRouter.route('/').get(getGroups).post(admin, createGroup);
+groupRouter.route('/:id').patch(admin, updateGroup).delete(admin, deleteGroup);
+groupRouter.post('/:id/tasks', admin, assignGroupTask);
+
+app.use(['/api/groups', '/groups'], groupRouter);
 
 // Debug endpoint for deployment
 app.get(['/api/debug/status', '/debug/status'], (req, res) => {

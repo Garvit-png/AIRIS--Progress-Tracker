@@ -518,34 +518,65 @@ export const AuthService = {
         return data;
     },
 
-    // Group Management
-    getGroups: async () => {
+    // Group Management (with Resilience Layer)
+    getGroups: async (retryCount = 0) => {
         const token = localStorage.getItem('token');
-        const response = await fetchWithTimeout(`${config.API_BASE_URL}/groups`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        }, 10000); // 10s timeout
-        const data = await safeJson(response);
-        if (data.success) {
-            cache.set('groups', data.data);
+        try {
+            const response = await fetchWithTimeout(`${config.API_BASE_URL}/groups`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }, 10000); // 10s timeout
+            const data = await safeJson(response);
+            if (data.success) {
+                cache.set('groups', data.data);
+                return data.data;
+            }
+            // If server returned non-success (e.g. 503 or HTML error), retry once
+            if (!data.success && retryCount < 1) {
+                console.log('Sync stall detected. Initiating Layer-2 retry...');
+                await new Promise(r => setTimeout(r, 2000));
+                return AuthService.getGroups(1);
+            }
+            if (!data.success) throw new Error(data.message);
             return data.data;
+        } catch (err) {
+            if (retryCount < 1) {
+                console.log('Network stall detected. Initiating Layer-2 retry...');
+                await new Promise(r => setTimeout(r, 2000));
+                return AuthService.getGroups(1);
+            }
+            throw err;
         }
-        if (!data.success) throw new Error(data.message);
-        return data.data;
     },
 
-    createGroup: async (groupData) => {
+    createGroup: async (groupData, retryCount = 0) => {
         const token = localStorage.getItem('token');
-        const response = await fetchWithTimeout(`${config.API_BASE_URL}/groups`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` 
-            },
-            body: JSON.stringify(groupData)
-        }, 12000); // 12s timeout for creation
-        const data = await safeJson(response);
-        if (!data.success) throw new Error(data.message);
-        return data.data;
+        try {
+            const response = await fetchWithTimeout(`${config.API_BASE_URL}/groups`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify(groupData)
+            }, 12000); // 12s timeout for creation
+            const data = await safeJson(response);
+            
+            // If server returned non-success (e.g. 504 HTML), retry once
+            if (!data.success && retryCount < 1) {
+                console.log('Registry creation stall detected. Re-attempting handshake...');
+                await new Promise(r => setTimeout(r, 2000));
+                return AuthService.createGroup(groupData, 1);
+            }
+            if (!data.success) throw new Error(data.message);
+            return data.data;
+        } catch (err) {
+            if (retryCount < 1) {
+                console.log('Registry creation stall detected. Re-attempting handshake...');
+                await new Promise(r => setTimeout(r, 2000));
+                return AuthService.createGroup(groupData, 1);
+            }
+            throw err;
+        }
     },
 
     updateGroup: async (groupId, groupData) => {
