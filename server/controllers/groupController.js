@@ -37,9 +37,9 @@ exports.getGroups = async (req, res) => {
         
         // If admin, get all. If not, get only groups where user is a member.
         if (req.user.isAdmin || req.user.role?.toLowerCase() === 'admin' || req.user.role?.toLowerCase() === 'president' || req.user.role?.toLowerCase() === 'general secretary') {
-            query = Group.find().populate('members', 'name email profilePicture');
+            query = Group.find().populate('members', 'name email profilePicture').lean();
         } else {
-            query = Group.find({ members: req.user.id }).populate('members', 'name email profilePicture');
+            query = Group.find({ members: req.user.id }).populate('members', 'name email profilePicture').lean();
         }
 
         const groups = await query;

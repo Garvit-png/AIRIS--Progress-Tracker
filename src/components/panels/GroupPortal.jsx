@@ -41,28 +41,39 @@ const GroupPortal = () => {
     const isAdmin = user?.isAdmin || ['president', 'general secretary', 'admin'].includes(user?.role?.toLowerCase());
 
     useEffect(() => {
-        const syncData = async () => {
-            setIsSyncing(true);
-            try {
-                // Parallelize all data fetching
-                const fetchPromises = [AuthService.getGroups()];
-                if (isAdmin) fetchPromises.push(AuthService.getUsers());
-                
-                const [groupsData, usersData] = await Promise.all(fetchPromises);
-                
-                setGroups(groupsData);
-                if (usersData) setAllUsers(usersData);
-            } catch (err) {
-                console.error('Background sync failed:', err);
-                // If it's our first load and it fails, show error
-                if (!groups.length) setError(err.message);
-            } finally {
-                setLoading(false);
-                setIsSyncing(false);
-            }
+        const fetchAllData = async () => {
+            // PHASE 1: Groups (Highest Priority)
+            const syncGroups = async () => {
+                setIsSyncing(true);
+                try {
+                    const data = await AuthService.getGroups();
+                    setGroups(data);
+                } catch (err) {
+                    console.error('Group sync failed:', err);
+                    if (!groups.length) setError('Failed to retrieve project groups. Check connection.');
+                } finally {
+                    setLoading(false);
+                    setIsSyncing(false);
+                }
+            };
+
+            // PHASE 2: Administrative Roster (Secondary - Background Only)
+            const syncUsers = async () => {
+                if (!isAdmin) return;
+                try {
+                    const data = await AuthService.getUsers();
+                    setAllUsers(data);
+                } catch (err) {
+                    console.warn('User roster sync failed (background).', err);
+                }
+            };
+
+            // Execute in order but don't let Phase 2 block Phase 1
+            syncGroups();
+            syncUsers();
         };
 
-        syncData();
+        fetchAllData();
     }, [isAdmin]);
 
     // Manual refresh helper
@@ -464,11 +475,36 @@ const GroupPortal = () => {
         </div>
     );
 
-    if (loading) {
+    const GroupSkeleton = () => (
+        <div className="bg-white/[0.03] border border-white/5 rounded-2xl overflow-hidden animate-pulse">
+            <div className="p-6 space-y-4">
+                <div className="flex justify-between items-start">
+                    <div className="space-y-2 flex-1">
+                        <div className="h-4 bg-white/5 rounded w-1/3" />
+                        <div className="h-3 bg-white/5 rounded w-1/2" />
+                    </div>
+                </div>
+                <div className="py-3 border-y border-white/5 space-y-2">
+                    <div className="h-2 bg-white/5 rounded w-1/4" />
+                    <div className="h-4 bg-white/5 rounded w-2/3" />
+                </div>
+                <div className="space-y-3">
+                    <div className="h-2 bg-white/5 rounded w-1/5" />
+                    <div className="flex gap-2">
+                        {[1, 2, 3].map(i => <div key={i} className="w-8 h-8 rounded-lg bg-white/5" />)}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    if (loading && groups.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 gap-4">
-                <div className="w-12 h-12 border-2 border-pink-500/20 border-t-pink-500 rounded-full animate-spin" />
-                <p className="text-[10px] font-mono text-white/40 uppercase tracking-widest animate-pulse">Syncing Group Data...</p>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                <div className="h-10 w-48 bg-white/5 rounded-xl mb-8 animate-pulse" />
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    {[1, 2, 3, 4].map(i => <GroupSkeleton key={i} />)}
+                </div>
             </div>
         );
     }
