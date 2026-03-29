@@ -56,4 +56,5 @@ const taskSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-module.exports = mongoose.model('Task', taskSchema);
+const Task = mongoose.models.Task || mongoose.model('Task', taskSchema);
+module.exports = Task;

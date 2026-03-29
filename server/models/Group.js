@@ -33,4 +33,4 @@ const groupSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-module.exports = mongoose.model('Group', groupSchema);
+module.exports = mongoose.models.Group || mongoose.model('Group', groupSchema);

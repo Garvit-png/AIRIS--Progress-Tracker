@@ -28,39 +28,10 @@ const connectDB = async () => {
 };
 
 // 3. Models Inlining (Prevents "Model Not Found" during bundling)
-const UserSchema = new mongoose.Schema({
-    name: String,
-    email: { type: String, unique: true },
-    password: { type: String, select: false },
-    role: { type: String, default: 'Member' },
-    isAdmin: { type: Boolean, default: false },
-    status: { type: String, default: 'pending' },
-    profilePicture: String
-}, { timestamps: true });
-
-const GroupSchema = new mongoose.Schema({
-    name: { type: String, unique: true, required: true },
-    description: String,
-    repoUrl: String,
-    members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    lead: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
-}, { timestamps: true });
-
-const TaskSchema = new mongoose.Schema({
-    senderName: String,
-    senderEmail: String,
-    targetEmail: String,
-    title: String,
-    description: String,
-    deadline: Date,
-    status: { type: String, default: 'pending' },
-    isPriority: { type: Boolean, default: false },
-    targetGroup: { type: mongoose.Schema.Types.ObjectId, ref: 'Group' }
-}, { timestamps: true });
-
-const User = mongoose.models.User || mongoose.model('User', UserSchema);
-const Group = mongoose.models.Group || mongoose.model('Group', GroupSchema);
-const Task = mongoose.models.Task || mongoose.model('Task', TaskSchema);
+// 3. Models Setup (Serverless-Safe)
+const User = require('../server/models/User');
+const Group = require('../server/models/Group');
+const Task = require('../server/models/Task');
 
 // 4. Security Middleware
 const protect = async (req, res, next) => {
