@@ -6,12 +6,12 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const path = require('path');
+const { OAuth2Client } = require('google-auth-library');
 
 // 1. Initial Configuration
 dotenv.config();
 const app = express();
-
-// Absolute Path Fallbacks
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const distPath = path.join(__dirname, '../dist');
 
 // 2. Monolithic Database Connection
@@ -23,13 +23,13 @@ const connectDB = async () => {
             serverSelectionTimeoutMS: 5000,
             connectTimeoutMS: 10000,
         });
-        console.log("DB LIFT-OFF SUCCESSFUL (ABSOLUTE_MONOLITH)");
+        console.log("DB LIFT-OFF SUCCESSFUL (THE_SINGULARITY)");
     } catch (err) {
         console.error("DB FAIL:", err.message);
     }
 };
 
-// 3. HARDENED SCHEMAS (INLINED)
+// 3. THE SINGULARITY MODELS (INLINED)
 const UserSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
@@ -41,9 +41,8 @@ const UserSchema = new mongoose.Schema({
     googleId: { type: String, unique: true, sparse: true }
 }, { timestamps: true });
 
-// User Methods (Inlined)
 UserSchema.pre('save', async function(next) {
-    if (!this.isModified('password')) next();
+    if (!this.isModified('password')) return next();
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
 });
@@ -72,12 +71,19 @@ const TaskSchema = new mongoose.Schema({
     targetGroup: { type: mongoose.Schema.Types.ObjectId, ref: 'Group' }
 }, { timestamps: true });
 
-// SAFE COMPILATION (SINGLETON PATTERN)
+const ApprovedEmailSchema = new mongoose.Schema({
+    email: { type: String, required: true, unique: true },
+    role: { type: String, default: 'Member' },
+    isAdmin: { type: Boolean, default: false }
+}, { timestamps: true });
+
+// SAFE COMPILATION (SINGLETON)
 const User = mongoose.models.User || mongoose.model('User', UserSchema);
 const Group = mongoose.models.Group || mongoose.model('Group', GroupSchema);
 const Task = mongoose.models.Task || mongoose.model('Task', TaskSchema);
+const ApprovedEmail = mongoose.models.ApprovedEmail || mongoose.model('ApprovedEmail', ApprovedEmailSchema);
 
-// 4. Security Middleware (Inlined)
+// 4. Middlewares
 const protect = async (req, res, next) => {
     let token;
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -86,7 +92,7 @@ const protect = async (req, res, next) => {
     if (!token) return res.status(401).json({ success: false, message: 'Not authorized' });
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = await User.findById(decoded.id);
+        req.user = await User.findById(decoded.userId || decoded.id);
         next();
     } catch (err) {
         res.status(401).json({ success: false, message: 'Invalid Token' });
@@ -94,98 +100,127 @@ const protect = async (req, res, next) => {
 };
 
 const admin = (req, res, next) => {
-    const isAdmin = req.user && (
+    const isAuthorized = req.user && (
         req.user.isAdmin || 
         ['president', 'general secretary', 'admin', 'gs'].includes(req.user.role?.toLowerCase())
     );
-    if (!isAdmin) return res.status(403).json({ success: false, message: 'Admin access required' });
+    if (!isAuthorized) return res.status(403).json({ success: false, message: 'Admin access required' });
     next();
 };
 
-// 5. Global Middlewares
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
+app.use(async (req, res, next) => { await connectDB(); next(); });
 
-// Rapid Database Activation
-app.use(async (req, res, next) => {
-    await connectDB();
-    next();
-});
+// 5. THE SINGULARITY ROUTES
 
-// 6. Monolithic Project Routes
-app.get('/api/debug/pulse', (req, res) => {
-    res.json({ pulse: 'active', mode: 'absolute_monolith', timestamp: new Date().toISOString() });
-});
+// Diagnostics
+app.get('/api/debug/pulse', (req, res) => res.json({ mode: 'singularity', time: new Date().toISOString() }));
 
-app.get('/api/groups', protect, async (req, res) => {
+// Auth: Login & Register
+app.post('/api/auth/register', async (req, res) => {
     try {
-        let query;
-        const isAdmin = req.user.isAdmin || ['president', 'general secretary', 'admin', 'gs'].includes(req.user.role?.toLowerCase());
-        if (isAdmin) {
-            query = Group.find().populate('members', 'name email profilePicture').lean();
-        } else {
-            query = Group.find({ members: req.user.id }).populate('members', 'name email profilePicture').lean();
-        }
-        const data = await query;
-        res.json({ success: true, count: data.length, data });
+        const { name, email, password } = req.body;
+        const cleanEmail = email.toLowerCase().trim();
+        const existing = await User.findOne({ email: cleanEmail });
+        if (existing) return res.status(400).json({ success: false, message: 'User already exists' });
+        
+        const isPreAuth = await ApprovedEmail.findOne({ email: cleanEmail });
+        const user = await User.create({ 
+            name, email: cleanEmail, password,
+            status: isPreAuth ? 'approved' : 'pending',
+            role: isPreAuth?.role || 'Member',
+            isAdmin: isPreAuth?.isAdmin || false
+        });
+        const token = jwt.sign({ userId: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '30d' });
+        res.status(201).json({ success: true, token, user });
     } catch (err) { res.status(400).json({ success: false, message: err.message }); }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+        if (!user || !(await user.matchPassword(password))) {
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+        const token = jwt.sign({ userId: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '30d' });
+        res.json({ success: true, token, user });
+    } catch (err) { res.status(400).json({ success: false, message: err.message }); }
+});
+
+app.post('/api/auth/google', async (req, res) => {
+    try {
+        const { idToken } = req.body;
+        const ticket = await client.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
+        const { email, name, picture } = ticket.getPayload();
+        const cleanEmail = email.toLowerCase().trim();
+        let user = await User.findOne({ email: cleanEmail });
+        if (!user) {
+            const isPreAuth = await ApprovedEmail.findOne({ email: cleanEmail });
+            user = await User.create({ 
+                name, email: cleanEmail, password: crypto.randomBytes(20).toString('hex'),
+                status: isPreAuth ? 'approved' : 'pending',
+                profilePicture: picture || ''
+            });
+        }
+        const token = jwt.sign({ userId: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '30d' });
+        res.json({ success: true, token, user });
+    } catch (err) { res.status(401).json({ success: false, message: 'Google Auth Failed' }); }
+});
+
+app.get('/api/auth/me', protect, async (req, res) => {
+    res.json({ success: true, user: req.user });
+});
+
+app.get('/api/auth/members', protect, async (req, res) => {
+    const members = await User.find({ status: 'approved', _id: { $ne: req.user.id } }).select('name profilePicture role').lean();
+    res.json({ success: true, members });
+});
+
+// Groups
+app.get('/api/groups', protect, async (req, res) => {
+    const isAdmin = req.user.isAdmin || ['president', 'general secretary', 'admin', 'gs'].includes(req.user.role?.toLowerCase());
+    const query = isAdmin ? Group.find() : Group.find({ members: req.user.id });
+    const data = await query.populate('members', 'name email profilePicture').lean();
+    res.json({ success: true, data });
 });
 
 app.post('/api/groups', protect, admin, async (req, res) => {
-    try {
-        const group = await Group.create(req.body);
-        res.status(201).json({ success: true, data: group });
-    } catch (err) { res.status(400).json({ success: false, message: err.message }); }
+    const group = await Group.create(req.body);
+    res.status(201).json({ success: true, data: group });
 });
 
 app.patch('/api/groups/:id', protect, admin, async (req, res) => {
-    try {
-        const group = await Group.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('members', 'name email profilePicture');
-        res.json({ success: true, data: group });
-    } catch (err) { res.status(400).json({ success: false, message: err.message }); }
+    const group = await Group.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('members', 'name email profilePicture');
+    res.json({ success: true, data: group });
 });
 
 app.delete('/api/groups/:id', protect, admin, async (req, res) => {
-    try {
-        await Group.findByIdAndDelete(req.params.id);
-        res.json({ success: true, data: {} });
-    } catch (err) { res.status(400).json({ success: false, message: err.message }); }
+    await Group.findByIdAndDelete(req.params.id);
+    res.json({ success: true, data: {} });
 });
 
-app.post('/api/groups/:id/tasks', protect, admin, async (req, res) => {
-    try {
-        const group = await Group.findById(req.params.id);
-        if (!group) return res.status(404).json({ success: false, message: 'Group not found' });
-        const { title, description, deadline, isPriority } = req.body;
-        const tasks = await Promise.all(group.members.map(async (memberId) => {
-            const member = await User.findById(memberId);
-            if (!member) return null;
-            return Task.create({
-                senderEmail: req.user.email, senderName: req.user.name,
-                targetEmail: member.email, title, description, deadline,
-                isPriority: isPriority || false, targetGroup: group._id
-            });
-        }));
-        res.status(201).json({ success: true, message: `Task assigned to members` });
-    } catch (err) { res.status(400).json({ success: false, message: err.message }); }
+// Tasks
+app.get('/api/tasks/my-tasks', protect, async (req, res) => {
+    const tasks = await Task.find({ targetEmail: req.user.email.toLowerCase() }).lean();
+    res.json({ success: true, data: tasks });
 });
 
-// 7. Legacy Forwarding (NO MODELS REQUIRED IN THESE FILES)
-const authRoutes = require('../server/routes/authRoutes');
-const adminRoutes = require('../server/routes/adminRoutes');
-const taskRoutes = require('../server/routes/taskRoutes');
-const chatRoutes = require('../server/routes/chatRoutes');
+app.post('/api/tasks/send', protect, admin, async (req, res) => {
+    const task = await Task.create({ ...req.body, senderEmail: req.user.email, senderName: req.user.name });
+    res.status(201).json({ success: true, data: task });
+});
 
-app.use(['/api/auth', '/auth'], authRoutes);
-app.use(['/api/admin', '/admin'], adminRoutes);
-app.use(['/api/tasks', '/tasks'], taskRoutes);
-app.use(['/api/chat', '/chat'], chatRoutes);
+app.put('/api/tasks/:id/status', protect, async (req, res) => {
+    const task = await Task.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
+    res.json({ success: true, data: task });
+});
 
-// 8. Static Frontend Handler
+// 6. SPA Handler
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(distPath));
     app.get('*', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
 }
 
-// 9. Export for Vercel
 module.exports = app;
