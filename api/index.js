@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const path = require('path');
 
 // 1. Initial Configuration
@@ -21,19 +23,61 @@ const connectDB = async () => {
             serverSelectionTimeoutMS: 5000,
             connectTimeoutMS: 10000,
         });
-        console.log("DB LIFT-OFF SUCCESSFUL (MONOLITH_MODE)");
+        console.log("DB LIFT-OFF SUCCESSFUL (ABSOLUTE_MONOLITH)");
     } catch (err) {
         console.error("DB FAIL:", err.message);
     }
 };
 
-// 3. Models Inlining (Prevents "Model Not Found" during bundling)
-// 3. Models Setup (Serverless-Safe)
-const User = require('../server/models/User');
-const Group = require('../server/models/Group');
-const Task = require('../server/models/Task');
+// 3. HARDENED SCHEMAS (INLINED)
+const UserSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true, select: false },
+    role: { type: String, default: 'Member' },
+    isAdmin: { type: Boolean, default: false },
+    status: { type: String, default: 'pending' },
+    profilePicture: { type: String, default: '' },
+    googleId: { type: String, unique: true, sparse: true }
+}, { timestamps: true });
 
-// 4. Security Middleware
+// User Methods (Inlined)
+UserSchema.pre('save', async function(next) {
+    if (!this.isModified('password')) next();
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+});
+
+UserSchema.methods.matchPassword = async function(enteredPassword) {
+    return await bcrypt.compare(enteredPassword, this.password);
+};
+
+const GroupSchema = new mongoose.Schema({
+    name: { type: String, required: true, unique: true },
+    description: String,
+    repoUrl: String,
+    members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    lead: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+}, { timestamps: true });
+
+const TaskSchema = new mongoose.Schema({
+    senderEmail: String,
+    senderName: String,
+    targetEmail: String,
+    title: String,
+    description: String,
+    deadline: String,
+    status: { type: String, default: 'pending' },
+    isPriority: { type: Boolean, default: false },
+    targetGroup: { type: mongoose.Schema.Types.ObjectId, ref: 'Group' }
+}, { timestamps: true });
+
+// SAFE COMPILATION (SINGLETON PATTERN)
+const User = mongoose.models.User || mongoose.model('User', UserSchema);
+const Group = mongoose.models.Group || mongoose.model('Group', GroupSchema);
+const Task = mongoose.models.Task || mongoose.model('Task', TaskSchema);
+
+// 4. Security Middleware (Inlined)
 const protect = async (req, res, next) => {
     let token;
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -68,9 +112,9 @@ app.use(async (req, res, next) => {
     next();
 });
 
-// 6. Monolithic Project Routes (The "Pulse" Engine)
+// 6. Monolithic Project Routes
 app.get('/api/debug/pulse', (req, res) => {
-    res.json({ pulse: 'active', mode: 'monolith_safe', time: new Date().toISOString() });
+    res.json({ pulse: 'active', mode: 'absolute_monolith', timestamp: new Date().toISOString() });
 });
 
 app.get('/api/groups', protect, async (req, res) => {
@@ -126,7 +170,7 @@ app.post('/api/groups/:id/tasks', protect, admin, async (req, res) => {
     } catch (err) { res.status(400).json({ success: false, message: err.message }); }
 });
 
-// 7. Bridge to Legacy Micro-services (If they exist)
+// 7. Legacy Forwarding (NO MODELS REQUIRED IN THESE FILES)
 const authRoutes = require('../server/routes/authRoutes');
 const adminRoutes = require('../server/routes/adminRoutes');
 const taskRoutes = require('../server/routes/taskRoutes');
@@ -143,5 +187,5 @@ if (process.env.NODE_ENV === 'production') {
     app.get('*', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
 }
 
-// 9. Export for Vercel Serverless
+// 9. Export for Vercel
 module.exports = app;
