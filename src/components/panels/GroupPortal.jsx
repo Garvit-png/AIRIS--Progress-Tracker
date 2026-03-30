@@ -258,19 +258,16 @@ const GroupPortal = () => {
                         {stats.profile && (
                             <>
                                 <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 flex flex-col justify-center items-center">
-                                    <AlertCircle size={16} className="text-green-500 mb-2" />
-                                    <span className="text-xl font-bold text-white">{stats.profile.openIssues}</span>
-                                    <span className="text-[9px] font-mono text-white/40 uppercase tracking-widest">Open Tickets</span>
-                                </div>
-                                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 flex flex-col justify-center items-center">
                                     <Users size={16} className="text-blue-500 mb-2" />
                                     <span className="text-xl font-bold text-white">{(stats.profile.contributors || []).length}</span>
                                     <span className="text-[9px] font-mono text-white/40 uppercase tracking-widest">Contributors</span>
                                 </div>
-                                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 flex flex-col justify-center items-center">
+                                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 flex flex-col justify-center items-center col-span-2 sm:col-span-2">
                                     <Clock size={16} className="text-amber-500 mb-2" />
-                                    <span className="text-[12px] font-bold text-white text-center">{new Date(stats.profile.lastUpdated).toLocaleDateString()}</span>
-                                    <span className="text-[9px] font-mono text-white/40 uppercase tracking-widest mt-1">Last Update</span>
+                                    <span className="text-[12px] font-bold text-white text-center">
+                                        {new Date(stats.profile.lastUpdated).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                                    </span>
+                                    <span className="text-[9px] font-mono text-white/40 uppercase tracking-widest mt-1">Last Global Update</span>
                                 </div>
                             </>
                         )}
@@ -316,48 +313,43 @@ const GroupPortal = () => {
                                         </div>
                                     </summary>
                                     
-                                    <div className="p-5 bg-black/40 border-t border-white/5 grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div>
-                                            <span className="text-[9px] font-mono text-white/30 uppercase tracking-[0.2em] mb-3 block flex items-center gap-1.5">
-                                                <AlertCircle size={10} className="text-pink-500" /> Active Tickets
-                                            </span>
-                                            {c.activeIssues && c.activeIssues.length > 0 ? (
-                                                <div className="space-y-2">
+                                    <div className="p-5 bg-black/40 border-t border-white/5 space-y-6">
+                                        {c.activeIssues && c.activeIssues.length > 0 && (
+                                            <div>
+                                                <span className="text-[9px] font-mono text-white/30 uppercase tracking-[0.2em] mb-3 block flex items-center gap-1.5">
+                                                    <AlertCircle size={10} className="text-pink-500" /> Active Assigned Issues
+                                                </span>
+                                                <div className="flex flex-wrap gap-2">
                                                     {c.activeIssues.map((issue, idx) => (
-                                                        <a key={idx} href={issue.url} target="_blank" rel="noreferrer" className="block text-[11px] text-white/70 bg-white/5 border border-white/5 px-3 py-2 rounded-xl hover:bg-white/10 hover:text-white hover:border-pink-500/30 transition-all flex items-start gap-2">
-                                                            <span className="text-pink-400 font-mono flex-shrink-0">#{issue.number}</span>
-                                                            <span className="truncate leading-relaxed">{issue.title}</span>
+                                                        <a key={idx} href={issue.url} target="_blank" rel="noreferrer" className="text-[11px] text-white/70 bg-white/5 border border-white/5 px-3 py-2 rounded-xl hover:bg-white/10 hover:text-white hover:border-pink-500/30 transition-all flex items-center gap-2">
+                                                            <span className="text-pink-400 font-mono">#{issue.number}</span>
+                                                            <span className="truncate max-w-[200px]">{issue.title}</span>
+                                                        </a>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div>
+                                            <span className="text-[9px] font-mono text-white/30 uppercase tracking-[0.2em] mb-4 block flex items-center gap-1.5">
+                                                <GitPullRequest size={10} className="text-pink-500" /> Complete Commit Log
+                                            </span>
+                                            {c.recentActivity && c.recentActivity.length > 0 ? (
+                                                <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                                                    {c.recentActivity.map((act, idx) => (
+                                                        <a key={idx} href={act.url} target="_blank" rel="noreferrer" className="block bg-white/5 rounded-xl border border-white/5 p-3 hover:border-pink-500/30 transition-colors group/act">
+                                                            <span className="block text-[12px] text-white/80 group-hover/act:text-white truncate mb-1">{act.message}</span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="block text-[9px] font-mono text-pink-500 uppercase tracking-widest">
+                                                                    {new Date(act.date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                                                                </span>
+                                                            </div>
                                                         </a>
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <div className="text-[10px] font-mono text-white/20 italic bg-white/[0.02] px-3 py-2 rounded-xl border border-dashed border-white/5">
-                                                    No Active Tickets
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div>
-                                            <span className="text-[9px] font-mono text-white/30 uppercase tracking-[0.2em] mb-3 block flex items-center gap-1.5">
-                                                <GitPullRequest size={10} className="text-pink-500" /> Recent Operations
-                                            </span>
-                                            {c.recentActivity && c.recentActivity.length > 0 ? (
-                                                <div className="space-y-3 relative before:absolute before:inset-0 before:ml-2 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-white/10 before:to-transparent">
-                                                    {c.recentActivity.map((act, idx) => (
-                                                        <div key={idx} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group/act is-active">
-                                                            <div className="flex items-center justify-center w-4 h-4 rounded-full border border-pink-500 bg-[#0a0a0a] text-pink-500 shadow shrink-0 md:order-1 md:group-odd/act:-translate-x-1/2 md:group-even/act:translate-x-1/2 z-10 transition-colors group-hover/act:bg-pink-500 group-hover/act:text-white" />
-                                                            <div className="w-[calc(100%-2.5rem)] md:w-[calc(50%-1.5rem)] bg-white/5 rounded-xl border border-white/5 p-3 hover:border-pink-500/30 transition-colors">
-                                                                <a href={act.url} target="_blank" rel="noreferrer" className="block">
-                                                                    <span className="block text-[11px] text-white/80 group-hover/act:text-white truncate mb-1">{act.message}</span>
-                                                                    <span className="block text-[8px] font-mono text-white/30 uppercase">{new Date(act.date).toLocaleDateString()}</span>
-                                                                </a>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : (
                                                 <div className="text-[10px] font-mono text-white/20 italic">
-                                                    No recent logged activity
+                                                    No recent commits available
                                                 </div>
                                             )}
                                         </div>

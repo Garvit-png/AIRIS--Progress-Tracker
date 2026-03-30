@@ -57,6 +57,11 @@ exports.getRepoStats = async (owner, repo) => {
         const issuesData = issuesRes?.data || [];
         const commitsData = commitsRes?.data || [];
 
+        // Identify true last updated from newest commit or fallback to repo pushed_at
+        const trueLastUpdated = commitsData.length > 0 && commitsData[0].commit?.author?.date 
+            ? commitsData[0].commit.author.date 
+            : repoData.pushed_at;
+
         // Build base map of contributors from stats/contributors
         const contributorMap = new Map();
         contribData.forEach(c => {
@@ -98,14 +103,12 @@ exports.getRepoStats = async (owner, repo) => {
                 // If they exist in cache, we assume the cache might be slightly behind, but we can't reliably know which commits are already in cache.
             }
 
-            // Populate recent activity up to 3
-            if (c.recentActivity.length < 3) {
-                c.recentActivity.push({
-                    message: commit.commit.message.split('\n')[0],
-                    date: commit.commit.author.date,
-                    url: commit.html_url
-                });
-            }
+            // Populate recent activity (ALL fetched commits)
+            c.recentActivity.push({
+                message: commit.commit.message.split('\n')[0],
+                date: commit.commit.author.date,
+                url: commit.html_url
+            });
         });
 
         const activeContributors = Array.from(contributorMap.values());
@@ -148,14 +151,14 @@ exports.getRepoStats = async (owner, repo) => {
                 stars: repoData.stargazers_count,
                 forks: repoData.forks_count,
                 openIssues: repoData.open_issues_count,
-                lastUpdated: repoData.pushed_at,
+                lastUpdated: trueLastUpdated,
                 primaryLanguage: repoData.language,
                 languages
             }
         };
             
-        // 3. Save to Redis Cache (10 minutes = 600 seconds)
-        await cacheSetEx(cacheKey, 600, newStats);
+        // 3. Save to Redis Cache (1 minute = 60 seconds)
+        await cacheSetEx(cacheKey, 60, newStats);
 
         return { status: 200, data: newStats };
     } catch (error) {
