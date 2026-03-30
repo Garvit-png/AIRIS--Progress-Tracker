@@ -620,6 +620,32 @@ export const AuthService = {
         return data.message;
     },
 
+    getGitHubStats: async (repoUrl) => {
+        const token = localStorage.getItem('token');
+        if (!repoUrl) return null;
+
+        let slug = repoUrl.replace('https://github.com/', '');
+        if (slug.endsWith('.git')) slug = slug.slice(0, -4);
+        slug = slug.split('/').slice(0, 2).join('/');
+        if (!slug) return null;
+
+        try {
+            const response = await fetchWithTimeout(`${config.API_BASE_URL}/github/stats/${slug}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }, 10000);
+            
+            const data = await safeJson(response);
+            if (response.status === 202) {
+                return { status: 202, message: data.message };
+            }
+            if (!data.success) throw new Error(data.message);
+            return data.data;
+        } catch (error) {
+            console.error('Failed to grab GitHub Stats from Backend:', error);
+            return null; // Gracefully fail if backend drops it
+        }
+    },
+
     /**
      * Helper to get full URL for uploaded files
      */

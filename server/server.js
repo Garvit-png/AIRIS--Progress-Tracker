@@ -13,6 +13,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const groupRoutes = require('./routes/groupRoutes');
+const githubRoutes = require('./routes/githubRoutes');
 const { 
     createGroup, 
     getGroups, 
@@ -138,6 +139,7 @@ app.use(['/api/auth', '/auth'], authRoutes);
 app.use(['/api/admin', '/admin'], adminRoutes);
 app.use(['/api/tasks', '/tasks'], taskRoutes);
 app.use(['/api/chat', '/chat'], chatRoutes);
+app.use(['/api/github', '/github'], githubRoutes);
 // INLINED GROUP ROUTES FOR PRODUCTION STABILITY
 const groupRouter = express.Router();
 groupRouter.use(protect);

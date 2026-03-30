@@ -8,7 +8,11 @@ const isProduction = import.meta.env.PROD;
 export const config = {
     // Vite requires VITE_ prefix for client-side environment variables
     API_BASE_URL: (() => {
-        let url = import.meta.env.VITE_API_URL || '/api';
+        const defaultProdUrl = 'https://airis-progress-tracker.onrender.com/api';
+        const defaultDevUrl = 'http://localhost:5001/api';
+        
+        let url = import.meta.env.VITE_API_URL || (isProduction ? defaultProdUrl : defaultDevUrl);
+        
         if (url && !url.endsWith('/api') && url.startsWith('http')) {
             url += '/api';
         }

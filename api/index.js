@@ -128,7 +128,7 @@ app.use(async (req, res, next) => {
 // 5. THE SINGULARITY ROUTES
 
 // Diagnostics
-app.get('/api/debug/pulse', (req, res) => res.json({ mode: 'singularity', time: new Date().toISOString() }));
+app.get('/api/debug/pulse', (req, res) => res.json({ mode: 'singularity_patched_v2', time: new Date().toISOString() }));
 
 // Auth: Login & Register
 app.post('/api/auth/register', async (req, res) => {

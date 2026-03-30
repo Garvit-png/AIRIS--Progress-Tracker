@@ -202,57 +202,13 @@ const GroupPortal = () => {
         const fetchRepoStats = async () => {
             if (!repoUrl) return;
             try {
-                // Clean the URL to get the repo slug (owner/repo)
-                let slug = repoUrl.replace('https://github.com/', '');
-                if (slug.endsWith('.git')) slug = slug.slice(0, -4);
-                slug = slug.split('/').slice(0, 2).join('/');
-                if (!slug) return;
-
-                // Concurrent fetching for Intelligence Streams
-                const [contribRes, repoRes, langRes] = await Promise.all([
-                    fetch(`https://api.github.com/repos/${slug}/stats/contributors`),
-                    fetch(`https://api.github.com/repos/${slug}`),
-                    fetch(`https://api.github.com/repos/${slug}/languages`)
-                ]);
-
-                // 202 status means GitHub is still computing stats
-                if (contribRes.status === 202) return;
+                const newStats = await AuthService.getGitHubStats(repoUrl);
                 
-                const [contribData, repoData, langData] = await Promise.all([
-                    contribRes.json(),
-                    repoRes.json(),
-                    langRes.json()
-                ]);
+                if (newStats?.status === 202) {
+                    return; // Stays loading or retries silently if needed
+                }
                 
-                if (Array.isArray(contribData)) {
-                    const sorted = [...contribData].sort((a, b) => b.total - a.total);
-                    
-                    // Process Language Profile (Top 3)
-                    const totalBytes = Object.values(langData).reduce((a, b) => a + b, 0);
-                    const languages = Object.entries(langData)
-                        .sort((a, b) => b[1] - a[1])
-                        .slice(0, 3)
-                        .map(([name, bytes]) => ({
-                            name,
-                            percent: Math.round((bytes / totalBytes) * 100)
-                        }));
-
-                    const newStats = {
-                        totalCommits: contribData.reduce((acc, curr) => acc + curr.total, 0),
-                        contributors: sorted.map(c => ({
-                            login: c.author.login,
-                            avatar: c.author.avatar_url,
-                            commits: c.total
-                        })),
-                        profile: {
-                            stars: repoData.stargazers_count,
-                            forks: repoData.forks_count,
-                            openIssues: repoData.open_issues_count,
-                            lastUpdated: repoData.pushed_at,
-                            primaryLanguage: repoData.language,
-                            languages
-                        }
-                    };
+                if (newStats) {
                     setStats(newStats);
                     setShowRoster(true); // Auto-expand for Member Awareness
                     AuthService.cache.set(`github_${repoUrl}`, newStats);
