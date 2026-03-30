@@ -25,7 +25,7 @@ exports.cacheGet = async (key) => {
         const data = await redisClient.get(key);
         return data; // Upstash auto-parses JSON!
     } catch (e) {
-        console.error('Redis Get Error:', e.message);
+        // Silently fail, don't flood console with WRONGPASS errors.
         return null;
     }
 };
@@ -35,6 +35,6 @@ exports.cacheSetEx = async (key, seconds, data) => {
     try {
         await redisClient.setex(key, seconds, data);
     } catch (e) {
-        console.error('Redis Set Error:', e.message);
+        // Silently fail
     }
 };

@@ -51,76 +51,113 @@ exports.getRepoStats = async (owner, repo) => {
             return { status: 202, message: 'Stats are compiling, try again shortly.' };
         }
 
-        const contribData = contribRes.data;
+        const contribData = Array.isArray(contribRes.data) ? contribRes.data : [];
         const repoData = repoRes.data;
         const langData = langRes.data;
         const issuesData = issuesRes?.data || [];
         const commitsData = commitsRes?.data || [];
 
-        if (Array.isArray(contribData)) {
-            const sorted = [...contribData].sort((a, b) => b.total - a.total);
+        // Build base map of contributors from stats/contributors
+        const contributorMap = new Map();
+        contribData.forEach(c => {
+            contributorMap.set(c.author.login, {
+                login: c.author.login,
+                avatar: c.author.avatar_url,
+                commits: c.total,
+                activeIssues: [],
+                recentActivity: []
+            });
+        });
+
+        // Inject real-time commits to augment stale counts or add missing users
+        commitsData.forEach(commit => {
+            // Find author login or fallback to git name/email
+            const login = commit.author?.login || commit.commit.author.name || commit.commit.author.email;
+            const avatar = commit.author?.avatar_url || 'https://github.com/identicons/user.png';
             
-            // Process Language Profile (Top 3)
-            const totalBytes = Object.values(langData).reduce((a, b) => a + b, 0);
-            const languages = Object.entries(langData)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 3)
-                .map(([name, bytes]) => ({
-                    name,
-                    percent: Math.round((bytes / totalBytes) * 100)
+            if (!contributorMap.has(login)) {
+                // First time seeing this contributor (meaning GitHub stats hasn't cached them yet)
+                contributorMap.set(login, {
+                    login: login,
+                    avatar: avatar,
+                    commits: 0,
+                    activeIssues: [],
+                    recentActivity: []
+                });
+            }
+
+            const c = contributorMap.get(login);
+            // If the commit date is very recent (e.g. not factored into their cache), we could increment. 
+            // For safety and real-time accuracy over the last 100 commits, we just count them if they are in the last 100.
+            // Wait, if it's already counted in GitHub's cache, incrementing will double count.
+            // A simpler approach: If we find a new commit, just use the cache's total, BUT if they were totally missing from cache, their commits = 0.
+            // Let's actually count the occurrences in commitsData for missing users:
+            if (!contribData.some(cached => cached.author.login === login)) {
+                c.commits += 1;
+            } else {
+                // If they exist in cache, we assume the cache might be slightly behind, but we can't reliably know which commits are already in cache.
+            }
+
+            // Populate recent activity up to 3
+            if (c.recentActivity.length < 3) {
+                c.recentActivity.push({
+                    message: commit.commit.message.split('\n')[0],
+                    date: commit.commit.author.date,
+                    url: commit.html_url
+                });
+            }
+        });
+
+        const activeContributors = Array.from(contributorMap.values());
+
+        // Process Language Profile (Top 3)
+        const totalBytes = Object.values(langData).reduce((a, b) => a + b, 0);
+        const languages = Object.entries(langData)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(([name, bytes]) => ({
+                name,
+                percent: Math.round((bytes / totalBytes) * 100)
+            }));
+            
+        const enrichedContributors = activeContributors.map(c => {
+            const login = c.login;
+            
+            // Extract assigned active issues for this person
+            c.activeIssues = issuesData
+                .filter(issue => issue.assignee?.login === login || issue.assignees?.some(a => a.login === login))
+                .map(issue => ({
+                    title: issue.title,
+                    url: issue.html_url,
+                    number: issue.number
                 }));
                 
-            const enrichedContributors = sorted.map(c => {
-                const login = c.author.login;
-                
-                // Extract assigned active issues for this person
-                const assignedIssues = issuesData
-                    .filter(issue => issue.assignee?.login === login || issue.assignees?.some(a => a.login === login))
-                    .map(issue => ({
-                        title: issue.title,
-                        url: issue.html_url,
-                        number: issue.number
-                    }));
-                    
-                // Extract recent activity context
-                const recentActivity = commitsData
-                    .filter(commit => commit.author?.login === login)
-                    .slice(0, 3) // Give top 3 most recent commits
-                    .map(commit => ({
-                        message: commit.commit.message.split('\n')[0],
-                        date: commit.commit.author.date,
-                        url: commit.html_url
-                    }));
+            return c;
+        });
 
-                return {
-                    login: login,
-                    avatar: c.author.avatar_url,
-                    commits: c.total,
-                    activeIssues: assignedIssues,
-                    recentActivity: recentActivity
-                }
-            });
+        // Sort by commits
+        enrichedContributors.sort((a, b) => b.commits - a.commits);
 
-            const newStats = {
-                totalCommits: contribData.reduce((acc, curr) => acc + curr.total, 0),
-                contributors: enrichedContributors,
-                profile: {
-                    stars: repoData.stargazers_count,
-                    forks: repoData.forks_count,
-                    openIssues: repoData.open_issues_count,
-                    lastUpdated: repoData.pushed_at,
-                    primaryLanguage: repoData.language,
-                    languages
-                }
-            };
+        // Recalculate total
+        const finalTotalCommits = enrichedContributors.reduce((acc, curr) => acc + curr.commits, 0) || contribData.reduce((acc, curr) => acc + curr.total, 0);
+
+        const newStats = {
+            totalCommits: finalTotalCommits,
+            contributors: enrichedContributors,
+            profile: {
+                stars: repoData.stargazers_count,
+                forks: repoData.forks_count,
+                openIssues: repoData.open_issues_count,
+                lastUpdated: repoData.pushed_at,
+                primaryLanguage: repoData.language,
+                languages
+            }
+        };
             
-            // 3. Save to Redis Cache (10 minutes = 600 seconds)
-            await cacheSetEx(cacheKey, 600, newStats);
+        // 3. Save to Redis Cache (10 minutes = 600 seconds)
+        await cacheSetEx(cacheKey, 600, newStats);
 
-            return { status: 200, data: newStats };
-        }
-
-        return { status: 400, message: 'Invalid contributor array received from GitHub' };
+        return { status: 200, data: newStats };
     } catch (error) {
         console.error('GitHub Service Error:', error);
         throw error;

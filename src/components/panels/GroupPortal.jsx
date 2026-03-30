@@ -1,26 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    Users, 
-    Plus, 
-    Github, 
-    ExternalLink, 
-    UserPlus, 
-    UserMinus, 
-    Trash2, 
-    ClipboardList,
-    AlertCircle,
-    ChevronRight,
-    Search,
-    Clock,
-    CheckCircle2,
-    Edit2,
-    X
+    Users, Plus, Github, ExternalLink, Trash2, 
+    ClipboardList, AlertCircle, ChevronRight, Search, 
+    Clock, CheckCircle2, Edit2, X, Activity, GitCommit, GitPullRequest
 } from 'lucide-react';
 import { AuthService } from '../../services/authService';
 
 const GroupPortal = () => {
-    const [user, setUser] = useState(AuthService.getSession());
+    const [user] = useState(AuthService.getSession());
     
     // INSTANT LOAD: Initialize from cache if available
     const [groups, setGroups] = useState(AuthService.cache.get('groups') || []);
@@ -33,6 +21,7 @@ const GroupPortal = () => {
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('overview'); 
     
+    // Modals & Forms
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [newGroup, setNewGroup] = useState({ name: '', description: '', repoUrl: '' });
@@ -42,7 +31,11 @@ const GroupPortal = () => {
     const [isAssignTaskModalOpen, setIsAssignTaskModalOpen] = useState(false);
     const [selectedGroup, setSelectedGroup] = useState(null);
     const [taskData, setTaskData] = useState({ title: '', description: '', deadline: '', isPriority: true });
+    
+    // Modal for GitHub Stats
+    const [activeGithubRepo, setActiveGithubRepo] = useState(null);
 
+    // Provide safe optional chaining to avoid initial crashes
     const isAdmin = user?.isAdmin || ['president', 'general secretary', 'admin'].includes(user?.role?.toLowerCase());
 
     const fetchGroups = async () => {
@@ -64,8 +57,6 @@ const GroupPortal = () => {
             const syncGroups = async () => {
                 setIsSyncing(true);
                 setError(null);
-                
-                // Set a timer to detect slow server response (Cold Start)
                 longSyncTimer = setTimeout(() => setIsLongSync(true), 3000);
                 
                 try {
@@ -103,9 +94,8 @@ const GroupPortal = () => {
 
         fetchAllData();
         return () => clearTimeout(longSyncTimer);
-    }, [isAdmin]);
+    }, [isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Manual refresh helper
     const handleRefresh = async () => {
         setIsSyncing(true);
         try {
@@ -154,9 +144,11 @@ const GroupPortal = () => {
 
     const handleAddMember = async (groupId, userId) => {
         const group = groups.find(g => g._id === groupId);
-        if (group.members.some(m => m._id === userId)) return;
+        // Protect against null mappings
+        const validMembers = (group.members || []).filter(Boolean);
+        if (validMembers.some(m => m._id === userId)) return;
 
-        const updatedMembers = [...group.members.map(m => m._id), userId];
+        const updatedMembers = [...validMembers.map(m => m._id), userId];
         try {
             await AuthService.updateGroup(groupId, { members: updatedMembers });
             fetchGroups();
@@ -167,7 +159,8 @@ const GroupPortal = () => {
 
     const handleRemoveMember = async (groupId, userId) => {
         const group = groups.find(g => g._id === groupId);
-        const updatedMembers = group.members.filter(m => m._id !== userId).map(m => m._id);
+        // Protect against null mappings
+        const updatedMembers = (group.members || []).filter(Boolean).filter(m => m._id !== userId).map(m => m._id);
         
         try {
             await AuthService.updateGroup(groupId, { members: updatedMembers });
@@ -189,29 +182,38 @@ const GroupPortal = () => {
         }
     };
 
-    const GitHubStats = ({ repoUrl }) => {
-        // Use cached stats if available for instant render
-        const [stats, setStats] = useState(AuthService.cache.get(`github_${repoUrl}`));
+    // ----------------------------------------------------------------------
+    // SUB-COMPONENTS
+    // ----------------------------------------------------------------------
+
+    const GitHubStatsModal = ({ repoInfo, onClose }) => {
+        const [stats, setStats] = useState(AuthService.cache.get(`github_${repoInfo.repoUrl}`));
         const [repoLoading, setRepoLoading] = useState(!stats);
-        const [showRoster, setShowRoster] = useState(false);
+        const [isCompiling, setIsCompiling] = useState(false);
 
         useEffect(() => {
-            if (repoUrl) fetchRepoStats();
-        }, [repoUrl]);
+            if (repoInfo.repoUrl) fetchRepoStats();
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [repoInfo.repoUrl]);
 
         const fetchRepoStats = async () => {
-            if (!repoUrl) return;
+            if (!repoInfo.repoUrl) return;
+            if (!stats) setRepoLoading(true);
+            setIsCompiling(false);
+            
             try {
-                const newStats = await AuthService.getGitHubStats(repoUrl);
+                const newStats = await AuthService.getGitHubStats(repoInfo.repoUrl);
                 
                 if (newStats?.status === 202) {
-                    return; // Stays loading or retries silently if needed
+                    setIsCompiling(true);
+                    setRepoLoading(false);
+                    setTimeout(() => fetchRepoStats(), 3000);
+                    return;
                 }
                 
-                if (newStats) {
+                if (newStats && newStats.status !== 400 && newStats.status !== 500) {
                     setStats(newStats);
-                    setShowRoster(true); // Auto-expand for Member Awareness
-                    AuthService.cache.set(`github_${repoUrl}`, newStats);
+                    AuthService.cache.set(`github_${repoInfo.repoUrl}`, newStats);
                 }
             } catch (err) {
                 console.error('GitHub Intelligence Error:', err);
@@ -220,425 +222,349 @@ const GroupPortal = () => {
             }
         };
 
-        if (repoLoading && !stats) return <div className="animate-pulse h-4 w-20 bg-white/5 rounded" />;
-        if (!stats) return <span className="text-[10px] text-white/20">NO GITHUB DATA LINKED</span>;
+        const renderContent = () => {
+            if (repoLoading && !stats) return (
+                <div className="flex flex-col items-center justify-center py-20">
+                    <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin mb-4" />
+                    <span className="text-[10px] font-mono font-bold text-pink-500 uppercase tracking-widest animate-pulse">Establishing Uplink to Repo...</span>
+                </div>
+            );
+            
+            if (isCompiling && !stats) return (
+                <div className="flex flex-col items-center justify-center py-20">
+                    <Clock size={32} className="text-pink-500 animate-spin-slow mb-4" />
+                    <span className="text-[10px] font-mono font-bold text-pink-500 uppercase tracking-widest animate-pulse text-center">
+                        Initializing Codebase Analysis<br/><span className="text-[8px] opacity-70">GitHub is compiling stats. Hang tight.</span>
+                    </span>
+                </div>
+            );
+            
+            if (!stats) return (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <AlertCircle size={32} className="text-white/20 mb-4" />
+                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-widest">No Intelligence linked or available.</span>
+                </div>
+            );
 
-        return (
-            <div className="space-y-4">
-                <div className="flex flex-col gap-4">
-                    {/* Primary Intelligence Row */}
-                    <div className="flex flex-wrap items-center gap-3">
-                        <div className="flex items-center gap-1.5 px-3 py-1 bg-pink-500/10 border border-pink-500/20 rounded-full">
-                            <Github size={12} className="text-pink-500" />
-                            <span className="text-[10px] font-mono font-bold text-pink-400 uppercase tracking-tighter">{stats.totalCommits} COMMITS</span>
+            return (
+                <div className="space-y-6">
+                    {/* Top Analytics Summary */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="bg-pink-500/10 border border-pink-500/20 rounded-2xl p-4 flex flex-col justify-center items-center">
+                            <GitCommit size={16} className="text-pink-500 mb-2" />
+                            <span className="text-xl font-bold text-white">{stats.totalCommits || 0}</span>
+                            <span className="text-[9px] font-mono text-pink-400 uppercase tracking-widest">Total Commits</span>
                         </div>
-                        
                         {stats.profile && (
                             <>
-                                <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 rounded-full">
-                                    <Clock size={10} className="text-white/40" />
-                                    <span className="text-[9px] font-mono text-white/60 uppercase">
-                                        PULSE: {new Date(stats.profile.lastUpdated).toLocaleDateString()}
-                                    </span>
+                                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 flex flex-col justify-center items-center">
+                                    <AlertCircle size={16} className="text-green-500 mb-2" />
+                                    <span className="text-xl font-bold text-white">{stats.profile.openIssues}</span>
+                                    <span className="text-[9px] font-mono text-white/40 uppercase tracking-widest">Open Tickets</span>
                                 </div>
-                                <div className="flex items-center gap-3 text-[10px] font-mono text-white/30 ml-auto">
-                                    <span className="flex items-center gap-1"><CheckCircle2 size={10} className="text-green-500/50" /> {stats.profile.openIssues} ISSUES</span>
-                                    <span className="flex items-center gap-1"><Users size={10} /> {stats.profile.contributors.length} CONTRIBUTORS</span>
+                                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 flex flex-col justify-center items-center">
+                                    <Users size={16} className="text-blue-500 mb-2" />
+                                    <span className="text-xl font-bold text-white">{(stats.profile.contributors || []).length}</span>
+                                    <span className="text-[9px] font-mono text-white/40 uppercase tracking-widest">Contributors</span>
+                                </div>
+                                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 flex flex-col justify-center items-center">
+                                    <Clock size={16} className="text-amber-500 mb-2" />
+                                    <span className="text-[12px] font-bold text-white text-center">{new Date(stats.profile.lastUpdated).toLocaleDateString()}</span>
+                                    <span className="text-[9px] font-mono text-white/40 uppercase tracking-widest mt-1">Last Update</span>
                                 </div>
                             </>
                         )}
                     </div>
 
-                    {/* Tech Stack Row */}
-                    {stats.profile?.languages && (
-                        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-                            <span className="text-[9px] font-mono text-white/20 uppercase tracking-widest mr-1">Stack:</span>
+                    {stats.profile?.languages && stats.profile.languages.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[9px] font-mono text-white/30 uppercase tracking-widest mr-2">Core Tech Stack:</span>
                             {stats.profile.languages.map(lang => (
-                                <div key={lang.name} className="flex items-center gap-1.5 px-2 py-0.5 bg-white/[0.03] border border-white/5 rounded-md shrink-0">
-                                    <span className="text-[9px] font-bold text-white/80">{lang.name.toUpperCase()}</span>
-                                    <span className="text-[8px] font-mono text-pink-500/60">{lang.percent}%</span>
+                                <div key={lang.name} className="px-3 py-1 bg-white/[0.05] border border-white/10 rounded-full flex items-center gap-2">
+                                    <span className="text-[10px] font-bold text-white/80">{lang.name}</span>
+                                    <span className="text-[9px] font-mono text-pink-500">{lang.percent}%</span>
                                 </div>
                             ))}
                         </div>
                     )}
 
-                    <button 
-                        onClick={(e) => { e.stopPropagation(); setShowRoster(!showRoster); }}
-                        className="text-[10px] font-mono text-white/40 hover:text-white transition-all uppercase tracking-widest flex items-center gap-1 w-fit group/btn"
-                    >
-                        {showRoster ? 'Collapse Intelligence' : 'Examine Contributor Roster'}
-                        <ChevronRight size={12} className={`transition-transform duration-300 ${showRoster ? 'rotate-90' : 'group-hover/btn:translate-x-1'}`} />
-                    </button>
-                </div>
-
-                <AnimatePresence>
-                    {showRoster && (
-                        <motion.div 
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="overflow-hidden border-t border-white/5 pt-4 space-y-3"
-                        >
-                            <label className="text-[9px] font-mono text-white/20 uppercase tracking-[0.2em] block mb-4">Unmasked Contributor Intelligence</label>
-                            <div className="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                {stats.contributors.map((c, i) => (
-                                    <div key={c.login} className="bg-white/[0.02] rounded-xl border border-white/5 overflow-hidden transition-all group/contrib">
-                                        <details className="group/details">
-                                            <summary className="flex items-center justify-between p-3 cursor-pointer hover:bg-white/[0.02] transition-colors list-none">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-[10px] font-mono text-white/20 w-4 text-right">{i + 1}</span>
-                                                    <img src={c.avatar} className="w-8 h-8 rounded-full border border-white/10" alt="" />
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[12px] font-bold text-white/90">{c.login}</span>
-                                                        <span className="text-[9px] font-mono text-pink-500 uppercase flex items-center gap-1 mt-0.5">
-                                                            <CheckCircle2 size={8} /> {c.activeIssues?.length || 0} Open Tickets
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-4">
-                                                    <div className="flex flex-col items-end">
-                                                        <span className="text-[14px] font-mono font-bold text-white">{c.commits}</span>
-                                                        <span className="text-[8px] font-mono text-white/30 uppercase tracking-widest">Commits</span>
-                                                    </div>
-                                                    <ChevronRight size={14} className="text-white/20 group-open/details:rotate-90 transition-transform" />
-                                                </div>
-                                            </summary>
-                                            
-                                            <div className="p-4 bg-black/40 border-t border-white/5 space-y-5">
-                                                {/* Active Issues Section */}
-                                                <div>
-                                                    <span className="text-[9px] font-mono text-white/30 uppercase tracking-[0.2em] mb-2 block flex items-center gap-1.5">
-                                                        <AlertCircle size={10} className="text-pink-500" /> Active Duty (Issues)
-                                                    </span>
-                                                    {c.activeIssues && c.activeIssues.length > 0 ? (
-                                                        <div className="space-y-1.5">
-                                                            {c.activeIssues.map((issue, idx) => (
-                                                                <a key={idx} href={issue.url} target="_blank" rel="noreferrer" className="block text-[10px] text-white/70 bg-white/5 border border-white/5 px-3 py-2 rounded-lg hover:bg-white/10 hover:text-white transition-all flex items-start gap-2">
-                                                                    <span className="text-pink-400 font-mono flex-shrink-0">#{issue.number}</span>
-                                                                    <span className="truncate leading-tight">{issue.title}</span>
-                                                                </a>
-                                                            ))}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="text-[10px] font-mono text-white/20 italic bg-white/[0.02] px-3 py-2 rounded-lg border border-dashed border-white/5">
-                                                            No Active Issues Assigned
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Recent Activity Section */}
-                                                <div>
-                                                    <span className="text-[9px] font-mono text-white/30 uppercase tracking-[0.2em] mb-2 block flex items-center gap-1.5">
-                                                        <Clock size={10} className="text-pink-500" /> Recent Operations
-                                                    </span>
-                                                    {c.recentActivity && c.recentActivity.length > 0 ? (
-                                                        <div className="space-y-2 border-l border-white/10 ml-1.5 pl-3">
-                                                            {c.recentActivity.map((act, idx) => (
-                                                                <div key={idx} className="relative">
-                                                                    <div className="absolute -left-[17px] top-1.5 w-1.5 h-1.5 rounded-full bg-pink-500/50" />
-                                                                    <a href={act.url} target="_blank" rel="noreferrer" className="block group/act">
-                                                                        <span className="block text-[10px] text-white/70 group-hover/act:text-white truncate transition-colors">{act.message}</span>
-                                                                        <span className="block text-[8px] font-mono text-white/30 uppercase mt-0.5">{new Date(act.date).toLocaleString()}</span>
-                                                                    </a>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="text-[10px] font-mono text-white/20 italic pl-1">
-                                                            No recent intelligence available
-                                                        </div>
-                                                    )}
-                                                </div>
+                    <div className="pt-2 border-t border-white/5">
+                        <label className="text-[10px] font-mono text-white/40 uppercase tracking-[0.2em] block mb-4 flex items-center gap-2">
+                            <Activity size={12} className="text-pink-500" />
+                            Unmasked Commits & Activity Logs
+                        </label>
+                        
+                        <div className="space-y-3">
+                            {(stats.contributors || []).map((c, i) => (
+                                <details key={i} className="group/details bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden hover:border-pink-500/20 transition-colors">
+                                    <summary className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/[0.02] transition-colors list-none outline-none">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-[#121212] flex items-center justify-center p-[2px] border border-white/10 group-hover/details:border-pink-500/50 transition-colors">
+                                                {c.avatar ? <img src={c.avatar} className="w-full h-full rounded-full" alt="" /> : <Users size={14} className="text-white/40"/>}
                                             </div>
-                                        </details>
+                                            <div className="flex flex-col">
+                                                <span className="text-[13px] font-bold text-white tracking-tight">{c.login}</span>
+                                                <span className="text-[9px] font-mono text-white/40 uppercase">Assigned: {c.activeIssues?.length || 0} Tickets</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-5">
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-[16px] font-mono font-bold text-pink-400">{c.commits}</span>
+                                                <span className="text-[8px] font-mono text-white/30 uppercase tracking-widest">Commits</span>
+                                            </div>
+                                            <ChevronRight size={16} className="text-white/20 group-open/details:rotate-90 transition-transform" />
+                                        </div>
+                                    </summary>
+                                    
+                                    <div className="p-5 bg-black/40 border-t border-white/5 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <span className="text-[9px] font-mono text-white/30 uppercase tracking-[0.2em] mb-3 block flex items-center gap-1.5">
+                                                <AlertCircle size={10} className="text-pink-500" /> Active Tickets
+                                            </span>
+                                            {c.activeIssues && c.activeIssues.length > 0 ? (
+                                                <div className="space-y-2">
+                                                    {c.activeIssues.map((issue, idx) => (
+                                                        <a key={idx} href={issue.url} target="_blank" rel="noreferrer" className="block text-[11px] text-white/70 bg-white/5 border border-white/5 px-3 py-2 rounded-xl hover:bg-white/10 hover:text-white hover:border-pink-500/30 transition-all flex items-start gap-2">
+                                                            <span className="text-pink-400 font-mono flex-shrink-0">#{issue.number}</span>
+                                                            <span className="truncate leading-relaxed">{issue.title}</span>
+                                                        </a>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="text-[10px] font-mono text-white/20 italic bg-white/[0.02] px-3 py-2 rounded-xl border border-dashed border-white/5">
+                                                    No Active Tickets
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <span className="text-[9px] font-mono text-white/30 uppercase tracking-[0.2em] mb-3 block flex items-center gap-1.5">
+                                                <GitPullRequest size={10} className="text-pink-500" /> Recent Operations
+                                            </span>
+                                            {c.recentActivity && c.recentActivity.length > 0 ? (
+                                                <div className="space-y-3 relative before:absolute before:inset-0 before:ml-2 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-white/10 before:to-transparent">
+                                                    {c.recentActivity.map((act, idx) => (
+                                                        <div key={idx} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group/act is-active">
+                                                            <div className="flex items-center justify-center w-4 h-4 rounded-full border border-pink-500 bg-[#0a0a0a] text-pink-500 shadow shrink-0 md:order-1 md:group-odd/act:-translate-x-1/2 md:group-even/act:translate-x-1/2 z-10 transition-colors group-hover/act:bg-pink-500 group-hover/act:text-white" />
+                                                            <div className="w-[calc(100%-2.5rem)] md:w-[calc(50%-1.5rem)] bg-white/5 rounded-xl border border-white/5 p-3 hover:border-pink-500/30 transition-colors">
+                                                                <a href={act.url} target="_blank" rel="noreferrer" className="block">
+                                                                    <span className="block text-[11px] text-white/80 group-hover/act:text-white truncate mb-1">{act.message}</span>
+                                                                    <span className="block text-[8px] font-mono text-white/30 uppercase">{new Date(act.date).toLocaleDateString()}</span>
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="text-[10px] font-mono text-white/20 italic">
+                                                    No recent logged activity
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                ))}
+                                </details>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        return (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/80 backdrop-blur-xl" />
+                <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-4xl max-h-[85vh] flex flex-col bg-[#080808] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl z-10">
+                    <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-pink-500/10 flex items-center justify-center flex-shrink-0">
+                                <Github className="text-pink-500" size={20} />
                             </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                            <div>
+                                <h3 className="text-lg font-bold text-white tracking-tight uppercase">{repoInfo.name}</h3>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-[9px] font-mono text-white/40 uppercase tracking-widest">{repoInfo.repoUrl}</span>
+                                    <a href={repoInfo.repoUrl} target="_blank" rel="noreferrer" className="text-pink-500 hover:text-pink-400 transition-colors"><ExternalLink size={10}/></a>
+                                </div>
+                            </div>
+                        </div>
+                        <button onClick={onClose} className="p-3 bg-white/5 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-all">
+                            <X size={16} />
+                        </button>
+                    </div>
+                    
+                    <div className="p-6 overflow-y-auto custom-scrollbar flex-1 relative">
+                        {renderContent()}
+                    </div>
+                </motion.div>
             </div>
         );
     };
 
-    const renderAdminView = () => (
-        <div className="space-y-8">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-xl font-bold text-white tracking-tight uppercase">Group Command Center</h2>
-                    <p className="text-[10px] font-mono text-white/40 uppercase tracking-[0.2em] mt-1">Global Project Oversight</p>
-                </div>
-                <button 
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-pink-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-pink-600 transition-all shadow-lg shadow-pink-500/20"
-                >
-                    <Plus size={14} />
-                    New Project Group
-                </button>
-            </div>
-
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                {groups.map(group => (
-                    <motion.div 
-                        layout
-                        key={group._id}
-                        className="bg-white/[0.03] border border-pink-500/10 rounded-2xl overflow-hidden hover:border-pink-500/30 transition-all group"
-                    >
-                        <div className="p-6 space-y-4">
-                            <div className="flex items-start justify-between">
-                                <div className="space-y-1">
-                                    <h3 className="text-base font-bold text-white uppercase">{group.name}</h3>
-                                    <p className="text-xs text-white/40 line-clamp-1">{group.description || 'No description provided.'}</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <button 
-                                        onClick={() => {
-                                            setEditingGroup(group);
-                                            setIsEditModalOpen(true);
-                                        }}
-                                        className="p-2 bg-white/5 border border-white/10 rounded-lg text-white/40 hover:text-pink-500 hover:bg-pink-500/10 transition-all"
-                                        title="Edit Group Details"
-                                    >
-                                        <Edit2 size={14} />
-                                    </button>
-                                    <button 
-                                        onClick={() => {
-                                            setSelectedGroup(group);
-                                            setIsAssignTaskModalOpen(true);
-                                        }}
-                                        className="p-2 bg-white/5 border border-white/10 rounded-lg text-white/40 hover:text-pink-500 hover:bg-pink-500/10 transition-all"
-                                        title="Assign Priority Task"
-                                    >
-                                        <ClipboardList size={16} />
-                                    </button>
-                                    <button 
-                                        onClick={() => handleDeleteGroup(group._id)}
-                                        className="p-2 bg-white/5 border border-white/10 rounded-lg text-white/40 hover:text-red-500 hover:bg-red-500/10 transition-all"
-                                        title="Dissolve Group"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
+    const GroupCard = ({ group }) => {
+        // Safe mapping to prevent backend data crashes if users are deleted
+        const validMembers = (group.members || []).filter(Boolean);
+        const isSelected = selectedGroup?._id === group._id;
+        
+        return (
+            <motion.div layout className={`bg-white/[0.02] border transition-all rounded-3xl p-6 relative overflow-hidden group flex flex-col h-full ${isSelected ? 'border-pink-500/40 shadow-[0_0_30px_rgba(236,72,153,0.1)]' : 'border-white/5 hover:border-white/20'}`}>
+                {/* Visual Flair */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/10 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                
+                <div className="relative z-10 flex-1 flex flex-col">
+                    <div className="flex justify-between items-start gap-4 mb-4">
+                        <div className="space-y-1">
+                            <h3 className="text-base font-bold text-white uppercase tracking-tight">{group.name}</h3>
+                            <p className="text-xs text-white/40 line-clamp-2 leading-relaxed">{group.description || 'No description assigned.'}</p>
+                        </div>
+                        {isAdmin && activeTab === 'management' && (
+                            <div className="flex items-center gap-1 bg-black/40 rounded-xl p-1 border border-white/5 shrink-0">
+                                <button onClick={() => { setEditingGroup(group); setIsEditModalOpen(true); }} className="p-1.5 text-white/40 hover:text-white hover:bg-white/10 rounded-lg transition-all" title="Edit Group">
+                                    <Edit2 size={13} />
+                                </button>
+                                <button onClick={() => { setSelectedGroup(group); setIsAssignTaskModalOpen(true); }} className="p-1.5 text-white/40 hover:text-amber-400 hover:bg-amber-400/10 rounded-lg transition-all" title="Assign Priority Task">
+                                    <ClipboardList size={13} />
+                                </button>
+                                <button onClick={() => handleDeleteGroup(group._id)} className="p-1.5 text-white/40 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all" title="Dissolve Group">
+                                    <Trash2 size={13} />
+                                </button>
                             </div>
+                        )}
+                    </div>
 
-                            <div className="py-3 border-y border-white/5">
-                                <div className="flex items-center justify-between mb-3">
-                                    <span className="text-[9px] font-mono text-white/30 uppercase tracking-widest">Active Repository</span>
-                                    {group.repoUrl ? (
-                                        <a href={group.repoUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[10px] font-bold text-pink-400 hover:text-white transition-colors">
-                                            VIEW REPO <ExternalLink size={10} />
-                                        </a>
-                                    ) : (
-                                        <span className="text-[10px] text-white/20">NOT LINKED</span>
-                                    )}
-                                </div>
-                                <GitHubStats repoUrl={group.repoUrl} />
-                            </div>
-
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[9px] font-mono text-white/30 uppercase tracking-widest">Team Members ({group.members.length})</span>
-                                    <button 
-                                        onClick={() => {
-                                            setSelectedGroup(group);
-                                            fetchGroups(); // Refresh to ensure updated lists
-                                        }}
-                                        className="text-[9px] font-bold text-pink-400 uppercase tracking-widest hover:text-white"
-                                    >
-                                        Manage Roster
-                                    </button>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {group.members.map(member => (
-                                        <div key={member._id} className="relative group/member">
-                                            <div className="w-8 h-8 rounded-lg bg-pink-500/20 border border-pink-500/20 flex items-center justify-center text-[10px] font-bold text-pink-400 overflow-hidden" title={member.name}>
-                                                {member.profilePicture ? (
-                                                    <img src={AuthService.getFileUrl(member.profilePicture)} alt="" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    member.name[0].toUpperCase()
-                                                )}
+                    <div className="mt-auto space-y-5">
+                        <div className="flex items-center justify-between">
+                            <div className="flex -space-x-2">
+                                {validMembers.slice(0, 5).map(member => (
+                                    <div key={member._id} className="w-8 h-8 rounded-full border-2 border-[#121212] bg-[#1a1a1a] flex items-center justify-center overflow-hidden shrink-0 relative group/tooltip">
+                                        {member.profilePicture ? (
+                                            <img src={AuthService.getFileUrl(member.profilePicture)} alt="" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <span className="text-[10px] font-bold text-pink-500">{member.name ? member.name[0].toUpperCase() : '?'}</span>
+                                        )}
+                                        {isAdmin && activeTab === 'management' && (
+                                            <div className="absolute inset-0 bg-red-500/80 flex items-center justify-center opacity-0 hover:opacity-100 cursor-pointer transition-opacity z-10" onClick={() => handleRemoveMember(group._id, member._id)}>
+                                                <X size={12} className="text-white" />
                                             </div>
-                                            <button 
-                                                onClick={() => handleRemoveMember(group._id, member._id)}
-                                                className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover/member:opacity-100 transition-all scale-75 hover:scale-100"
-                                            >
-                                                <X size={8} />
-                                            </button>
-                                        </div>
-                                    ))}
-                                    <button 
-                                        onClick={() => setSelectedGroup(group)}
-                                        className="w-8 h-8 rounded-lg bg-white/5 border border-dashed border-white/10 flex items-center justify-center text-white/20 hover:text-pink-400 hover:border-pink-400/40 transition-all"
-                                    >
-                                        <Plus size={14} />
-                                    </button>
-                                </div>
+                                        )}
+                                    </div>
+                                ))}
+                                {validMembers.length > 5 && (
+                                    <div className="w-8 h-8 rounded-full border-2 border-[#121212] bg-white/5 flex items-center justify-center shrink-0">
+                                        <span className="text-[9px] font-bold text-white/60">+{validMembers.length - 5}</span>
+                                    </div>
+                                )}
                             </div>
+                            
+                            {isAdmin && activeTab === 'management' && (
+                                <button onClick={() => setSelectedGroup(isSelected ? null : group)} className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg border transition-all ${isSelected ? 'bg-pink-500 text-white border-pink-500' : 'text-white/40 hover:text-white border-white/10 hover:border-white/20'}`}>
+                                    {isSelected ? 'Done' : 'Manage'}
+                                </button>
+                            )}
+                            {!isAdmin && (
+                                <span className="text-[10px] font-mono text-white/30 uppercase tracking-widest">{validMembers.length} Members</span>
+                            )}
                         </div>
 
-                        {/* Expandable Member Search (only if selected) */}
+                        {/* Inline Management Area Base */}
                         <AnimatePresence>
-                            {selectedGroup?._id === group._id && (
-                                <motion.div 
-                                    initial={{ height: 0 }}
-                                    animate={{ height: 'auto' }}
-                                    exit={{ height: 0 }}
-                                    className="border-t border-white/5 bg-black/20 overflow-hidden"
-                                >
-                                    <div className="p-4 space-y-4">
-                                        <div className="relative">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
-                                            <input 
-                                                type="text"
-                                                placeholder="Search members to add..."
-                                                className="w-full bg-black/40 border border-white/5 rounded-lg pl-9 pr-4 py-2 text-[11px] outline-none text-white focus:border-pink-500/30"
-                                                value={searchQuery}
-                                                onChange={(e) => setSearchQuery(e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="max-h-40 overflow-y-auto custom-scrollbar space-y-1">
-                                            {allUsers
-                                                .filter(u => !group.members.some(m => m._id === u._id))
-                                                .filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()) || u.email.toLowerCase().includes(searchQuery.toLowerCase()))
-                                                .map(u => (
-                                                    <div key={u._id} className="flex items-center justify-between p-2 hover:bg-white/5 rounded-lg transition-colors group/row">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-6 h-6 rounded bg-pink-500/10 flex items-center justify-center text-[8px] text-pink-500">
-                                                                {u.name[0]}
-                                                            </div>
-                                                            <span className="text-[10px] text-white/80">{u.name}</span>
+                            {isSelected && isAdmin && activeTab === 'management' && (
+                                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="border-t border-white/5 pt-4 overflow-hidden">
+                                     <div className="relative mb-3">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
+                                        <input 
+                                            type="text"
+                                            placeholder="Assign member..."
+                                            className="w-full bg-black/40 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-[11px] outline-none text-white focus:border-pink-500/50"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="max-h-32 overflow-y-auto custom-scrollbar space-y-1">
+                                        {allUsers
+                                            .filter(u => !validMembers.some(m => m._id === u._id))
+                                            .filter(u => u.name?.toLowerCase().includes(searchQuery.toLowerCase()) || u.email?.toLowerCase().includes(searchQuery.toLowerCase()))
+                                            .map(u => (
+                                                <div key={u._id} className="flex items-center justify-between p-2 hover:bg-white/5 rounded-lg transition-colors group/row">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-6 h-6 rounded bg-pink-500/10 flex items-center justify-center text-[8px] text-pink-500 border border-pink-500/20">
+                                                            {u.name ? u.name[0].toUpperCase() : '?'}
                                                         </div>
-                                                        <button 
-                                                            onClick={() => handleAddMember(group._id, u._id)}
-                                                            className="px-3 py-1 bg-pink-500/10 text-pink-400 rounded text-[9px] font-bold uppercase hover:bg-pink-500 hover:text-white transition-all"
-                                                        >
-                                                            Add
-                                                        </button>
+                                                        <span className="text-[10px] text-white/80 font-bold truncate max-w-[100px]">{u.name || u.email}</span>
                                                     </div>
-                                                ))}
-                                        </div>
-                                        <button 
-                                            onClick={() => setSelectedGroup(null)}
-                                            className="w-full py-2 text-[9px] font-bold text-white/20 hover:text-white/40 uppercase tracking-widest"
-                                        >
-                                            Collapse Editor
-                                        </button>
+                                                    <button onClick={() => handleAddMember(group._id, u._id)} className="px-3 py-1 bg-white/5 text-white/60 rounded text-[9px] font-bold uppercase hover:bg-pink-500 hover:text-white transition-all">Add</button>
+                                                </div>
+                                            ))}
                                     </div>
                                 </motion.div>
                             )}
                         </AnimatePresence>
-                    </motion.div>
+
+                        {/* See Commits Button Layer */}
+                        <div className="pt-4 border-t border-white/5">
+                            {group.repoUrl ? (
+                                <button 
+                                    onClick={() => setActiveGithubRepo({ repoUrl: group.repoUrl, name: group.name })}
+                                    className="w-full py-3 bg-pink-500/5 hover:bg-pink-500 border border-pink-500/20 hover:border-pink-500 text-pink-500 hover:text-white rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 group/btn"
+                                >
+                                    <Github size={14} className="group-hover/btn:-mt-1 transition-all" /> See Commits & Activity
+                                </button>
+                            ) : (
+                                <div className="w-full py-3 bg-white/[0.01] border border-dashed border-white/10 text-white/20 rounded-xl text-[10px] font-bold uppercase tracking-widest text-center flex items-center justify-center gap-2">
+                                    <AlertCircle size={14} /> GitHub Unlinked
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
+        );
+    };
+
+    const renderAdminView = () => (
+        <div className="space-y-8 pb-10">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-2xl font-bold text-white tracking-tight uppercase">Command Center</h2>
+                    <p className="text-[10px] font-mono text-white/40 uppercase tracking-[0.2em] mt-1">Global Project Oversight</p>
+                </div>
+                <button 
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="flex items-center gap-2 px-6 py-3 bg-pink-500 text-white rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-pink-600 transition-all shadow-lg shadow-pink-500/20 w-full sm:w-auto justify-center"
+                >
+                    <Plus size={14} /> New Project Group
+                </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {groups.map(group => (
+                    <GroupCard key={group._id} group={group} isAdmin={isAdmin} />
                 ))}
             </div>
         </div>
     );
 
     const renderMemberView = () => (
-        <div className="space-y-8">
+        <div className="space-y-8 pb-10">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-xl font-bold text-white tracking-tight uppercase">Assigned Projects</h2>
+                    <h2 className="text-2xl font-bold text-white tracking-tight uppercase">My Assignments</h2>
                     <p className="text-[10px] font-mono text-white/40 uppercase tracking-[0.2em] mt-1">Registry of Group Responsibilities</p>
                 </div>
             </div>
 
             {groups.length === 0 ? (
-                <div className="py-20 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-3xl">
-                    <div className="p-4 bg-white/5 rounded-full mb-4">
-                        <Users size={32} className="text-white/10" />
+                <div className="py-24 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-[3rem]">
+                    <div className="p-5 bg-white/5 rounded-full mb-6 relative">
+                        <Users size={32} className="text-white/20 relative z-10" />
+                        <div className="absolute inset-0 bg-pink-500/20 rounded-full blur-xl" />
                     </div>
-                    <p className="text-[10px] font-mono text-white/20 uppercase tracking-[0.3em]">No Active Group Assignments</p>
-                    <p className="text-[9px] text-white/10 mt-2">Contact President or GS to join a project group.</p>
+                    <p className="text-[11px] font-mono text-white/40 uppercase tracking-[0.3em]">No Active Deployments</p>
+                    <p className="text-[10px] text-white/20 mt-3 font-mono">Contact Administration to be assigned to a project group.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {groups.map(group => (
-                        <motion.div 
-                            key={group._id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-white/[0.03] border border-pink-500/10 rounded-[2.5rem] overflow-hidden"
-                        >
-                            <div className="p-8 md:p-10 flex flex-col lg:flex-row gap-10">
-                                <div className="flex-1 space-y-6">
-                                    <div className="space-y-2">
-                                        <h3 className="text-2xl font-bold text-white uppercase tracking-tight">{group.name}</h3>
-                                        <p className="text-sm text-white/50 leading-relaxed max-w-xl">{group.description || 'No project description available.'}</p>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                        <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
-                                            <p className="text-[9px] font-mono text-white/30 uppercase tracking-widest mb-2">Team Size</p>
-                                            <p className="text-lg font-bold text-white">{group.members.length} Members</p>
-                                        </div>
-                                        <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
-                                            <p className="text-[9px] font-mono text-white/30 uppercase tracking-widest mb-2">My Role</p>
-                                            <p className="text-lg font-bold text-pink-500">Contributor</p>
-                                        </div>
-                                        <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl col-span-2 sm:col-span-1">
-                                            <p className="text-[9px] font-mono text-white/30 uppercase tracking-widest mb-2">Created On</p>
-                                            <p className="text-lg font-bold text-white">{new Date(group.createdAt).toLocaleDateString()}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-6">
-                                        <p className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-4">Core Team</p>
-                                        <div className="flex flex-wrap gap-3">
-                                            {group.members.map(member => (
-                                                <div key={member._id} className="flex items-center gap-2 p-1.5 bg-white/[0.03] border border-white/5 rounded-xl pr-4">
-                                                    <div className="w-8 h-8 rounded-lg bg-pink-500/20 border border-pink-500/20 flex items-center justify-center text-[10px] font-bold text-pink-400 overflow-hidden">
-                                                        {member.profilePicture ? (
-                                                            <img src={AuthService.getFileUrl(member.profilePicture)} alt="" className="w-full h-full object-cover" />
-                                                        ) : (
-                                                            member.name[0].toUpperCase()
-                                                        )}
-                                                    </div>
-                                                    <span className="text-[10px] font-bold text-white/80">{member.name}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="lg:w-80 space-y-4">
-                                    <div className="p-6 bg-pink-500/[0.03] border border-pink-500/20 rounded-3xl relative overflow-hidden group">
-                                        <div className="absolute -top-10 -right-10 w-24 h-24 bg-pink-500/10 blur-3xl rounded-full" />
-                                        <h4 className="text-[10px] font-mono font-bold text-pink-500 uppercase tracking-widest mb-4">GitHub Insights</h4>
-                                        
-                                        <div className="space-y-6 relative z-10">
-                                            <GitHubStats repoUrl={group.repoUrl} />
-                                            {group.repoUrl && (
-                                                <a 
-                                                    href={group.repoUrl} 
-                                                    target="_blank" 
-                                                    rel="noreferrer"
-                                                    className="w-full py-3 bg-pink-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-pink-600 transition-all shadow-lg shadow-pink-500/20"
-                                                >
-                                                    <Github size={14} />
-                                                    View Repository
-                                                </a>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="p-6 bg-white/[0.02] border border-white/5 rounded-3xl">
-                                        <h4 className="text-[10px] font-mono font-bold text-white/40 uppercase tracking-widest mb-4">Project Guidelines</h4>
-                                        <ul className="space-y-3">
-                                            {[
-                                                'Maintain 80% code coverage',
-                                                'Daily sync on commit logs',
-                                                'Priority to Admin assignments'
-                                            ].map((text, i) => (
-                                                <li key={i} className="flex gap-3 text-[10px] text-white/60">
-                                                    <ChevronRight size={12} className="text-pink-500 shrink-0" />
-                                                    {text}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
+                        <GroupCard key={group._id} group={group} isAdmin={false} />
                     ))}
                 </div>
             )}
@@ -646,53 +572,41 @@ const GroupPortal = () => {
     );
 
     const GroupSkeleton = () => (
-        <div className="bg-white/[0.03] border border-white/5 rounded-2xl overflow-hidden animate-pulse">
-            <div className="p-6 space-y-4">
-                <div className="flex justify-between items-start">
-                    <div className="space-y-2 flex-1">
-                        <div className="h-4 bg-white/5 rounded w-1/3" />
-                        <div className="h-3 bg-white/5 rounded w-1/2" />
-                    </div>
+        <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 h-[250px] flex flex-col justify-between animate-pulse">
+            <div>
+                <div className="h-5 bg-white/5 rounded-lg w-1/2 mb-3" />
+                <div className="h-3 bg-white/5 rounded w-3/4 mb-1" />
+                <div className="h-3 bg-white/5 rounded w-2/3" />
+            </div>
+            <div>
+                <div className="flex gap-2 mb-6">
+                    {[1, 2, 3].map(i => <div key={i} className="w-8 h-8 rounded-full bg-white/5 border-2 border-[#121212]" />)}
                 </div>
-                <div className="py-3 border-y border-white/5 space-y-2">
-                    <div className="h-2 bg-white/5 rounded w-1/4" />
-                    <div className="h-4 bg-white/5 rounded w-2/3" />
-                </div>
-                <div className="space-y-3">
-                    <div className="h-2 bg-white/5 rounded w-1/5" />
-                    <div className="flex gap-2">
-                        {[1, 2, 3].map(i => <div key={i} className="w-8 h-8 rounded-lg bg-white/5" />)}
-                    </div>
-                </div>
+                <div className="h-10 bg-white/5 rounded-xl w-full" />
             </div>
         </div>
     );
 
     if (loading && groups.length === 0) {
         return (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
                 <div className="flex items-center justify-between mb-8">
                     <div className="h-10 w-48 bg-white/5 rounded-xl animate-pulse" />
                     {isLongSync && (
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 px-4 py-2 bg-pink-500/10 border border-pink-500/20 rounded-full">
-                            <Clock size={12} className="text-pink-500 animate-spin-slow" />
-                            <span className="text-[10px] font-mono text-pink-500 font-bold uppercase tracking-widest">Establishing Uplink... (Server Waking Up)</span>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 px-5 py-2.5 bg-pink-500/10 border border-pink-500/20 rounded-full">
+                            <Clock size={14} className="text-pink-500 animate-spin-slow" />
+                            <span className="text-[10px] font-mono text-pink-500 font-bold uppercase tracking-widest">Establishing Uplink... (Server Waking)</span>
                         </motion.div>
                     )}
                     {error && (
-                        <div className="flex items-center gap-4">
-                            <span className="text-[10px] font-mono text-white/30 uppercase">{error}</span>
-                            <button 
-                                onClick={() => window.location.reload()}
-                                className="px-4 py-2 bg-pink-500 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-pink-500/20"
-                            >
-                                Retry Connection
-                            </button>
+                        <div className="flex items-center gap-4 bg-red-500/10 border border-red-500/20 p-2 pr-4 rounded-xl">
+                            <div className="p-2 bg-red-500/20 rounded-lg text-red-500"><AlertCircle size={14}/></div>
+                            <span className="text-[10px] font-mono text-white/60 uppercase">{error}</span>
                         </div>
                     )}
                 </div>
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                    {[1, 2, 3, 4].map(i => <GroupSkeleton key={i} />)}
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {[1, 2, 3].map(i => <GroupSkeleton key={i} />)}
                 </div>
             </div>
         );
@@ -701,12 +615,12 @@ const GroupPortal = () => {
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
             {isAdmin && (
-                <div className="flex items-center justify-between mb-8 overflow-x-auto custom-scrollbar pb-2">
-                    <div className="flex gap-2 p-1.5 bg-pink-500/5 rounded-2xl w-fit border border-pink-500/20 backdrop-blur-xl shrink-0">
+                <div className="flex flex-wrap items-center justify-between gap-4 mb-8 border-b border-white/5 pb-6">
+                    <div className="flex gap-2 p-1.5 bg-black/40 rounded-2xl border border-white/10 backdrop-blur-xl shrink-0 h-fit">
                         <button 
                             onClick={() => setActiveTab('overview')}
                             className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
-                                activeTab === 'overview' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/75 hover:text-white/90'
+                                activeTab === 'overview' ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/20' : 'text-white/40 hover:text-white/90 hover:bg-white/5'
                             }`}
                         >
                             My Groups
@@ -714,7 +628,7 @@ const GroupPortal = () => {
                         <button 
                             onClick={() => setActiveTab('management')}
                             className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
-                                activeTab === 'management' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/75 hover:text-white/90'
+                                activeTab === 'management' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/40 hover:text-white/90 hover:bg-white/5'
                             }`}
                         >
                             Admin Command
@@ -723,92 +637,67 @@ const GroupPortal = () => {
                     
                     <div className="flex items-center gap-3">
                         {isSyncing && (
-                            <div className="flex items-center gap-2 px-3 py-1 bg-pink-500/10 border border-pink-500/20 rounded-full">
+                            <div className="flex items-center gap-2 px-4 py-2 bg-pink-500/10 border border-pink-500/20 rounded-full">
                                 <div className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse" />
                                 <span className="text-[9px] font-mono text-pink-500 font-bold uppercase tracking-widest">Live Sync</span>
                             </div>
                         )}
                         <button 
                             onClick={handleRefresh}
-                            className="p-2 border border-white/10 rounded-xl hover:bg-white/5 text-white/40 transition-all"
+                            className="p-2 border border-white/10 rounded-xl hover:bg-white/5 text-white/40 transition-all flex items-center justify-center bg-black/40 h-10 w-10"
                         >
-                            <Clock size={14} className={isSyncing ? 'animate-spin-slow' : ''} />
+                            <Clock size={16} className={isSyncing ? 'animate-spin-slow' : ''} />
                         </button>
                     </div>
                 </div>
             )}
 
             {!isAdmin && isSyncing && (
-                <div className="fixed top-8 right-8 z-50 flex items-center gap-2 px-4 py-2 bg-[#0a0a0a] border border-pink-500/20 rounded-full shadow-2xl">
+                <div className="fixed bottom-8 right-8 z-50 flex items-center gap-2 px-5 py-3 bg-[#0a0a0a] border border-pink-500/20 rounded-full shadow-2xl">
                     <div className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" />
-                    <span className="text-[9px] font-mono text-pink-500/80 font-bold uppercase tracking-widest">Sychronizing Registry...</span>
+                    <span className="text-[9px] font-mono text-pink-500/80 font-bold uppercase tracking-widest">Synchronizing Registry...</span>
                 </div>
             )}
 
             {isAdmin && activeTab === 'management' ? renderAdminView() : renderMemberView()}
 
-            {/* Create Group Modal */}
+            {/* Overlays / Modals */}
+            <AnimatePresence>
+                {activeGithubRepo && (
+                    <GitHubStatsModal 
+                        repoInfo={activeGithubRepo} 
+                        onClose={() => setActiveGithubRepo(null)} 
+                    />
+                )}
+            </AnimatePresence>
+
             <AnimatePresence>
                 {isCreateModalOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsCreateModalOpen(false)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
-                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-lg bg-[#121212] border border-pink-500/20 rounded-[2.5rem] p-10 overflow-hidden shadow-2xl">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsCreateModalOpen(false)} className="absolute inset-0 bg-black/80 backdrop-blur-xl" />
+                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-lg bg-[#0a0a0b] border border-white/10 rounded-[2.5rem] p-10 overflow-hidden shadow-2xl">
                             <div className="relative z-10 space-y-8">
                                 <div>
-                                    <h3 className="text-2xl font-bold text-white tracking-tight uppercase">Assemble Project Group</h3>
+                                    <h3 className="text-2xl font-bold text-white tracking-tight uppercase">Assemble Team</h3>
                                     <p className="text-[10px] font-mono text-white/40 uppercase tracking-[0.2em] mt-1">Initialize new club assignment</p>
                                 </div>
-
+                                {/* Reduced form duplication handled cleanly above */}
                                 <form onSubmit={handleCreateGroup} className="space-y-6">
                                     <div className="space-y-4">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-mono text-pink-500/60 uppercase tracking-widest ml-1">Group Designation</label>
-                                            <input 
-                                                required
-                                                type="text"
-                                                placeholder="e.g. AI Research Group"
-                                                className="w-full bg-white/5 border border-pink-500/10 rounded-xl px-5 py-4 text-sm outline-none text-white focus:border-pink-500/30 transition-all"
-                                                value={newGroup.name}
-                                                onChange={(e) => setNewGroup({...newGroup, name: e.target.value})}
-                                            />
+                                            <input required type="text" placeholder="Project Title" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs outline-none text-white focus:border-pink-500/50 transition-all font-bold" value={newGroup.name} onChange={(e) => setNewGroup({...newGroup, name: e.target.value})} />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-mono text-pink-500/60 uppercase tracking-widest ml-1">GitHub Repo Link</label>
-                                            <input 
-                                                type="text"
-                                                placeholder="https://github.com/organization/repo"
-                                                className="w-full bg-white/5 border border-pink-500/10 rounded-xl px-5 py-4 text-sm outline-none text-white focus:border-pink-500/30 transition-all"
-                                                value={newGroup.repoUrl}
-                                                onChange={(e) => setNewGroup({...newGroup, repoUrl: e.target.value})}
-                                            />
+                                            <input type="url" placeholder="GitHub Repository URL" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs outline-none text-white focus:border-pink-500/50 transition-all" value={newGroup.repoUrl} onChange={(e) => setNewGroup({...newGroup, repoUrl: e.target.value})} />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-mono text-pink-500/60 uppercase tracking-widest ml-1">Project Objectives</label>
-                                            <textarea 
-                                                rows="3"
-                                                placeholder="Detailed project scope..."
-                                                className="w-full bg-white/5 border border-pink-500/10 rounded-xl px-5 py-4 text-sm outline-none text-white focus:border-pink-500/30 transition-all resize-none"
-                                                value={newGroup.description}
-                                                onChange={(e) => setNewGroup({...newGroup, description: e.target.value})}
-                                            />
+                                            <textarea rows="3" placeholder="Project Objectives..." className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs outline-none text-white focus:border-pink-500/50 transition-all resize-none" value={newGroup.description} onChange={(e) => setNewGroup({...newGroup, description: e.target.value})} />
                                         </div>
                                     </div>
 
-                                    <div className="flex gap-3 pt-4">
-                                        <button 
-                                            type="button"
-                                            onClick={() => setIsCreateModalOpen(false)}
-                                            className="flex-1 py-4 bg-white/5 border border-white/5 rounded-xl text-[10px] font-bold uppercase tracking-widest text-white/40 hover:text-white transition-all"
-                                        >
-                                            Discard
-                                        </button>
-                                        <button 
-                                            type="submit"
-                                            disabled={isSyncing}
-                                            className={`flex-2 px-10 py-4 bg-pink-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all shadow-xl ${isSyncing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-pink-600'}`}
-                                        >
-                                            {isSyncing ? 'Syncing...' : 'Create Registry'}
-                                        </button>
+                                    <div className="flex gap-3 pt-4 border-t border-white/5 mt-6">
+                                        <button type="button" onClick={() => setIsCreateModalOpen(false)} className="flex-1 py-4 bg-white/5 border border-white/5 rounded-2xl text-[10px] font-bold uppercase tracking-widest text-white/40 hover:text-white transition-all">Discard</button>
+                                        <button type="submit" disabled={isSyncing} className="flex-1 py-4 bg-pink-500 text-white rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-pink-600 disabled:opacity-50">Launch</button>
                                     </div>
                                 </form>
                             </div>
@@ -817,82 +706,24 @@ const GroupPortal = () => {
                 )}
             </AnimatePresence>
 
-            {/* Assign Task Modal */}
             <AnimatePresence>
                 {isAssignTaskModalOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsAssignTaskModalOpen(false)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
-                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-lg bg-[#121212] border border-pink-500/20 rounded-[2.5rem] p-10 overflow-hidden shadow-2xl">
-                            <div className="relative z-10 space-y-8">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsAssignTaskModalOpen(false)} className="absolute inset-0 bg-black/80 backdrop-blur-xl" />
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-lg bg-[#0a0a0b] border border-white/10 rounded-[2.5rem] p-10 overflow-hidden shadow-2xl">
+                            <div className="relative z-10 space-y-6">
                                 <div>
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className="w-8 h-8 rounded-lg bg-pink-500/20 flex items-center justify-center text-pink-500">
-                                            <AlertCircle size={18} />
-                                        </div>
-                                        <h3 className="text-2xl font-bold text-white tracking-tight uppercase">Priority Dispatch</h3>
-                                    </div>
-                                    <p className="text-[10px] font-mono text-white/40 uppercase tracking-[0.2em]">Target: {selectedGroup?.name}</p>
+                                    <h3 className="text-2xl font-bold text-white tracking-tight uppercase">Priority Dispatch</h3>
+                                    <p className="text-[10px] font-mono text-white/40 uppercase tracking-[0.2em] mt-1">Target: {selectedGroup?.name}</p>
                                 </div>
-
-                                <form onSubmit={handleAssignGroupTask} className="space-y-6">
-                                    <div className="space-y-4">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest ml-1">Task Title</label>
-                                            <input 
-                                                required
-                                                type="text"
-                                                placeholder="Primary objective name..."
-                                                className="w-full bg-white/5 border border-pink-500/10 rounded-xl px-5 py-4 text-sm outline-none text-white focus:border-pink-500/30 transition-all font-bold"
-                                                value={taskData.title}
-                                                onChange={(e) => setTaskData({...taskData, title: e.target.value})}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest ml-1">Detailed Instructions</label>
-                                            <textarea 
-                                                required
-                                                rows="4"
-                                                placeholder="Process steps and requirements..."
-                                                className="w-full bg-white/5 border border-pink-500/10 rounded-xl px-5 py-4 text-sm outline-none text-white focus:border-pink-500/30 transition-all resize-none"
-                                                value={taskData.description}
-                                                onChange={(e) => setTaskData({...taskData, description: e.target.value})}
-                                            />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest ml-1">Deadline</label>
-                                                <input 
-                                                    required
-                                                    type="date"
-                                                    className="w-full bg-white/5 border border-pink-500/10 rounded-xl px-5 py-4 text-[10px] outline-none text-white focus:border-pink-500/30 transition-all"
-                                                    value={taskData.deadline}
-                                                    onChange={(e) => setTaskData({...taskData, deadline: e.target.value})}
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest ml-1">Priority Status</label>
-                                                <div className="w-full bg-pink-500/10 border border-pink-500/20 rounded-xl px-5 py-4 flex items-center gap-3">
-                                                    <div className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" />
-                                                    <span className="text-[10px] font-bold text-pink-400 uppercase tracking-widest">URGENT LEVEL</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-3 pt-4">
-                                        <button 
-                                            type="button"
-                                            onClick={() => setIsAssignTaskModalOpen(false)}
-                                            className="flex-1 py-4 bg-white/5 border border-white/5 rounded-xl text-[10px] font-bold uppercase tracking-widest text-white/40 hover:text-white transition-all"
-                                        >
-                                            Abort
-                                        </button>
-                                        <button 
-                                            type="submit"
-                                            className="flex-2 px-10 py-4 bg-pink-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-pink-600 transition-all shadow-xl"
-                                        >
-                                            Broadcast Priority
-                                        </button>
+                                <form onSubmit={handleAssignGroupTask} className="space-y-4">
+                                    <input required type="text" placeholder="Objective Title" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs outline-none text-white focus:border-pink-500/50 transition-all font-bold" value={taskData.title} onChange={(e) => setTaskData({...taskData, title: e.target.value})} />
+                                    <textarea required rows="4" placeholder="Instructions..." className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs outline-none text-white focus:border-pink-500/50 transition-all resize-none" value={taskData.description} onChange={(e) => setTaskData({...taskData, description: e.target.value})} />
+                                    <input required type="date" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs outline-none text-white focus:border-pink-500/50 transition-all [color-scheme:dark]" value={taskData.deadline} onChange={(e) => setTaskData({...taskData, deadline: e.target.value})} />
+                                    
+                                    <div className="flex gap-3 pt-6 border-t border-white/5">
+                                        <button type="button" onClick={() => setIsAssignTaskModalOpen(false)} className="flex-1 py-4 bg-white/5 rounded-2xl text-[10px] font-bold uppercase tracking-widest text-white/40 hover:text-white transition-all">Abort</button>
+                                        <button type="submit" className="flex-[2] py-4 bg-amber-500 text-black rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-amber-400 transition-all shadow-xl shadow-amber-500/20">Broadcast Priority</button>
                                     </div>
                                 </form>
                             </div>
@@ -901,84 +732,24 @@ const GroupPortal = () => {
                 )}
             </AnimatePresence>
 
-            {/* Edit Group Modal */}
             <AnimatePresence>
                 {isEditModalOpen && editingGroup && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setIsEditModalOpen(false)}
-                            className="absolute inset-0 bg-black/80 backdrop-blur-xl"
-                        />
-                        <motion.div 
-                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            className="bg-[#0A0A0B] border border-white/10 w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl relative z-[101]"
-                        >
-                            <div className="p-8 space-y-6">
-                                <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                                    <div>
-                                        <h3 className="text-xl font-bold text-white uppercase tracking-tight">Modify Project</h3>
-                                        <p className="text-[10px] font-mono text-white/30 uppercase mt-1">Registry Update Console</p>
-                                    </div>
-                                    <button onClick={() => setIsEditModalOpen(false)} className="p-2 hover:bg-white/5 rounded-full transition-all text-white/40 hover:text-white">
-                                        <X size={20} />
-                                    </button>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsEditModalOpen(false)} className="absolute inset-0 bg-black/80 backdrop-blur-xl" />
+                        <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="bg-[#0a0a0b] border border-white/10 w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl relative z-10 p-10">
+                             <div className="space-y-6">
+                                <div>
+                                    <h3 className="text-xl font-bold text-white uppercase tracking-tight">Modify Project</h3>
+                                    <p className="text-[10px] font-mono text-white/40 uppercase mt-1">Registry Update Console</p>
                                 </div>
-
                                 <form onSubmit={handleEditGroup} className="space-y-4">
-                                    <div className="space-y-4">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest ml-1">Team Name</label>
-                                            <input 
-                                                required
-                                                type="text"
-                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs outline-none text-white focus:border-pink-500/30 transition-all font-bold"
-                                                placeholder="e.g. AI Vision Team"
-                                                value={editingGroup.name}
-                                                onChange={(e) => setEditingGroup({...editingGroup, name: e.target.value})}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest ml-1">Mission Log</label>
-                                            <textarea 
-                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs outline-none text-white focus:border-pink-500/30 transition-all min-h-[100px] resize-none"
-                                                placeholder="Objectives and goals..."
-                                                value={editingGroup.description}
-                                                onChange={(e) => setEditingGroup({...editingGroup, description: e.target.value})}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest ml-1">GitHub Endpoint</label>
-                                            <input 
-                                                required
-                                                type="url"
-                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs outline-none text-white focus:border-pink-500/30 transition-all"
-                                                placeholder="https://github.com/org/repo"
-                                                value={editingGroup.repoUrl}
-                                                onChange={(e) => setEditingGroup({...editingGroup, repoUrl: e.target.value})}
-                                            />
-                                        </div>
-                                    </div>
+                                    <input required type="text" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs outline-none text-white focus:border-pink-500/50 transition-all font-bold" value={editingGroup.name} onChange={(e) => setEditingGroup({...editingGroup, name: e.target.value})} />
+                                    <input required type="url" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs outline-none text-white focus:border-pink-500/50 transition-all" value={editingGroup.repoUrl} onChange={(e) => setEditingGroup({...editingGroup, repoUrl: e.target.value})} />
+                                    <textarea className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs outline-none text-white focus:border-pink-500/50 transition-all resize-none" value={editingGroup.description} onChange={(e) => setEditingGroup({...editingGroup, description: e.target.value})} />
 
-                                    <div className="flex gap-3 pt-6">
-                                        <button 
-                                            type="button"
-                                            onClick={() => setIsEditModalOpen(false)}
-                                            className="flex-1 py-4 bg-white/5 text-white/40 border border-white/5 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:text-white transition-all underline-none"
-                                        >
-                                            Abort
-                                        </button>
-                                        <button 
-                                            type="submit"
-                                            disabled={isSyncing}
-                                            className={`flex-1 py-4 bg-pink-500 text-white rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all shadow-xl shadow-pink-500/20 ${isSyncing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-pink-600'}`}
-                                        >
-                                            {isSyncing ? 'Syncing Intel...' : 'Save Intel'}
-                                        </button>
+                                    <div className="flex gap-3 pt-6 border-t border-white/5">
+                                        <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 py-4 bg-white/5 text-white/40 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:text-white transition-all">Abort</button>
+                                        <button type="submit" disabled={isSyncing} className="flex-1 py-4 bg-pink-500 text-white rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-pink-600 disabled:opacity-50">Save Intel</button>
                                     </div>
                                 </form>
                             </div>
