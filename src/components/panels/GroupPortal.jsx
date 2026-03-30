@@ -279,24 +279,78 @@ const GroupPortal = () => {
                             exit={{ height: 0, opacity: 0 }}
                             className="overflow-hidden border-t border-white/5 pt-4 space-y-3"
                         >
-                            <label className="text-[9px] font-mono text-white/20 uppercase tracking-[0.2em] block mb-2">Member Throughput Tracking</label>
-                            <div className="grid grid-cols-1 gap-2 max-h-[150px] overflow-y-auto pr-2 custom-scrollbar">
+                            <label className="text-[9px] font-mono text-white/20 uppercase tracking-[0.2em] block mb-4">Unmasked Contributor Intelligence</label>
+                            <div className="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                                 {stats.contributors.map((c, i) => (
-                                    <div key={c.login} className="flex items-center justify-between bg-white/[0.02] p-2 rounded-lg border border-white/5">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[10px] font-mono text-white/20 w-4">{i + 1}</span>
-                                            <img src={c.avatar} className="w-5 h-5 rounded-md border border-white/10" alt="" />
-                                            <span className="text-[10px] font-bold text-white/70">{c.login.toUpperCase()}</span>
-                                        </div>
-                                        <div className="flex items-center gap-4">
-                                            <div className="h-1 w-20 bg-white/5 rounded-full overflow-hidden">
-                                                <div 
-                                                    className="h-full bg-pink-500 rounded-full" 
-                                                    style={{ width: `${Math.min(100, (c.commits / stats.totalCommits) * 100 * 2)}%` }} 
-                                                />
+                                    <div key={c.login} className="bg-white/[0.02] rounded-xl border border-white/5 overflow-hidden transition-all group/contrib">
+                                        <details className="group/details">
+                                            <summary className="flex items-center justify-between p-3 cursor-pointer hover:bg-white/[0.02] transition-colors list-none">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-[10px] font-mono text-white/20 w-4 text-right">{i + 1}</span>
+                                                    <img src={c.avatar} className="w-8 h-8 rounded-full border border-white/10" alt="" />
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[12px] font-bold text-white/90">{c.login}</span>
+                                                        <span className="text-[9px] font-mono text-pink-500 uppercase flex items-center gap-1 mt-0.5">
+                                                            <CheckCircle2 size={8} /> {c.activeIssues?.length || 0} Open Tickets
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="text-[14px] font-mono font-bold text-white">{c.commits}</span>
+                                                        <span className="text-[8px] font-mono text-white/30 uppercase tracking-widest">Commits</span>
+                                                    </div>
+                                                    <ChevronRight size={14} className="text-white/20 group-open/details:rotate-90 transition-transform" />
+                                                </div>
+                                            </summary>
+                                            
+                                            <div className="p-4 bg-black/40 border-t border-white/5 space-y-5">
+                                                {/* Active Issues Section */}
+                                                <div>
+                                                    <span className="text-[9px] font-mono text-white/30 uppercase tracking-[0.2em] mb-2 block flex items-center gap-1.5">
+                                                        <AlertCircle size={10} className="text-pink-500" /> Active Duty (Issues)
+                                                    </span>
+                                                    {c.activeIssues && c.activeIssues.length > 0 ? (
+                                                        <div className="space-y-1.5">
+                                                            {c.activeIssues.map((issue, idx) => (
+                                                                <a key={idx} href={issue.url} target="_blank" rel="noreferrer" className="block text-[10px] text-white/70 bg-white/5 border border-white/5 px-3 py-2 rounded-lg hover:bg-white/10 hover:text-white transition-all flex items-start gap-2">
+                                                                    <span className="text-pink-400 font-mono flex-shrink-0">#{issue.number}</span>
+                                                                    <span className="truncate leading-tight">{issue.title}</span>
+                                                                </a>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-[10px] font-mono text-white/20 italic bg-white/[0.02] px-3 py-2 rounded-lg border border-dashed border-white/5">
+                                                            No Active Issues Assigned
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Recent Activity Section */}
+                                                <div>
+                                                    <span className="text-[9px] font-mono text-white/30 uppercase tracking-[0.2em] mb-2 block flex items-center gap-1.5">
+                                                        <Clock size={10} className="text-pink-500" /> Recent Operations
+                                                    </span>
+                                                    {c.recentActivity && c.recentActivity.length > 0 ? (
+                                                        <div className="space-y-2 border-l border-white/10 ml-1.5 pl-3">
+                                                            {c.recentActivity.map((act, idx) => (
+                                                                <div key={idx} className="relative">
+                                                                    <div className="absolute -left-[17px] top-1.5 w-1.5 h-1.5 rounded-full bg-pink-500/50" />
+                                                                    <a href={act.url} target="_blank" rel="noreferrer" className="block group/act">
+                                                                        <span className="block text-[10px] text-white/70 group-hover/act:text-white truncate transition-colors">{act.message}</span>
+                                                                        <span className="block text-[8px] font-mono text-white/30 uppercase mt-0.5">{new Date(act.date).toLocaleString()}</span>
+                                                                    </a>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-[10px] font-mono text-white/20 italic pl-1">
+                                                            No recent intelligence available
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <span className="text-[10px] font-mono font-bold text-pink-500 w-12 text-right">{c.commits} COM</span>
-                                        </div>
+                                        </details>
                                     </div>
                                 ))}
                             </div>
