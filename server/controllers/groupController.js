@@ -7,13 +7,14 @@ const Task = require('../models/Task');
 // @access  Admin
 exports.createGroup = async (req, res) => {
     try {
-        const { name, description, repoUrl, members } = req.body;
+        const { name, description, repoUrl, members, inactivityLimitDays } = req.body;
         
         const group = await Group.create({
             name,
             description,
             repoUrl,
-            members
+            members,
+            inactivityLimitDays
         });
 
         res.status(201).json({

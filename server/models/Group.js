@@ -16,6 +16,11 @@ const groupSchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
+    inactivityLimitDays: {
+        type: Number,
+        default: 3,
+        min: 1
+    },
     members: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'

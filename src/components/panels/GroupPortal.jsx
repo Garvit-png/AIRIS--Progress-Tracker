@@ -24,7 +24,7 @@ const GroupPortal = () => {
     // Modals & Forms
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [newGroup, setNewGroup] = useState({ name: '', description: '', repoUrl: '' });
+    const [newGroup, setNewGroup] = useState({ name: '', description: '', repoUrl: '', inactivityLimitDays: 3 });
     const [editingGroup, setEditingGroup] = useState(null);
     
     const [searchQuery, setSearchQuery] = useState('');
@@ -113,7 +113,7 @@ const GroupPortal = () => {
         try {
             await AuthService.createGroup(newGroup);
             setIsCreateModalOpen(false);
-            setNewGroup({ name: '', description: '', repoUrl: '' });
+            setNewGroup({ name: '', description: '', repoUrl: '', inactivityLimitDays: 3 });
             fetchGroups();
         } catch (err) {
             alert(err.message);
@@ -286,22 +286,35 @@ const GroupPortal = () => {
                     )}
 
                     <div className="pt-2 border-t border-white/5">
-                        <label className="text-[10px] font-mono text-white/40 uppercase tracking-[0.2em] block mb-4 flex items-center gap-2">
-                            <Activity size={12} className="text-pink-500" />
-                            Unmasked Commits & Activity Logs
+                        <label className="text-[10px] font-mono text-white/40 uppercase tracking-[0.2em] block mb-4 flex items-center justify-between">
+                            <span className="flex items-center gap-2"><Activity size={12} className="text-pink-500" /> Members Activity & Commit Overlook</span>
+                            <span className="text-[8px] bg-red-500/10 text-red-500 px-2 py-1 rounded border border-red-500/20">Inactivity Trigger: {repoInfo.inactivityLimitDays || 3} Days</span>
                         </label>
                         
                         <div className="space-y-3">
-                            {(stats.contributors || []).map((c, i) => (
+                            {(stats.contributors || []).map((c, i) => {
+                                const lastCommitDate = c.recentActivity && c.recentActivity.length > 0 ? new Date(c.recentActivity[0].date) : new Date(0);
+                                const inactivityDays = (new Date() - lastCommitDate) / (1000 * 60 * 60 * 24);
+                                const isInactive = inactivityDays > (repoInfo.inactivityLimitDays || 3);
+
+                                return (
                                 <details key={i} className="group/details bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden hover:border-pink-500/20 transition-colors">
                                     <summary className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/[0.02] transition-colors list-none outline-none">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-[#121212] flex items-center justify-center p-[2px] border border-white/10 group-hover/details:border-pink-500/50 transition-colors">
+                                            <div className="w-8 h-8 rounded-full bg-[#121212] flex items-center justify-center p-[2px] border border-white/10 group-hover/details:border-pink-500/50 transition-colors relative">
                                                 {c.avatar ? <img src={c.avatar} className="w-full h-full rounded-full" alt="" /> : <Users size={14} className="text-white/40"/>}
+                                                {isInactive && (
+                                                    <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-[#121212] flex items-center justify-center animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]">
+                                                        <AlertCircle size={8} className="text-white" />
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="flex flex-col">
-                                                <span className="text-[13px] font-bold text-white tracking-tight">{c.login}</span>
-                                                <span className="text-[9px] font-mono text-white/40 uppercase">Assigned: {c.activeIssues?.length || 0} Tickets</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[13px] font-bold text-white tracking-tight">{c.login}</span>
+                                                    {isInactive && <span className="text-[8px] font-bold uppercase tracking-widest text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20">Danger: Inactive</span>}
+                                                </div>
+                                                <span className="text-[9px] font-mono text-white/40 uppercase mt-0.5">Assigned: {c.activeIssues?.length || 0} Tickets</span>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-5">
@@ -355,7 +368,8 @@ const GroupPortal = () => {
                                         </div>
                                     </div>
                                 </details>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
@@ -491,15 +505,23 @@ const GroupPortal = () => {
                             )}
                         </AnimatePresence>
 
-                        {/* See Commits Button Layer */}
-                        <div className="pt-4 border-t border-white/5">
+                        {/* Group Actions Layer */}
+                        <div className="pt-4 border-t border-white/5 flex gap-2">
                             {group.repoUrl ? (
-                                <button 
-                                    onClick={() => setActiveGithubRepo({ repoUrl: group.repoUrl, name: group.name })}
-                                    className="w-full py-3 bg-pink-500/5 hover:bg-pink-500 border border-pink-500/20 hover:border-pink-500 text-pink-500 hover:text-white rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 group/btn"
-                                >
-                                    <Github size={14} className="group-hover/btn:-mt-1 transition-all" /> See Commits & Activity
-                                </button>
+                                <>
+                                    <button 
+                                        onClick={() => setActiveGithubRepo(group)}
+                                        className="flex-[2] py-3 bg-pink-500/5 hover:bg-pink-500 border border-pink-500/20 hover:border-pink-500 text-pink-500 hover:text-white rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 group/btn"
+                                    >
+                                        <Users size={14} className="group-hover/btn:-mt-1 transition-all" /> Members Indulge
+                                    </button>
+                                    <a 
+                                        href={group.repoUrl} target="_blank" rel="noreferrer"
+                                        className="flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white/50 hover:text-white rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <Github size={14} /> Repo
+                                    </a>
+                                </>
                             ) : (
                                 <div className="w-full py-3 bg-white/[0.01] border border-dashed border-white/10 text-white/20 rounded-xl text-[10px] font-bold uppercase tracking-widest text-center flex items-center justify-center gap-2">
                                     <AlertCircle size={14} /> GitHub Unlinked
@@ -685,6 +707,10 @@ const GroupPortal = () => {
                                         <div className="space-y-2">
                                             <textarea rows="3" placeholder="Project Objectives..." className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs outline-none text-white focus:border-pink-500/50 transition-all resize-none" value={newGroup.description} onChange={(e) => setNewGroup({...newGroup, description: e.target.value})} />
                                         </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] text-white/40 uppercase tracking-widest pl-2">Inactivity Alert Limit (Days)</label>
+                                            <input type="number" min="1" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs outline-none text-white focus:border-pink-500/50 transition-all font-bold" value={newGroup.inactivityLimitDays} onChange={(e) => setNewGroup({...newGroup, inactivityLimitDays: parseInt(e.target.value)})} />
+                                        </div>
                                     </div>
 
                                     <div className="flex gap-3 pt-4 border-t border-white/5 mt-6">
@@ -738,6 +764,10 @@ const GroupPortal = () => {
                                     <input required type="text" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs outline-none text-white focus:border-pink-500/50 transition-all font-bold" value={editingGroup.name} onChange={(e) => setEditingGroup({...editingGroup, name: e.target.value})} />
                                     <input required type="url" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs outline-none text-white focus:border-pink-500/50 transition-all" value={editingGroup.repoUrl} onChange={(e) => setEditingGroup({...editingGroup, repoUrl: e.target.value})} />
                                     <textarea className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs outline-none text-white focus:border-pink-500/50 transition-all resize-none" value={editingGroup.description} onChange={(e) => setEditingGroup({...editingGroup, description: e.target.value})} />
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] text-white/40 uppercase tracking-widest pl-2">Inactivity Alert Limit (Days)</label>
+                                        <input type="number" min="1" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs outline-none text-white focus:border-pink-500/50 transition-all font-bold" value={editingGroup.inactivityLimitDays || 3} onChange={(e) => setEditingGroup({...editingGroup, inactivityLimitDays: parseInt(e.target.value)})} />
+                                    </div>
 
                                     <div className="flex gap-3 pt-6 border-t border-white/5">
                                         <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 py-4 bg-white/5 text-white/40 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:text-white transition-all">Abort</button>
