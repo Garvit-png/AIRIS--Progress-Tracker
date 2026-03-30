@@ -16,16 +16,22 @@ const distPath = path.join(__dirname, '../dist');
 
 // 2. Monolithic Database Connection
 const connectDB = async () => {
-    if (!process.env.MONGO_URI) return;
+    if (!process.env.MONGO_URI) {
+        throw new Error('MONGO_URI is missing in Vercel Environment Variables!');
+    }
+    if (mongoose.connection.readyState === 1) return;
+    
+    mongoose.set('bufferCommands', false);
+    
     try {
-        if (mongoose.connection.readyState === 1) return;
         await mongoose.connect(process.env.MONGO_URI, {
-            serverSelectionTimeoutMS: 5000,
-            connectTimeoutMS: 10000,
+            serverSelectionTimeoutMS: 4000,
+            connectTimeoutMS: 4000,
         });
         console.log("DB LIFT-OFF SUCCESSFUL (THE_SINGULARITY)");
     } catch (err) {
         console.error("DB FAIL:", err.message);
+        throw new Error(`Database connection failed (${err.message}). Make sure to whitelist IP 0.0.0.0/0 in MongoDB Atlas Network Access!`);
     }
 };
 
@@ -110,7 +116,14 @@ const admin = (req, res, next) => {
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
-app.use(async (req, res, next) => { await connectDB(); next(); });
+app.use(async (req, res, next) => { 
+    try {
+        await connectDB(); 
+        next(); 
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
 // 5. THE SINGULARITY ROUTES
 
