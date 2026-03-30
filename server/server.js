@@ -128,9 +128,10 @@ const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
 app.use('/uploads', express.static(UPLOADS_DIR));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Inject Socket.io into request
+// Safely inject Socket.io (populated below if persistent server)
+let globalIo = null;
 app.use((req, res, next) => {
-    req.io = io;
+    req.io = globalIo;
     next();
 });
 
@@ -252,11 +253,8 @@ if (require.main === module) {
         socket.on('disconnect', () => console.log('User disconnected'));
     });
 
-    // Use specific io for requests in persistent mode
-    app.use((req, res, next) => {
-        req.io = io_server;
-        next();
-    });
+    // Populate the global io inject for all preceding routes
+    globalIo = io_server;
 
     const PORT = process.env.PORT || 5002;
     connectDB().then(() => {
