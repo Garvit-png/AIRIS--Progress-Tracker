@@ -180,41 +180,55 @@ app.get('/api/auth/members', protect, async (req, res) => {
 
 // Groups
 app.get('/api/groups', protect, async (req, res) => {
-    const isAdmin = req.user.isAdmin || ['president', 'general secretary', 'admin', 'gs'].includes(req.user.role?.toLowerCase());
-    const query = isAdmin ? Group.find() : Group.find({ members: req.user.id });
-    const data = await query.populate('members', 'name email profilePicture').lean();
-    res.json({ success: true, data });
+    try {
+        const isAdmin = req.user.isAdmin || ['president', 'general secretary', 'admin', 'gs'].includes(req.user.role?.toLowerCase());
+        const query = isAdmin ? Group.find() : Group.find({ members: req.user.id });
+        const data = await query.populate('members', 'name email profilePicture').lean();
+        res.json({ success: true, data });
+    } catch (err) { res.status(400).json({ success: false, message: err.message }); }
 });
 
 app.post('/api/groups', protect, admin, async (req, res) => {
-    const group = await Group.create(req.body);
-    res.status(201).json({ success: true, data: group });
+    try {
+        const group = await Group.create(req.body);
+        res.status(201).json({ success: true, data: group });
+    } catch (err) { res.status(400).json({ success: false, message: err.message }); }
 });
 
 app.patch('/api/groups/:id', protect, admin, async (req, res) => {
-    const group = await Group.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('members', 'name email profilePicture');
-    res.json({ success: true, data: group });
+    try {
+        const group = await Group.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('members', 'name email profilePicture');
+        res.json({ success: true, data: group });
+    } catch (err) { res.status(400).json({ success: false, message: err.message }); }
 });
 
 app.delete('/api/groups/:id', protect, admin, async (req, res) => {
-    await Group.findByIdAndDelete(req.params.id);
-    res.json({ success: true, data: {} });
+    try {
+        await Group.findByIdAndDelete(req.params.id);
+        res.json({ success: true, data: {} });
+    } catch (err) { res.status(400).json({ success: false, message: err.message }); }
 });
 
 // Tasks
 app.get('/api/tasks/my-tasks', protect, async (req, res) => {
-    const tasks = await Task.find({ targetEmail: req.user.email.toLowerCase() }).lean();
-    res.json({ success: true, data: tasks });
+    try {
+        const tasks = await Task.find({ targetEmail: req.user.email.toLowerCase() }).lean();
+        res.json({ success: true, data: tasks });
+    } catch (err) { res.status(400).json({ success: false, message: err.message }); }
 });
 
 app.post('/api/tasks/send', protect, admin, async (req, res) => {
-    const task = await Task.create({ ...req.body, senderEmail: req.user.email, senderName: req.user.name });
-    res.status(201).json({ success: true, data: task });
+    try {
+        const task = await Task.create({ ...req.body, senderEmail: req.user.email, senderName: req.user.name });
+        res.status(201).json({ success: true, data: task });
+    } catch (err) { res.status(400).json({ success: false, message: err.message }); }
 });
 
 app.put('/api/tasks/:id/status', protect, async (req, res) => {
-    const task = await Task.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
-    res.json({ success: true, data: task });
+    try {
+        const task = await Task.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
+        res.json({ success: true, data: task });
+    } catch (err) { res.status(400).json({ success: false, message: err.message }); }
 });
 
 // 6. SPA Handler
