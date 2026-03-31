@@ -40,8 +40,15 @@ exports.getRepoStats = async (owner, repo, force = false) => {
         }
 
         console.log(`🔌 Fetching from GitHub API: ${slug}`);
-        // 2. Fetch Repo Metadata first to get default branch
-        const repoRes = await fetchGitHubAPI(`/repos/${slug}`);
+        
+        // Parallelized handshakes: Fetch EVERYTHING concurrently
+        const [repoRes, contribRes, langRes, issuesRes] = await Promise.all([
+            fetchGitHubAPI(`/repos/${slug}`),
+            fetchGitHubAPI(`/repos/${slug}/stats/contributors`),
+            fetchGitHubAPI(`/repos/${slug}/languages`),
+            fetchGitHubAPI(`/repos/${slug}/issues?state=open`)
+        ]);
+
         if (repoRes.status !== 200) {
             throw new Error(`Failed to fetch repository metadata for ${slug}`);
         }
@@ -49,13 +56,8 @@ exports.getRepoStats = async (owner, repo, force = false) => {
         const repoData = repoRes.data || {};
         const defaultBranch = repoData.default_branch || 'main';
 
-        // 3. Fetch from GitHub Concurrent Streams (Using default branch explicitly)
-        const [contribRes, langRes, issuesRes, commitsRes] = await Promise.all([
-            fetchGitHubAPI(`/repos/${slug}/stats/contributors`),
-            fetchGitHubAPI(`/repos/${slug}/languages`),
-            fetchGitHubAPI(`/repos/${slug}/issues?state=open`),
-            fetchGitHubAPI(`/repos/${slug}/commits?sha=${defaultBranch}&per_page=100`).catch(() => ({ data: [] }))
-        ]);
+        // Commits are sensitive to branch - fetch them as part of the second wave or try concurrently
+        const commitsRes = await fetchGitHubAPI(`/repos/${slug}/commits?sha=${defaultBranch}&per_page=100`).catch(() => ({ data: [] }));
 
         const langData = langRes.data || {};
         const issuesData = issuesRes?.data || [];
@@ -73,14 +75,16 @@ exports.getRepoStats = async (owner, repo, force = false) => {
         // Build base map of contributors from stats/contributors
         const contributorMap = new Map();
         contribData.forEach(c => {
-            const normalizedLogin = normalizeKey(c.author.login);
-            contributorMap.set(normalizedLogin, {
-                login: c.author.login,
-                avatar: c.author.avatar_url,
-                commits: c.total,
-                activeIssues: [],
-                recentActivity: []
-            });
+            const normalizedLogin = normalizeKey(c.author?.login);
+            if (normalizedLogin) {
+                contributorMap.set(normalizedLogin, {
+                    login: c.author.login,
+                    avatar: c.author.avatar_url,
+                    commits: c.total,
+                    activeIssues: [],
+                    recentActivity: []
+                });
+            }
         });
 
         // Inject real-time commits to augment stale counts or add missing users
@@ -129,8 +133,8 @@ exports.getRepoStats = async (owner, repo, force = false) => {
 
             // Increment base count for new contributors only
             const isKnown = contribData.some(cached => {
-                const cLogin = normalizeKey(cached.author.login);
-                return cLogin === normalizeKey(rawLogin) || cLogin === normalizeKey(rawName);
+                const cLogin = normalizeKey(cached.author?.login);
+                return cLogin && (cLogin === normalizeKey(rawLogin) || cLogin === normalizeKey(rawName));
             });
             
             if (!isKnown && targetContributor.recentActivity.length === 1) {
@@ -147,7 +151,6 @@ exports.getRepoStats = async (owner, repo, force = false) => {
 
         const activeContributors = Array.from(contributorMap.values()).map(c => {
             // REAL-TIME SYNC: Force commit count to be at least the number of recent commits discovered
-            // This fixes the stale stats API from GitHub (e.g. showing 14 when we see 18 in recent log)
             if (c.recentActivity.length > c.commits) {
                 c.commits = c.recentActivity.length;
             }
@@ -183,7 +186,7 @@ exports.getRepoStats = async (owner, repo, force = false) => {
         enrichedContributors.sort((a, b) => b.commits - a.commits);
 
         // Recalculate total
-        const finalTotalCommits = enrichedContributors.reduce((acc, curr) => acc + curr.commits, 0) || contribData.reduce((acc, curr) => acc + curr.total, 0);
+        const finalTotalCommits = enrichedContributors.reduce((acc, curr) => acc + curr.commits, 0) || (Array.isArray(contribData) ? contribData.reduce((acc, curr) => acc + curr.total, 0) : 0);
 
         // Build a flat, global commit history for the "Activity Log"
         const globalCommitHistory = commitsData.map(commit => ({
@@ -207,12 +210,12 @@ exports.getRepoStats = async (owner, repo, force = false) => {
                 lastUpdated: trueLastUpdated,
                 primaryLanguage: repoData.language,
                 languages,
-                contributors: enrichedContributors // Added for UI count
+                contributorsCount: enrichedContributors.length // Renamed for clarity
             }
         };
             
-        // 3. Save to Redis Cache (Strict 10s TTL for "Instant" feel)
-        await cacheSetEx(cacheKey, 10, newStats);
+        // 3. Save to Redis Cache (1 Hour TTL for extreme performance)
+        await cacheSetEx(cacheKey, 3600, newStats);
 
         return { status: 200, data: newStats };
     } catch (error) {

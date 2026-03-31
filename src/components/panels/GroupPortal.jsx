@@ -233,28 +233,32 @@ const GroupPortal = () => {
         };
 
         const renderContent = () => {
-            if (repoLoading && !stats) return (
-                <div className="flex flex-col items-center justify-center py-20">
-                    <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin mb-4" />
-                    <span className="text-[10px] font-mono font-bold text-pink-500 tracking-wider animate-pulse text-center">Establishing Uplink to Repo...</span>
-                </div>
-            );
-            
-            if (isCompiling && !stats) return (
-                <div className="flex flex-col items-center justify-center py-20">
-                    <Clock size={32} className="text-pink-500 animate-spin-slow mb-4" />
-                    <span className="text-[10px] font-mono font-bold text-pink-500 tracking-wider animate-pulse text-center">
-                        Initializing Codebase Analysis<br/><span className="text-[8px] opacity-70 font-normal">GitHub is compiling stats. Hang tight.</span>
-                    </span>
-                </div>
-            );
-            
-            if (!stats) return (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <AlertCircle size={32} className="text-white/20 mb-4" />
-                    <span className="text-[10px] font-mono text-white/40 tracking-wider">No Intelligence linked or available.</span>
-                </div>
-            );
+            // If we are on any tab other than 'squad', and stats aren't loaded, we show a loader.
+            // But 'squad' (Squad Registry) is optimistic and shows members immediately from local group data.
+            if ((repoLoading || isCompiling || !stats) && activeModalTab !== 'squad') {
+                if (isCompiling) return (
+                    <div className="flex flex-col items-center justify-center py-20">
+                        <Clock size={32} className="text-pink-500 animate-spin-slow mb-4" />
+                        <span className="text-[10px] font-mono font-bold text-pink-500 tracking-wider animate-pulse text-center">
+                            Initializing Codebase Analysis<br/><span className="text-[8px] opacity-70 font-normal">GitHub is compiling stats. Hang tight.</span>
+                        </span>
+                    </div>
+                );
+                
+                if (repoLoading) return (
+                    <div className="flex flex-col items-center justify-center py-20">
+                        <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin mb-4" />
+                        <span className="text-[10px] font-mono font-bold text-pink-500 tracking-wider animate-pulse text-center">Establishing Uplink to Repo...</span>
+                    </div>
+                );
+
+                if (!stats) return (
+                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                        <AlertCircle size={32} className="text-white/20 mb-4" />
+                        <span className="text-[10px] font-mono text-white/40 tracking-wider">No Intelligence linked or available.</span>
+                    </div>
+                );
+            }
 
             const renderSquadTab = () => (
                 <div className="space-y-6">
@@ -265,9 +269,11 @@ const GroupPortal = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {(repoInfo.members || []).filter(m => m && typeof m === 'object').map((member, idx) => {
                             // Find matching GitHub contributor stats
-                            const githubStats = (stats.contributors || []).find(c => 
+                            const githubStats = (stats?.contributors || []).find(c => 
                                 c.login?.toLowerCase() === member.githubUsername?.toLowerCase()
                             );
+                            
+                            const isStatLoading = (repoLoading || isCompiling) && !githubStats;
                             
                             return (
                                 <div key={idx} className="bg-white/[0.03] border border-white/5 rounded-[2rem] p-6 hover:border-pink-500/30 transition-all group/member relative overflow-hidden backdrop-blur-md">
@@ -307,14 +313,22 @@ const GroupPortal = () => {
                                         <div className="space-y-1.5">
                                             <span className="text-[9px] font-mono text-white/30 uppercase tracking-[0.2em] block">Contribution Profile</span>
                                             <div className="flex items-baseline gap-2">
-                                                <span className="text-[24px] font-mono font-bold text-white">{githubStats ? githubStats.commits : 0}</span>
+                                                {isStatLoading ? (
+                                                    <div className="h-8 w-12 bg-white/5 animate-pulse rounded-lg mt-1" />
+                                                ) : (
+                                                    <span className="text-[24px] font-mono font-bold text-white">{githubStats ? githubStats.commits : 0}</span>
+                                                )}
                                                 <span className="text-[10px] font-mono text-white/40 uppercase">Total Commits</span>
                                             </div>
                                         </div>
                                         <div className="space-y-1.5">
                                             <span className="text-[9px] font-mono text-white/30 uppercase tracking-[0.2em] block">Assigned Tickets</span>
                                             <div className="flex items-baseline gap-2">
-                                                <span className="text-[24px] font-mono font-bold text-pink-500">{githubStats?.activeIssues?.length || 0}</span>
+                                                {isStatLoading ? (
+                                                    <div className="h-8 w-12 bg-pink-500/10 animate-pulse rounded-lg mt-1" />
+                                                ) : (
+                                                    <span className="text-[24px] font-mono font-bold text-pink-500">{githubStats?.activeIssues?.length || 0}</span>
+                                                )}
                                                 <span className="text-[10px] font-mono text-white/40 uppercase">Active</span>
                                             </div>
                                         </div>
@@ -482,25 +496,43 @@ const GroupPortal = () => {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div className="bg-pink-500/10 border border-pink-500/20 rounded-2xl p-4 flex flex-col justify-center items-center">
                             <GitCommit size={16} className="text-pink-500 mb-2" />
-                            <span className="text-xl font-bold text-white">{stats.totalCommits || 0}</span>
+                            {(!stats && (repoLoading || isCompiling)) ? (
+                                <div className="h-7 w-12 bg-white/5 animate-pulse rounded-lg" />
+                            ) : (
+                                <span className="text-xl font-bold text-white">{stats?.totalCommits || 0}</span>
+                            )}
                             <span className="text-[9px] font-mono text-pink-400 tracking-wider">Total Commits</span>
                         </div>
-                        {stats.profile && (
-                            <>
-                                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 flex flex-col justify-center items-center">
-                                    <Users size={16} className="text-blue-500 mb-2" />
-                                    <span className="text-xl font-bold text-white">{(stats.profile?.contributors || stats.contributors || []).length}</span>
-                                    <span className="text-[9px] font-mono text-white/40 tracking-wider">Contributors</span>
-                                </div>
-                                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 flex flex-col justify-center items-center col-span-2 sm:col-span-2">
-                                    <Clock size={16} className="text-amber-500 mb-2" />
-                                    <span className="text-[12px] font-bold text-white text-center">
-                                        {new Date(stats.profile.lastUpdated).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                                    </span>
-                                    <span className="text-[9px] font-mono text-white/40 tracking-wider mt-1">Last Global Update</span>
-                                </div>
-                            </>
+                        {(!stats && (repoLoading || isCompiling)) ? (
+                             <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 flex flex-col justify-center items-center">
+                                <Users size={16} className="text-blue-500 mb-2" />
+                                <div className="h-7 w-8 bg-white/5 animate-pulse rounded-lg" />
+                                <span className="text-[9px] font-mono text-white/40 tracking-wider">Loading...</span>
+                            </div>
+                        ) : (
+                            <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 flex flex-col justify-center items-center">
+                                <Users size={16} className="text-blue-500 mb-2" />
+                                <span className="text-xl font-bold text-white">
+                                    {stats?.profile?.contributorsCount ?? (stats?.contributors || []).length}
+                                </span>
+                                <span className="text-[9px] font-mono text-white/40 tracking-wider">Contributors</span>
+                            </div>
                         )}
+                        {(!stats && (repoLoading || isCompiling)) ? (
+                             <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 flex flex-col justify-center items-center col-span-2">
+                                <Clock size={16} className="text-amber-500 mb-2" />
+                                <div className="h-5 w-32 bg-white/5 animate-pulse rounded-lg mb-1" />
+                                <span className="text-[9px] font-mono text-white/40 tracking-wider">Syncing Data Streams...</span>
+                            </div>
+                        ) : (stats?.profile && (
+                            <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 flex flex-col justify-center items-center col-span-2 sm:col-span-2">
+                                <Clock size={16} className="text-amber-500 mb-2" />
+                                <span className="text-[12px] font-bold text-white text-center">
+                                    {new Date(stats.profile.lastUpdated).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                                </span>
+                                <span className="text-[9px] font-mono text-white/40 tracking-wider mt-1">Last Global Update</span>
+                            </div>
+                        ))}
                     </div>
 
                     {/* Tab Navigation */}
