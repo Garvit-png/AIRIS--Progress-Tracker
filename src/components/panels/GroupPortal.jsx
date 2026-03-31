@@ -226,6 +226,12 @@ const GroupPortal = () => {
             }
         };
 
+        const formatUrl = (url) => {
+            if (!url) return '';
+            if (url.startsWith('http')) return url;
+            return `https://${url}`;
+        };
+
         const renderContent = () => {
             if (repoLoading && !stats) return (
                 <div className="flex flex-col items-center justify-center py-20">
@@ -257,7 +263,7 @@ const GroupPortal = () => {
                     </label>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {(repoInfo.members || []).map((member, idx) => {
+                        {(repoInfo.members || []).filter(m => m && typeof m === 'object').map((member, idx) => {
                             // Find matching GitHub contributor stats
                             const githubStats = (stats.contributors || []).find(c => 
                                 c.login?.toLowerCase() === member.githubUsername?.toLowerCase()
@@ -545,8 +551,8 @@ const GroupPortal = () => {
                             <div>
                                 <h3 className="text-lg font-bold text-white tracking-tight">{repoInfo.name}</h3>
                                 <div className="flex items-center gap-2 mt-0.5">
-                                    <span className="text-[9px] font-mono text-white/40 tracking-wider">{repoInfo.repoUrl}</span>
-                                    <a href={repoInfo.repoUrl} target="_blank" rel="noreferrer" className="text-pink-500 hover:text-pink-400 transition-colors"><ExternalLink size={10}/></a>
+                                    <span className="text-[9px] font-mono text-white/40 tracking-wider whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]">{repoInfo.repoUrl}</span>
+                                    <a href={formatUrl(repoInfo.repoUrl)} target="_blank" rel="noreferrer" className="text-pink-500 hover:text-pink-400 transition-colors"><ExternalLink size={10}/></a>
                                 </div>
                             </div>
                         </div>
@@ -575,8 +581,14 @@ const GroupPortal = () => {
 
     const GroupCard = ({ group }) => {
         // Safe mapping to prevent backend data crashes if users are deleted
-        const validMembers = (group.members || []).filter(Boolean);
+        const validMembers = (group.members || []).filter(m => m && typeof m === 'object');
         const isSelected = selectedGroup?._id === group._id;
+
+        const formatUrl = (url) => {
+            if (!url) return '';
+            if (url.startsWith('http')) return url;
+            return `https://${url}`;
+        };
         
         return (
             <motion.div layout className={`bg-white/[0.02] border transition-all rounded-3xl p-6 relative overflow-hidden group flex flex-col h-full ${isSelected ? 'border-pink-500/40 shadow-[0_0_30px_rgba(236,72,153,0.1)]' : 'border-white/5 hover:border-white/20'}`}>
@@ -683,7 +695,7 @@ const GroupPortal = () => {
                                         <Users size={14} className="group-hover/btn:-mt-1 transition-all" /> Member Center
                                     </button>
                                     <a 
-                                        href={group.repoUrl} target="_blank" rel="noreferrer"
+                                        href={formatUrl(group.repoUrl)} target="_blank" rel="noreferrer"
                                         className="flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white/50 hover:text-white rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2"
                                     >
                                         <Github size={14} /> Repo
