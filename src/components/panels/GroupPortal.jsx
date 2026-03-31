@@ -314,7 +314,12 @@ const GroupPortal = () => {
                                                     <span className="text-[13px] font-bold text-white tracking-tight">{c.login}</span>
                                                     {isInactive && <span className="text-[8px] font-bold uppercase tracking-widest text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20">Danger: Inactive</span>}
                                                 </div>
-                                                <span className="text-[9px] font-mono text-white/40 uppercase mt-0.5">Assigned: {c.activeIssues?.length || 0} Tickets</span>
+                                                <div className="flex flex-col gap-0.5 mt-0.5">
+                                                    <span className="text-[9px] font-mono text-white/40 uppercase">Assigned: {c.activeIssues?.length || 0} Tickets</span>
+                                                    <span className={`text-[8.5px] font-mono uppercase tracking-widest ${isInactive ? 'text-red-500/80' : 'text-pink-500/80'}`}>
+                                                        Last Commit: {c.recentActivity && c.recentActivity.length > 0 ? (inactivityDays < 1 ? 'Today' : (Math.floor(inactivityDays) === 1 ? 'Yesterday' : `${Math.floor(inactivityDays)} days ago`)) : 'Unknown'}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-5">

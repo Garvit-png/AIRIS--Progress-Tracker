@@ -62,10 +62,14 @@ exports.getRepoStats = async (owner, repo) => {
             ? commitsData[0].commit.author.date 
             : repoData.pushed_at;
 
+        // Helper to normalize keys (case-insensitive and trimmed)
+        const normalizeKey = (key) => (key ? String(key).toLowerCase().trim() : '');
+
         // Build base map of contributors from stats/contributors
         const contributorMap = new Map();
         contribData.forEach(c => {
-            contributorMap.set(c.author.login, {
+            const normalizedLogin = normalizeKey(c.author.login);
+            contributorMap.set(normalizedLogin, {
                 login: c.author.login,
                 avatar: c.author.avatar_url,
                 commits: c.total,
@@ -76,14 +80,15 @@ exports.getRepoStats = async (owner, repo) => {
 
         // Inject real-time commits to augment stale counts or add missing users
         commitsData.forEach(commit => {
-            // Find author login or fallback to git name/email
-            const login = commit.author?.login || commit.commit.author.name || commit.commit.author.email;
+            // Find author login or fallback to git name/email. Prefer GitHub's login if linked.
+            const rawIdentifier = commit.author?.login || commit.commit.author.name || commit.commit.author.email;
+            const lookupKey = normalizeKey(rawIdentifier);
             const avatar = commit.author?.avatar_url || 'https://github.com/identicons/user.png';
             
-            if (!contributorMap.has(login)) {
+            if (!contributorMap.has(lookupKey)) {
                 // First time seeing this contributor (meaning GitHub stats hasn't cached them yet)
-                contributorMap.set(login, {
-                    login: login,
+                contributorMap.set(lookupKey, {
+                    login: rawIdentifier,
                     avatar: avatar,
                     commits: 0,
                     activeIssues: [],
@@ -91,16 +96,11 @@ exports.getRepoStats = async (owner, repo) => {
                 });
             }
 
-            const c = contributorMap.get(login);
-            // If the commit date is very recent (e.g. not factored into their cache), we could increment. 
-            // For safety and real-time accuracy over the last 100 commits, we just count them if they are in the last 100.
-            // Wait, if it's already counted in GitHub's cache, incrementing will double count.
-            // A simpler approach: If we find a new commit, just use the cache's total, BUT if they were totally missing from cache, their commits = 0.
-            // Let's actually count the occurrences in commitsData for missing users:
-            if (!contribData.some(cached => cached.author.login === login)) {
+            const c = contributorMap.get(lookupKey);
+            
+            // Only increment if they weren't in the base cache at all
+            if (!contribData.some(cached => normalizeKey(cached.author.login) === lookupKey)) {
                 c.commits += 1;
-            } else {
-                // If they exist in cache, we assume the cache might be slightly behind, but we can't reliably know which commits are already in cache.
             }
 
             // Populate recent activity (ALL fetched commits)
