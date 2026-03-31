@@ -191,6 +191,7 @@ const GroupPortal = () => {
         const [repoLoading, setRepoLoading] = useState(!stats);
         const [isCompiling, setIsCompiling] = useState(false);
         const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+        const [activeModalTab, setActiveModalTab] = useState('members'); // 'members' or 'activity'
 
         useEffect(() => {
             if (repoInfo.repoUrl) fetchRepoStats();
@@ -229,15 +230,15 @@ const GroupPortal = () => {
             if (repoLoading && !stats) return (
                 <div className="flex flex-col items-center justify-center py-20">
                     <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin mb-4" />
-                    <span className="text-[10px] font-mono font-bold text-pink-500 uppercase tracking-widest animate-pulse">Establishing Uplink to Repo...</span>
+                    <span className="text-[10px] font-mono font-bold text-pink-500 tracking-wider animate-pulse text-center">Establishing Uplink to Repo...</span>
                 </div>
             );
             
             if (isCompiling && !stats) return (
                 <div className="flex flex-col items-center justify-center py-20">
                     <Clock size={32} className="text-pink-500 animate-spin-slow mb-4" />
-                    <span className="text-[10px] font-mono font-bold text-pink-500 uppercase tracking-widest animate-pulse text-center">
-                        Initializing Codebase Analysis<br/><span className="text-[8px] opacity-70">GitHub is compiling stats. Hang tight.</span>
+                    <span className="text-[10px] font-mono font-bold text-pink-500 tracking-wider animate-pulse text-center">
+                        Initializing Codebase Analysis<br/><span className="text-[8px] opacity-70 font-normal">GitHub is compiling stats. Hang tight.</span>
                     </span>
                 </div>
             );
@@ -245,51 +246,14 @@ const GroupPortal = () => {
             if (!stats) return (
                 <div className="flex flex-col items-center justify-center py-20 text-center">
                     <AlertCircle size={32} className="text-white/20 mb-4" />
-                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-widest">No Intelligence linked or available.</span>
+                    <span className="text-[10px] font-mono text-white/40 tracking-wider">No Intelligence linked or available.</span>
                 </div>
             );
 
-            return (
+            const renderMembersTab = () => (
                 <div className="space-y-6">
-                    {/* Top Analytics Summary */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div className="bg-pink-500/10 border border-pink-500/20 rounded-2xl p-4 flex flex-col justify-center items-center">
-                            <GitCommit size={16} className="text-pink-500 mb-2" />
-                            <span className="text-xl font-bold text-white">{stats.totalCommits || 0}</span>
-                            <span className="text-[9px] font-mono text-pink-400 uppercase tracking-widest">Total Commits</span>
-                        </div>
-                        {stats.profile && (
-                            <>
-                                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 flex flex-col justify-center items-center">
-                                    <Users size={16} className="text-blue-500 mb-2" />
-                                    <span className="text-xl font-bold text-white">{(stats.profile.contributors || []).length}</span>
-                                    <span className="text-[9px] font-mono text-white/40 uppercase tracking-widest">Contributors</span>
-                                </div>
-                                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 flex flex-col justify-center items-center col-span-2 sm:col-span-2">
-                                    <Clock size={16} className="text-amber-500 mb-2" />
-                                    <span className="text-[12px] font-bold text-white text-center">
-                                        {new Date(stats.profile.lastUpdated).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                                    </span>
-                                    <span className="text-[9px] font-mono text-white/40 uppercase tracking-widest mt-1">Last Global Update</span>
-                                </div>
-                            </>
-                        )}
-                    </div>
-
-                    {stats.profile?.languages && stats.profile.languages.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[9px] font-mono text-white/30 uppercase tracking-widest mr-2">Core Tech Stack:</span>
-                            {stats.profile.languages.map(lang => (
-                                <div key={lang.name} className="px-3 py-1 bg-white/[0.05] border border-white/10 rounded-full flex items-center gap-2">
-                                    <span className="text-[10px] font-bold text-white/80">{lang.name}</span>
-                                    <span className="text-[9px] font-mono text-pink-500">{lang.percent}%</span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    <div className="pt-2 border-t border-white/5">
-                        <label className="text-[10px] font-mono text-white/40 uppercase tracking-[0.2em] block mb-4 flex items-center justify-between">
+                    <div className="pt-2">
+                        <label className="text-[10px] font-mono text-white/40 tracking-wider block mb-4 flex items-center justify-between">
                             <span className="flex items-center gap-2"><Activity size={12} className="text-pink-500" /> Members Activity & Commit Overlook</span>
                             <span className="text-[8px] bg-red-500/10 text-red-500 px-2 py-1 rounded border border-red-500/20">Inactivity Trigger: {repoInfo.inactivityLimitDays || 3} Days</span>
                         </label>
@@ -316,11 +280,11 @@ const GroupPortal = () => {
                                             <div className="flex flex-col">
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-[13px] font-bold text-white tracking-tight">{c.login}</span>
-                                                    {isInactive && <span className="text-[8px] font-bold uppercase tracking-widest text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20">Danger: Inactive</span>}
+                                                    {isInactive && <span className="text-[8px] font-bold tracking-wider text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20">Inactive</span>}
                                                 </div>
                                                 <div className="flex flex-col gap-0.5 mt-0.5">
-                                                    <span className="text-[9px] font-mono text-white/40 uppercase">Assigned: {c.activeIssues?.length || 0} Tickets</span>
-                                                    <span className={`text-[8.5px] font-mono uppercase tracking-widest ${isInactive ? 'text-red-500/80' : 'text-pink-500/80'}`}>
+                                                    <span className="text-[9px] font-mono text-white/40">Assigned: {c.activeIssues?.length || 0} Tickets</span>
+                                                    <span className={`text-[8.5px] font-mono tracking-wider ${isInactive ? 'text-red-500/80' : 'text-pink-500/80'}`}>
                                                         Last Commit: {c.recentActivity && c.recentActivity.length > 0 ? (inactivityDays < 1 ? 'Today' : (Math.floor(inactivityDays) === 1 ? 'Yesterday' : `${Math.floor(inactivityDays)} days ago`)) : 'Unknown'}
                                                     </span>
                                                 </div>
@@ -329,7 +293,7 @@ const GroupPortal = () => {
                                         <div className="flex items-center gap-5">
                                             <div className="flex flex-col items-end">
                                                 <span className="text-[16px] font-mono font-bold text-pink-400">{c.commits}</span>
-                                                <span className="text-[8px] font-mono text-white/30 uppercase tracking-widest">Commits</span>
+                                                <span className="text-[8px] font-mono text-white/30 tracking-wider">Commits</span>
                                             </div>
                                             <ChevronRight size={16} className="text-white/20 group-open/details:rotate-90 transition-transform" />
                                         </div>
@@ -354,7 +318,7 @@ const GroupPortal = () => {
 
                                         <div>
                                             <span className="text-[9px] font-mono text-white/30 uppercase tracking-[0.2em] mb-4 block flex items-center gap-1.5">
-                                                <GitPullRequest size={10} className="text-pink-500" /> Complete Commit Log
+                                                <GitPullRequest size={10} className="text-pink-500" /> Individual Commit Log
                                             </span>
                                             {c.recentActivity && c.recentActivity.length > 0 ? (
                                                 <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
@@ -383,6 +347,111 @@ const GroupPortal = () => {
                     </div>
                 </div>
             );
+
+            const renderActivityTab = () => (
+                <div className="space-y-6">
+                    <div className="pt-2">
+                        <label className="text-[10px] font-mono text-white/40 tracking-wider block mb-6 flex items-center gap-2">
+                            <Activity size={12} className="text-pink-500" /> Chronological Project Registry
+                        </label>
+
+                        {stats.commitHistory && stats.commitHistory.length > 0 ? (
+                            <div className="relative space-y-4 before:absolute before:left-[19px] before:top-2 before:bottom-2 before:w-[1px] before:bg-white/5">
+                                {stats.commitHistory.map((commit, idx) => (
+                                    <div key={idx} className="relative pl-12 group/commit">
+                                        {/* Timeline Dot */}
+                                        <div className="absolute left-0 top-1.5 w-10 h-10 flex items-center justify-center">
+                                            <div className="w-2 h-2 rounded-full bg-pink-500 shadow-[0_0_10px_rgba(236,72,153,0.5)] z-10 group-hover/commit:scale-125 transition-transform" />
+                                        </div>
+
+                                        <a href={commit.url} target="_blank" rel="noreferrer" className="block bg-white/[0.02] border border-white/5 hover:border-pink-500/30 rounded-[1.5rem] p-5 transition-all group-hover/commit:translate-x-1">
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div className="flex gap-4">
+                                                    <img src={commit.author.avatar} alt="" className="w-10 h-10 rounded-xl border border-white/10" />
+                                                    <div className="space-y-1">
+                                                        <h4 className="text-[13px] font-bold text-white group-hover/commit:text-pink-400 transition-colors">{commit.message}</h4>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[10px] font-bold text-white/60">{commit.author.login}</span>
+                                                            <span className="text-white/10 text-[10px]">•</span>
+                                                            <span className="text-[10px] font-mono text-white/30">
+                                                                {new Date(commit.date).toLocaleString('en-US', { 
+                                                                    month: 'short', day: 'numeric', 
+                                                                    hour: 'numeric', minute: '2-digit',
+                                                                    hour12: true 
+                                                                })}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="shrink-0 flex items-center justify-center p-2 bg-white/5 rounded-lg opacity-0 group-hover/commit:opacity-100 transition-opacity">
+                                                    <ExternalLink size={12} className="text-white/40" />
+                                                </div>
+                                            </div>
+                                        </a>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-10">
+                                <span className="text-[10px] font-mono text-white/20 italic">No activity registry logs found.</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+            return (
+                <div className="space-y-8 animate-in fade-in duration-500">
+                    {/* Top Analytics Summary */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="bg-pink-500/10 border border-pink-500/20 rounded-2xl p-4 flex flex-col justify-center items-center">
+                            <GitCommit size={16} className="text-pink-500 mb-2" />
+                            <span className="text-xl font-bold text-white">{stats.totalCommits || 0}</span>
+                            <span className="text-[9px] font-mono text-pink-400 tracking-wider">Total Commits</span>
+                        </div>
+                        {stats.profile && (
+                            <>
+                                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 flex flex-col justify-center items-center">
+                                    <Users size={16} className="text-blue-500 mb-2" />
+                                    <span className="text-xl font-bold text-white">{(stats.profile?.contributors || stats.contributors || []).length}</span>
+                                    <span className="text-[9px] font-mono text-white/40 tracking-wider">Contributors</span>
+                                </div>
+                                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 flex flex-col justify-center items-center col-span-2 sm:col-span-2">
+                                    <Clock size={16} className="text-amber-500 mb-2" />
+                                    <span className="text-[12px] font-bold text-white text-center">
+                                        {new Date(stats.profile.lastUpdated).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                                    </span>
+                                    <span className="text-[9px] font-mono text-white/40 tracking-wider mt-1">Last Global Update</span>
+                                </div>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Tab Navigation */}
+                    <div className="flex gap-2 p-1.5 bg-white/[0.02] border border-white/5 rounded-2xl w-fit">
+                        <button 
+                            onClick={() => setActiveModalTab('members')}
+                            className={`px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
+                                activeModalTab === 'members' ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/20' : 'text-white/40 hover:text-white/80 hover:bg-white/5'
+                            }`}
+                        >
+                            Active Squad
+                        </button>
+                        <button 
+                            onClick={() => setActiveModalTab('activity')}
+                            className={`px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
+                                activeModalTab === 'activity' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/40 hover:text-white/80 hover:bg-white/5'
+                            }`}
+                        >
+                            Activity Log
+                        </button>
+                    </div>
+
+                    {/* Main Content Area */}
+                    <div className="border-t border-white/5 pt-6 transition-all duration-300">
+                        {activeModalTab === 'members' ? renderMembersTab() : renderActivityTab()}
+                    </div>
+                </div>
+            );
         };
 
         return (
@@ -395,9 +464,9 @@ const GroupPortal = () => {
                                 <Github className="text-pink-500" size={20} />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-white tracking-tight uppercase">{repoInfo.name}</h3>
+                                <h3 className="text-lg font-bold text-white tracking-tight">{repoInfo.name}</h3>
                                 <div className="flex items-center gap-2 mt-0.5">
-                                    <span className="text-[9px] font-mono text-white/40 uppercase tracking-widest">{repoInfo.repoUrl}</span>
+                                    <span className="text-[9px] font-mono text-white/40 tracking-wider">{repoInfo.repoUrl}</span>
                                     <a href={repoInfo.repoUrl} target="_blank" rel="noreferrer" className="text-pink-500 hover:text-pink-400 transition-colors"><ExternalLink size={10}/></a>
                                 </div>
                             </div>
@@ -438,7 +507,7 @@ const GroupPortal = () => {
                 <div className="relative z-10 flex-1 flex flex-col">
                     <div className="flex justify-between items-start gap-4 mb-4">
                         <div className="space-y-1">
-                            <h3 className="text-base font-bold text-white uppercase tracking-tight">{group.name}</h3>
+                            <h3 className="text-base font-bold text-white tracking-tight">{group.name}</h3>
                             <p className="text-xs text-white/40 line-clamp-2 leading-relaxed">{group.description || 'No description assigned.'}</p>
                         </div>
                         {isAdmin && activeTab === 'management' && (

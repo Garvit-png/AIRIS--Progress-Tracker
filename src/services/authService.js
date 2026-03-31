@@ -635,8 +635,9 @@ export const AuthService = {
         if (!repoUrl) return null;
 
         let slug = repoUrl.replace('https://github.com/', '');
-        if (slug.endsWith('.git')) slug = slug.slice(0, -4);
-        slug = slug.split('/').slice(0, 2).join('/');
+        // Case-insensitive check for .git suffix
+        if (slug.toLowerCase().endsWith('.git')) slug = slug.slice(0, -4);
+        slug = slug.split('/').filter(Boolean).slice(0, 2).join('/');
         if (!slug) return null;
 
         // Bypassing cache for "Fast" force refresh

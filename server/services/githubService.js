@@ -40,30 +40,27 @@ exports.getRepoStats = async (owner, repo, force = false) => {
         }
 
         console.log(`🔌 Fetching from GitHub API: ${slug}`);
-        // 2. Fetch from GitHub Concurrent Streams
-        const [contribRes, repoRes, langRes, issuesRes, commitsRes] = await Promise.all([
-            fetchGitHubAPI(`/repos/${slug}/stats/contributors`),
-            fetchGitHubAPI(`/repos/${slug}`),
-            fetchGitHubAPI(`/repos/${slug}/languages`),
-            fetchGitHubAPI(`/repos/${slug}/issues?state=open`),
-            fetchGitHubAPI(`/repos/${slug}/commits?per_page=100`).catch(() => ({ data: [] })) // catch if commits fail for some reason
-        ]);
-
-        if (contribRes.status === 202) {
-            return { status: 202, message: 'Stats are compiling, try again shortly.' };
+        // 2. Fetch Repo Metadata first to get default branch
+        const repoRes = await fetchGitHubAPI(`/repos/${slug}`);
+        if (repoRes.status !== 200) {
+            throw new Error(`Failed to fetch repository metadata for ${slug}`);
         }
-
+        
         const repoData = repoRes.data || {};
         const defaultBranch = repoData.default_branch || 'main';
 
-        // 2b. If we didn't get commits yet or want to be specific, we could re-fetch, 
-        // but for speed we'll assume the initial concurrent fetch got the default branch.
-        // If the user pushed to a DIFFERENT branch, we'd need a branch selector (future feature).
-        
-        const contribData = Array.isArray(contribRes.data) ? contribRes.data : [];
+        // 3. Fetch from GitHub Concurrent Streams (Using default branch explicitly)
+        const [contribRes, langRes, issuesRes, commitsRes] = await Promise.all([
+            fetchGitHubAPI(`/repos/${slug}/stats/contributors`),
+            fetchGitHubAPI(`/repos/${slug}/languages`),
+            fetchGitHubAPI(`/repos/${slug}/issues?state=open`),
+            fetchGitHubAPI(`/repos/${slug}/commits?sha=${defaultBranch}&per_page=100`).catch(() => ({ data: [] }))
+        ]);
+
         const langData = langRes.data || {};
         const issuesData = issuesRes?.data || [];
         const commitsData = commitsRes?.data || [];
+        const contribData = Array.isArray(contribRes.data) ? contribRes.data : [];
 
         // Identify true last updated from newest commit or fallback to repo pushed_at
         const trueLastUpdated = commitsData.length > 0 && commitsData[0].commit?.author?.date 
@@ -188,9 +185,21 @@ exports.getRepoStats = async (owner, repo, force = false) => {
         // Recalculate total
         const finalTotalCommits = enrichedContributors.reduce((acc, curr) => acc + curr.commits, 0) || contribData.reduce((acc, curr) => acc + curr.total, 0);
 
+        // Build a flat, global commit history for the "Activity Log"
+        const globalCommitHistory = commitsData.map(commit => ({
+            message: commit.commit.message.split('\n')[0],
+            author: {
+                login: commit.author?.login || commit.commit.author.name,
+                avatar: commit.author?.avatar_url || 'https://github.com/identicons/user.png'
+            },
+            date: commit.commit.author.date,
+            url: commit.html_url
+        }));
+
         const newStats = {
             totalCommits: finalTotalCommits,
             contributors: enrichedContributors,
+            commitHistory: globalCommitHistory,
             profile: {
                 stars: repoData.stargazers_count,
                 forks: repoData.forks_count,
