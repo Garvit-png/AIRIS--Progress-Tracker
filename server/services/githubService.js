@@ -80,31 +80,61 @@ exports.getRepoStats = async (owner, repo) => {
 
         // Inject real-time commits to augment stale counts or add missing users
         commitsData.forEach(commit => {
-            // Find author login or fallback to git name/email. Prefer GitHub's login if linked.
-            const rawIdentifier = commit.author?.login || commit.commit.author.name || commit.commit.author.email;
-            const lookupKey = normalizeKey(rawIdentifier);
-            const avatar = commit.author?.avatar_url || 'https://github.com/identicons/user.png';
+            const rawLogin = commit.author?.login;
+            const rawName = commit.commit.author.name;
+            const rawEmail = commit.commit.author.email;
             
-            if (!contributorMap.has(lookupKey)) {
-                // First time seeing this contributor (meaning GitHub stats hasn't cached them yet)
-                contributorMap.set(lookupKey, {
-                    login: rawIdentifier,
-                    avatar: avatar,
-                    commits: 0,
-                    activeIssues: [],
-                    recentActivity: []
-                });
+            let targetContributor = null;
+            
+            // 1. Precise Match by Login
+            if (rawLogin) {
+                targetContributor = contributorMap.get(normalizeKey(rawLogin));
+            }
+            
+            // 2. Fuzzy Match by Name or Email Prefix if not found by login
+            if (!targetContributor && (rawName || rawEmail)) {
+                const normName = normalizeKey(rawName);
+                const normEmailPrefix = rawEmail ? normalizeKey(rawEmail.split('@')[0]) : '';
+                
+                // Search existing contributors for a name/login match
+                for (const [login, data] of contributorMap.entries()) {
+                    if (login === normName || login === normEmailPrefix || login.includes(normName) || normName.includes(login)) {
+                        targetContributor = data;
+                        break;
+                    }
+                }
+            }
+            
+            // 3. Fallback: Create new entry if still not found
+            if (!targetContributor) {
+                const identifier = rawLogin || rawName || rawEmail || 'Unknown';
+                const lookupKey = normalizeKey(identifier);
+                
+                if (!contributorMap.has(lookupKey)) {
+                    contributorMap.set(lookupKey, {
+                        login: identifier,
+                        avatar: commit.author?.avatar_url || 'https://github.com/identicons/user.png',
+                        commits: 0,
+                        activeIssues: [],
+                        recentActivity: []
+                    });
+                }
+                targetContributor = contributorMap.get(lookupKey);
             }
 
-            const c = contributorMap.get(lookupKey);
-            
             // Only increment if they weren't in the base cache at all
-            if (!contribData.some(cached => normalizeKey(cached.author.login) === lookupKey)) {
-                c.commits += 1;
+            // (Check if any contributor in original data matches this login/name)
+            const isKnown = contribData.some(cached => {
+                const cLogin = normalizeKey(cached.author.login);
+                return cLogin === normalizeKey(rawLogin) || cLogin === normalizeKey(rawName);
+            });
+            
+            if (!isKnown && targetContributor.recentActivity.length === 0) {
+                targetContributor.commits += 1;
             }
 
-            // Populate recent activity (ALL fetched commits)
-            c.recentActivity.push({
+            // Populate recent activity
+            targetContributor.recentActivity.push({
                 message: commit.commit.message.split('\n')[0],
                 date: commit.commit.author.date,
                 url: commit.html_url

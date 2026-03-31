@@ -293,9 +293,10 @@ const GroupPortal = () => {
                         
                         <div className="space-y-3">
                             {(stats.contributors || []).map((c, i) => {
-                                const lastCommitDate = c.recentActivity && c.recentActivity.length > 0 ? new Date(c.recentActivity[0].date) : new Date(0);
-                                const inactivityDays = (new Date() - lastCommitDate) / (1000 * 60 * 60 * 24);
-                                const isInactive = inactivityDays > (repoInfo.inactivityLimitDays || 3);
+                                 const lastCommitDate = c.recentActivity && c.recentActivity.length > 0 ? new Date(c.recentActivity[0].date) : null;
+                                const inactivityDays = lastCommitDate ? (new Date() - lastCommitDate) / (1000 * 60 * 60 * 24) : 999;
+                                const threshold = repoInfo.inactivityLimitDays || 3;
+                                const isInactive = inactivityDays > threshold;
 
                                 return (
                                 <details key={i} className="group/details bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden hover:border-pink-500/20 transition-colors">
