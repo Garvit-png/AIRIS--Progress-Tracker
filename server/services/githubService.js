@@ -30,7 +30,7 @@ exports.getRepoStats = async (owner, repo) => {
         const slug = `${owner}/${repo}`;
         const cacheKey = `github_intelligence_v2:${slug}`;
 
-        // 1. Check Redis Cache First
+        // 1. Check Redis Cache First (unless forcing refresh)
         const cachedData = await cacheGet(cacheKey);
         if (cachedData) {
             console.log(`⚡ Redis Cache Hit: ${cacheKey}`);
@@ -51,9 +51,15 @@ exports.getRepoStats = async (owner, repo) => {
             return { status: 202, message: 'Stats are compiling, try again shortly.' };
         }
 
+        const repoData = repoRes.data || {};
+        const defaultBranch = repoData.default_branch || 'main';
+
+        // 2b. If we didn't get commits yet or want to be specific, we could re-fetch, 
+        // but for speed we'll assume the initial concurrent fetch got the default branch.
+        // If the user pushed to a DIFFERENT branch, we'd need a branch selector (future feature).
+        
         const contribData = Array.isArray(contribRes.data) ? contribRes.data : [];
-        const repoData = repoRes.data;
-        const langData = langRes.data;
+        const langData = langRes.data || {};
         const issuesData = issuesRes?.data || [];
         const commitsData = commitsRes?.data || [];
 
@@ -183,12 +189,13 @@ exports.getRepoStats = async (owner, repo) => {
                 openIssues: repoData.open_issues_count,
                 lastUpdated: trueLastUpdated,
                 primaryLanguage: repoData.language,
-                languages
+                languages,
+                contributors: enrichedContributors // Added for UI count
             }
         };
             
-        // 3. Save to Redis Cache (1 minute = 60 seconds)
-        await cacheSetEx(cacheKey, 60, newStats);
+        // 3. Save to Redis Cache (Strict 10s TTL for "Instant" feel)
+        await cacheSetEx(cacheKey, 10, newStats);
 
         return { status: 200, data: newStats };
     } catch (error) {

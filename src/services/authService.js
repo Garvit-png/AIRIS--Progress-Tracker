@@ -38,17 +38,27 @@ const fetchWithTimeout = async (url, options = {}, timeout = 10000) => {
     }
 };
 
-// Simple persistent cache for instant UI
+// Simple persistent cache with 10s TTL (Strict for "Fast" updates)
 const cache = {
     get: (key) => {
         try {
             const data = localStorage.getItem(`cache_${key}`);
-            return data ? JSON.parse(data) : null;
+            if (!data) return null;
+            const { value, timestamp } = JSON.parse(data);
+            const isExpired = Date.now() - timestamp > 10000; // 10s
+            if (isExpired) {
+                localStorage.removeItem(`cache_${key}`);
+                return null;
+            }
+            return value;
         } catch { return null; }
     },
     set: (key, value) => {
         try {
-            localStorage.setItem(`cache_${key}`, JSON.stringify(value));
+            localStorage.setItem(`cache_${key}`, JSON.stringify({
+                value,
+                timestamp: Date.now()
+            }));
         } catch (e) { console.warn('Cache write failed', e); }
     }
 };
@@ -620,7 +630,7 @@ export const AuthService = {
         return data.message;
     },
 
-    getGitHubStats: async (repoUrl) => {
+    getGitHubStats: async (repoUrl, forceRefresh = false) => {
         const token = localStorage.getItem('token');
         if (!repoUrl) return null;
 
@@ -629,8 +639,15 @@ export const AuthService = {
         slug = slug.split('/').slice(0, 2).join('/');
         if (!slug) return null;
 
+        // Bypassing cache for "Fast" force refresh
+        if (!forceRefresh) {
+            const cached = cache.get(`github_${repoUrl}`);
+            if (cached) return cached;
+        }
+
         try {
-            const response = await fetchWithTimeout(`${config.API_BASE_URL}/github/stats/${slug}`, {
+            const url = `${config.API_BASE_URL}/github/stats/${slug}${forceRefresh ? '?force=true' : ''}`;
+            const response = await fetchWithTimeout(url, {
                 headers: { 'Authorization': `Bearer ${token}` }
             }, 10000);
             
@@ -639,10 +656,13 @@ export const AuthService = {
                 return { status: 202, message: data.message };
             }
             if (!data.success) throw new Error(data.message);
+            
+            // Save to cache for next 10 seconds
+            cache.set(`github_${repoUrl}`, data.data);
             return data.data;
         } catch (error) {
             console.error('Failed to grab GitHub Stats from Backend:', error);
-            return null; // Gracefully fail if backend drops it
+            return cache.get(`github_${repoUrl}`); // Fallback to stale if network fails
         }
     },
 

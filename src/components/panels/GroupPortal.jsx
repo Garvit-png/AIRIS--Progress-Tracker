@@ -190,35 +190,38 @@ const GroupPortal = () => {
         const [stats, setStats] = useState(AuthService.cache.get(`github_${repoInfo.repoUrl}`));
         const [repoLoading, setRepoLoading] = useState(!stats);
         const [isCompiling, setIsCompiling] = useState(false);
+        const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
         useEffect(() => {
             if (repoInfo.repoUrl) fetchRepoStats();
             // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [repoInfo.repoUrl]);
 
-        const fetchRepoStats = async () => {
+        const fetchRepoStats = async (isForced = false) => {
             if (!repoInfo.repoUrl) return;
-            if (!stats) setRepoLoading(true);
+            if (!stats && !isForced) setRepoLoading(true);
+            if (isForced) setIsManualRefreshing(true);
             setIsCompiling(false);
             
             try {
-                const newStats = await AuthService.getGitHubStats(repoInfo.repoUrl);
+                const newStats = await AuthService.getGitHubStats(repoInfo.repoUrl, isForced);
                 
                 if (newStats?.status === 202) {
                     setIsCompiling(true);
                     setRepoLoading(false);
-                    setTimeout(() => fetchRepoStats(), 3000);
+                    setTimeout(() => fetchRepoStats(isForced), 3000);
                     return;
                 }
                 
                 if (newStats && newStats.status !== 400 && newStats.status !== 500) {
                     setStats(newStats);
-                    AuthService.cache.set(`github_${repoInfo.repoUrl}`, newStats);
+                    // AuthService.getGitHubStats already updates the cache
                 }
             } catch (err) {
                 console.error('GitHub Intelligence Error:', err);
             } finally {
                 setRepoLoading(false);
+                setIsManualRefreshing(false);
             }
         };
 
@@ -399,9 +402,19 @@ const GroupPortal = () => {
                                 </div>
                             </div>
                         </div>
-                        <button onClick={onClose} className="p-3 bg-white/5 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-all">
-                            <X size={16} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button 
+                                onClick={() => fetchRepoStats(true)} 
+                                disabled={isManualRefreshing || repoLoading}
+                                className={`flex items-center gap-2 px-4 py-2 bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/20 rounded-xl text-[10px] font-bold uppercase tracking-widest text-pink-500 transition-all ${isManualRefreshing ? 'animate-pulse opacity-50' : ''}`}
+                            >
+                                <Clock size={12} className={isManualRefreshing ? 'animate-spin' : ''} />
+                                {isManualRefreshing ? 'Syncing...' : 'Force Sync'}
+                            </button>
+                            <button onClick={onClose} className="p-3 bg-white/5 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-all">
+                                <X size={16} />
+                            </button>
+                        </div>
                     </div>
                     
                     <div className="p-6 overflow-y-auto custom-scrollbar flex-1 relative">
