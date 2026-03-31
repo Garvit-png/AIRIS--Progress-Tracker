@@ -351,90 +351,119 @@ const GroupPortal = () => {
                         </label>
                         
                         <div className="space-y-3">
-                            {(stats.contributors || []).map((c, i) => {
-                                 const lastCommitDate = c.recentActivity && c.recentActivity.length > 0 ? new Date(c.recentActivity[0].date) : null;
-                                const inactivityDays = lastCommitDate ? (new Date() - lastCommitDate) / (1000 * 60 * 60 * 24) : 999;
-                                const threshold = repoInfo.inactivityLimitDays || 3;
-                                const isInactive = inactivityDays > threshold;
+                            <AnimatePresence mode="popLayout">
+                                {(repoInfo.members || []).filter(m => m && typeof m === 'object').map((member, idx) => {
+                                    // Find matching GitHub contributor stats from the backend stats
+                                    const githubStats = (stats.contributors || []).find(c => 
+                                        c.login?.toLowerCase() === member.githubUsername?.toLowerCase() ||
+                                        c.login?.toLowerCase() === member.name?.toLowerCase().replace(/\s+/g, '')
+                                    );
+                                    
+                                    const lastCommitDate = githubStats?.recentActivity && githubStats.recentActivity.length > 0 ? new Date(githubStats.recentActivity[0].date) : null;
+                                    const inactivityDays = lastCommitDate ? (new Date() - lastCommitDate) / (1000 * 60 * 60 * 24) : 999;
+                                    const threshold = repoInfo.inactivityLimitDays || 3;
+                                    const isInactive = inactivityDays > threshold && githubStats;
 
-                                return (
-                                <details key={i} className="group/details bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden hover:border-pink-500/20 transition-colors">
-                                    <summary className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/[0.02] transition-colors list-none outline-none">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-[#121212] flex items-center justify-center p-[2px] border border-white/10 group-hover/details:border-pink-500/50 transition-colors relative">
-                                                {c.avatar ? <img src={c.avatar} className="w-full h-full rounded-full" alt="" /> : <Users size={14} className="text-white/40"/>}
-                                                {isInactive && (
-                                                    <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-[#121212] flex items-center justify-center animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]">
-                                                        <AlertCircle size={8} className="text-white" />
+                                    return (
+                                    <motion.details 
+                                        layout
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.98 }}
+                                        key={member._id || idx} 
+                                        className="group/details bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden hover:border-pink-500/20 transition-colors"
+                                    >
+                                        <summary className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/[0.02] transition-colors list-none outline-none">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-[#121212] flex items-center justify-center p-[2px] border border-white/10 group-hover/details:border-pink-500/50 transition-colors relative overflow-hidden">
+                                                    {member.profilePicture ? (
+                                                        <img src={AuthService.getFileUrl(member.profilePicture)} className="w-full h-full object-cover" alt="" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-lg font-bold text-pink-500 bg-pink-500/5">
+                                                            {member.name?.[0]}
+                                                        </div>
+                                                    )}
+                                                    {isInactive && (
+                                                        <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-[#121212] flex items-center justify-center animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]">
+                                                            <AlertCircle size={8} className="text-white" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[14px] font-bold text-white tracking-tight">{member.name}</span>
+                                                        {isInactive && <span className="text-[8px] font-bold tracking-wider text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20 uppercase">Critical Inactivity</span>}
+                                                    </div>
+                                                    <div className="flex flex-col gap-0.5 mt-0.5">
+                                                        <span className="text-[9px] font-mono text-white/30 uppercase tracking-widest">{member.email}</span>
+                                                        {githubStats && (
+                                                            <span className={`text-[8.5px] font-mono tracking-wider ${isInactive ? 'text-red-500/80' : 'text-pink-500/80'}`}>
+                                                                Last Sync: {githubStats.recentActivity && githubStats.recentActivity.length > 0 ? (inactivityDays < 1 ? 'Today' : (Math.floor(inactivityDays) === 1 ? 'Yesterday' : `${Math.floor(inactivityDays)} days ago`)) : 'Unknown'}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-5">
+                                                {githubStats ? (
+                                                    <div className="flex flex-col items-end shrink-0">
+                                                        <span className="text-[16px] font-mono font-bold text-pink-400">{githubStats.commits}</span>
+                                                        <span className="text-[8px] font-mono text-white/30 tracking-wider uppercase">Commits</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-[9px] font-mono text-white/10 italic">Intelligence Pending</div>
+                                                )}
+                                                <ChevronRight size={16} className="text-white/20 group-open/details:rotate-90 transition-transform" />
+                                            </div>
+                                        </summary>
+                                        
+                                        {githubStats && (
+                                            <div className="p-5 bg-black/40 border-t border-white/5 space-y-6">
+                                                {githubStats.activeIssues && githubStats.activeIssues.length > 0 && (
+                                                    <div>
+                                                        <span className="text-[9px] font-mono text-white/30 uppercase tracking-[0.2em] mb-3 block flex items-center gap-1.5">
+                                                            <AlertCircle size={10} className="text-pink-500" /> Active Assignments
+                                                        </span>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {githubStats.activeIssues.map((issue, idx) => (
+                                                                <a key={idx} href={issue.url} target="_blank" rel="noreferrer" className="text-[11px] text-white/70 bg-white/5 border border-white/5 px-3 py-2 rounded-xl hover:bg-white/10 hover:text-white hover:border-pink-500/30 transition-all flex items-center gap-2">
+                                                                    <span className="text-pink-400 font-mono">#{issue.number}</span>
+                                                                    <span className="truncate max-w-[200px]">{issue.title}</span>
+                                                                </a>
+                                                            ))}
+                                                        </div>
                                                     </div>
                                                 )}
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[13px] font-bold text-white tracking-tight">{c.login}</span>
-                                                    {isInactive && <span className="text-[8px] font-bold tracking-wider text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20">Inactive</span>}
-                                                </div>
-                                                <div className="flex flex-col gap-0.5 mt-0.5">
-                                                    <span className="text-[9px] font-mono text-white/40">Assigned: {c.activeIssues?.length || 0} Tickets</span>
-                                                    <span className={`text-[8.5px] font-mono tracking-wider ${isInactive ? 'text-red-500/80' : 'text-pink-500/80'}`}>
-                                                        Last Commit: {c.recentActivity && c.recentActivity.length > 0 ? (inactivityDays < 1 ? 'Today' : (Math.floor(inactivityDays) === 1 ? 'Yesterday' : `${Math.floor(inactivityDays)} days ago`)) : 'Unknown'}
+
+                                                <div>
+                                                    <span className="text-[9px] font-mono text-white/30 uppercase tracking-[0.2em] mb-4 block flex items-center gap-1.5">
+                                                        <GitPullRequest size={10} className="text-pink-500" /> Direct Activity Log
                                                     </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-5">
-                                            <div className="flex flex-col items-end">
-                                                <span className="text-[16px] font-mono font-bold text-pink-400">{c.commits}</span>
-                                                <span className="text-[8px] font-mono text-white/30 tracking-wider">Commits</span>
-                                            </div>
-                                            <ChevronRight size={16} className="text-white/20 group-open/details:rotate-90 transition-transform" />
-                                        </div>
-                                    </summary>
-                                    
-                                    <div className="p-5 bg-black/40 border-t border-white/5 space-y-6">
-                                        {c.activeIssues && c.activeIssues.length > 0 && (
-                                            <div>
-                                                <span className="text-[9px] font-mono text-white/30 uppercase tracking-[0.2em] mb-3 block flex items-center gap-1.5">
-                                                    <AlertCircle size={10} className="text-pink-500" /> Active Assigned Issues
-                                                </span>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {c.activeIssues.map((issue, idx) => (
-                                                        <a key={idx} href={issue.url} target="_blank" rel="noreferrer" className="text-[11px] text-white/70 bg-white/5 border border-white/5 px-3 py-2 rounded-xl hover:bg-white/10 hover:text-white hover:border-pink-500/30 transition-all flex items-center gap-2">
-                                                            <span className="text-pink-400 font-mono">#{issue.number}</span>
-                                                            <span className="truncate max-w-[200px]">{issue.title}</span>
-                                                        </a>
-                                                    ))}
+                                                    {githubStats.recentActivity && githubStats.recentActivity.length > 0 ? (
+                                                        <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                                                            {githubStats.recentActivity.map((act, idx) => (
+                                                                <a key={idx} href={act.url} target="_blank" rel="noreferrer" className="block bg-white/5 rounded-xl border border-white/5 p-3 hover:border-pink-500/30 transition-colors group/act">
+                                                                    <span className="block text-[12px] text-white/80 group-hover/act:text-white truncate mb-1">{act.message}</span>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="block text-[9px] font-mono text-pink-500 uppercase tracking-widest">
+                                                                            {new Date(act.date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                                                                        </span>
+                                                                    </div>
+                                                                </a>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-[10px] font-mono text-white/20 italic">
+                                                            No recent intelligence available
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
-
-                                        <div>
-                                            <span className="text-[9px] font-mono text-white/30 uppercase tracking-[0.2em] mb-4 block flex items-center gap-1.5">
-                                                <GitPullRequest size={10} className="text-pink-500" /> Individual Commit Log
-                                            </span>
-                                            {c.recentActivity && c.recentActivity.length > 0 ? (
-                                                <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                                                    {c.recentActivity.map((act, idx) => (
-                                                        <a key={idx} href={act.url} target="_blank" rel="noreferrer" className="block bg-white/5 rounded-xl border border-white/5 p-3 hover:border-pink-500/30 transition-colors group/act">
-                                                            <span className="block text-[12px] text-white/80 group-hover/act:text-white truncate mb-1">{act.message}</span>
-                                                            <div className="flex items-center gap-2">
-                                                                 <span className="block text-[9px] font-mono text-pink-500 uppercase tracking-widest">
-                                                                    {new Date(act.date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                                                                </span>
-                                                            </div>
-                                                        </a>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <div className="text-[10px] font-mono text-white/20 italic">
-                                                    No recent commits available
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </details>
-                                );
-                            })}
+                                    </motion.details>
+                                    );
+                                })}
+                            </AnimatePresence>
                         </div>
                     </div>
                 </div>
@@ -656,20 +685,29 @@ const GroupPortal = () => {
                     <div className="mt-auto space-y-5">
                         <div className="flex items-center justify-between">
                             <div className="flex -space-x-2">
-                                {validMembers.slice(0, 5).map(member => (
-                                    <div key={member._id} className="w-8 h-8 rounded-full border-2 border-[#121212] bg-[#1a1a1a] flex items-center justify-center overflow-hidden shrink-0 relative group/tooltip">
-                                        {member.profilePicture ? (
-                                            <img src={AuthService.getFileUrl(member.profilePicture)} alt="" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <span className="text-[10px] font-bold text-pink-500">{member.name ? member.name[0].toUpperCase() : '?'}</span>
-                                        )}
-                                        {isAdmin && activeTab === 'management' && (
-                                            <div className="absolute inset-0 bg-red-500/80 flex items-center justify-center opacity-0 hover:opacity-100 cursor-pointer transition-opacity z-10" onClick={() => handleRemoveMember(group._id, member._id)}>
-                                                <X size={12} className="text-white" />
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
+                                <AnimatePresence mode="popLayout">
+                                    {validMembers.slice(0, 5).map(member => (
+                                        <motion.div 
+                                            layout
+                                            initial={{ opacity: 0, x: -10 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: 10, scale: 0.8 }}
+                                            key={member._id} 
+                                            className="w-8 h-8 rounded-full border-2 border-[#121212] bg-[#1a1a1a] flex items-center justify-center overflow-hidden shrink-0 relative group/tooltip shadow-lg"
+                                        >
+                                            {member.profilePicture ? (
+                                                <img src={AuthService.getFileUrl(member.profilePicture)} alt="" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="text-[10px] font-bold text-pink-500">{member.name ? member.name[0].toUpperCase() : '?'}</span>
+                                            )}
+                                            {isAdmin && activeTab === 'management' && (
+                                                <div className="absolute inset-0 bg-red-500/80 flex items-center justify-center opacity-0 hover:opacity-100 cursor-pointer transition-opacity z-10" onClick={() => handleRemoveMember(group._id, member._id)}>
+                                                    <X size={12} className="text-white" />
+                                                </div>
+                                            )}
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
                                 {validMembers.length > 5 && (
                                     <div className="w-8 h-8 rounded-full border-2 border-[#121212] bg-white/5 flex items-center justify-center shrink-0">
                                         <span className="text-[9px] font-bold text-white/60">+{validMembers.length - 5}</span>
@@ -702,20 +740,29 @@ const GroupPortal = () => {
                                         />
                                     </div>
                                     <div className="max-h-32 overflow-y-auto custom-scrollbar space-y-1">
-                                        {allUsers
-                                            .filter(u => !validMembers.some(m => m._id === u._id))
-                                            .filter(u => u.name?.toLowerCase().includes(searchQuery.toLowerCase()) || u.email?.toLowerCase().includes(searchQuery.toLowerCase()))
-                                            .map(u => (
-                                                <div key={u._id} className="flex items-center justify-between p-2 hover:bg-white/5 rounded-lg transition-colors group/row">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-6 h-6 rounded bg-pink-500/10 flex items-center justify-center text-[8px] text-pink-500 border border-pink-500/20">
-                                                            {u.name ? u.name[0].toUpperCase() : '?'}
+                                        <AnimatePresence mode="popLayout">
+                                            {allUsers
+                                                .filter(u => !validMembers.some(m => m?._id === u._id))
+                                                .filter(u => u.name?.toLowerCase().includes(searchQuery.toLowerCase()) || u.email?.toLowerCase().includes(searchQuery.toLowerCase()))
+                                                .map(u => (
+                                                    <motion.div 
+                                                        layout
+                                                        initial={{ opacity: 0, x: -5 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        exit={{ opacity: 0, x: 5 }}
+                                                        key={u._id} 
+                                                        className="flex items-center justify-between p-2 hover:bg-white/5 rounded-lg transition-colors group/row"
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-6 h-6 rounded bg-pink-500/10 flex items-center justify-center text-[8px] text-pink-500 border border-pink-500/20 overflow-hidden">
+                                                                {u.profilePicture ? <img src={AuthService.getFileUrl(u.profilePicture)} className="w-full h-full object-cover" /> : (u.name ? u.name[0].toUpperCase() : '?')}
+                                                            </div>
+                                                            <span className="text-[10px] text-white/80 font-bold truncate max-w-[100px]">{u.name || u.email}</span>
                                                         </div>
-                                                        <span className="text-[10px] text-white/80 font-bold truncate max-w-[100px]">{u.name || u.email}</span>
-                                                    </div>
-                                                    <button onClick={() => handleAddMember(group._id, u._id)} className="px-3 py-1 bg-white/5 text-white/60 rounded text-[9px] font-bold uppercase hover:bg-pink-500 hover:text-white transition-all">Add</button>
-                                                </div>
-                                            ))}
+                                                        <button onClick={() => handleAddMember(group._id, u._id)} className="px-3 py-1 bg-white/5 text-white/60 rounded text-[9px] font-bold uppercase hover:bg-pink-500 hover:text-white transition-all">Add</button>
+                                                    </motion.div>
+                                                ))}
+                                        </AnimatePresence>
                                     </div>
                                 </motion.div>
                             )}
