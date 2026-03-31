@@ -25,16 +25,18 @@ const fetchGitHubAPI = async (endpoint) => {
 
 const { cacheGet, cacheSetEx } = require('../config/redis');
 
-exports.getRepoStats = async (owner, repo) => {
+exports.getRepoStats = async (owner, repo, force = false) => {
     try {
         const slug = `${owner}/${repo}`;
         const cacheKey = `github_intelligence_v2:${slug}`;
 
-        // 1. Check Redis Cache First (unless forcing refresh)
-        const cachedData = await cacheGet(cacheKey);
-        if (cachedData) {
-            console.log(`⚡ Redis Cache Hit: ${cacheKey}`);
-            return { status: 200, data: cachedData };
+        // 1. Check Redis Cache (unless force refresh is active)
+        if (!force) {
+            const cachedData = await cacheGet(cacheKey);
+            if (cachedData) {
+                console.log(`⚡ Redis Cache Hit: ${cacheKey}`);
+                return { status: 200, data: cachedData };
+            }
         }
 
         console.log(`🔌 Fetching from GitHub API: ${slug}`);
@@ -128,14 +130,13 @@ exports.getRepoStats = async (owner, repo) => {
                 targetContributor = contributorMap.get(lookupKey);
             }
 
-            // Only increment if they weren't in the base cache at all
-            // (Check if any contributor in original data matches this login/name)
+            // Increment base count for new contributors only
             const isKnown = contribData.some(cached => {
                 const cLogin = normalizeKey(cached.author.login);
                 return cLogin === normalizeKey(rawLogin) || cLogin === normalizeKey(rawName);
             });
             
-            if (!isKnown && targetContributor.recentActivity.length === 0) {
+            if (!isKnown && targetContributor.recentActivity.length === 1) {
                 targetContributor.commits += 1;
             }
 
@@ -147,7 +148,14 @@ exports.getRepoStats = async (owner, repo) => {
             });
         });
 
-        const activeContributors = Array.from(contributorMap.values());
+        const activeContributors = Array.from(contributorMap.values()).map(c => {
+            // REAL-TIME SYNC: Force commit count to be at least the number of recent commits discovered
+            // This fixes the stale stats API from GitHub (e.g. showing 14 when we see 18 in recent log)
+            if (c.recentActivity.length > c.commits) {
+                c.commits = c.recentActivity.length;
+            }
+            return c;
+        });
 
         // Process Language Profile (Top 3)
         const totalBytes = Object.values(langData).reduce((a, b) => a + b, 0);

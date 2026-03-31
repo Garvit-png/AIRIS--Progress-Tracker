@@ -7,7 +7,8 @@ exports.getRepoStats = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Repository owner and name are required' });
         }
 
-        const result = await githubService.getRepoStats(owner, repo);
+        const { force } = req.query;
+        const result = await githubService.getRepoStats(owner, repo, force === 'true');
 
         if (result.status === 202) {
             return res.status(202).json({ success: true, message: result.message, data: null });
