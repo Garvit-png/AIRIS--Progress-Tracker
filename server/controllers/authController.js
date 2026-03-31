@@ -11,7 +11,7 @@ const ApprovedEmail = require('../models/ApprovedEmail');
 // @access  Public
 exports.register = async (req, res, next) => {
     try {
-        const { name, email, password, year } = req.body;
+        const { name, email, password, year, githubUsername } = req.body;
         const cleanEmail = email.toLowerCase().trim();
 
         // Check if user exists
@@ -42,6 +42,7 @@ exports.register = async (req, res, next) => {
             email: cleanEmail,
             password,
             year,
+            githubUsername,
             role: newRole,
             isAdmin: newIsAdmin,
             status: newStatus,

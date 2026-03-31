@@ -14,6 +14,7 @@ export default function RegisterPage() {
     const [year, setYear] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
+    const [githubUsername, setGithubUsername] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [isEmailSent, setIsEmailSent] = useState(false)
 
@@ -35,14 +36,14 @@ export default function RegisterPage() {
         e.preventDefault()
         setError('')
 
-        if (!name.trim() || !password.trim() || !year.trim()) {
+        if (!name.trim() || !password.trim() || !year.trim() || !githubUsername.trim()) {
             setError('ALL FIELDS REQUIRED')
             return
         }
 
         setIsLoading(true)
         try {
-            const data = await AuthService.register(name, email, password, year)
+            const data = await AuthService.register(name, email, password, year, githubUsername)
             // Auto-login happens in AuthService.register, so we just navigate to /pending
             navigate('/pending', { replace: true })
         } catch (err) {
@@ -108,6 +109,14 @@ export default function RegisterPage() {
                             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm outline-none focus:border-white/30 transition-all font-mono"
                             value={name}
                             onChange={(e) => { setName(e.target.value); setError(''); }}
+                        />
+
+                        <input
+                            type="text"
+                            placeholder="GitHub Username"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm outline-none focus:border-white/30 transition-all font-mono"
+                            value={githubUsername}
+                            onChange={(e) => { setGithubUsername(e.target.value); setError(''); }}
                         />
 
                         <select

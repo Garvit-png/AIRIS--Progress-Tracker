@@ -84,11 +84,11 @@ export const AuthService = {
         }
     },
 
-    register: async (name, email, password, year) => {
+    register: async (name, email, password, year, githubUsername) => {
         const response = await fetch(`${API_URL}/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password, year })
+            body: JSON.stringify({ name, email, password, year, githubUsername })
         });
 
         const data = await safeJson(response);

@@ -191,7 +191,7 @@ const GroupPortal = () => {
         const [repoLoading, setRepoLoading] = useState(!stats);
         const [isCompiling, setIsCompiling] = useState(false);
         const [isManualRefreshing, setIsManualRefreshing] = useState(false);
-        const [activeModalTab, setActiveModalTab] = useState('members'); // 'members' or 'activity'
+        const [activeModalTab, setActiveModalTab] = useState('squad'); // 'squad', 'members' or 'activity'
 
         useEffect(() => {
             if (repoInfo.repoUrl) fetchRepoStats();
@@ -250,11 +250,81 @@ const GroupPortal = () => {
                 </div>
             );
 
+            const renderSquadTab = () => (
+                <div className="space-y-6">
+                    <label className="text-[10px] font-mono text-white/40 tracking-wider block mb-4 flex items-center gap-2">
+                        <Users size={12} className="text-pink-500" /> Human Resource Intelligence (HRI)
+                    </label>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {(repoInfo.members || []).map((member, idx) => {
+                            // Find matching GitHub contributor stats
+                            const githubStats = (stats.contributors || []).find(c => 
+                                c.login?.toLowerCase() === member.githubUsername?.toLowerCase()
+                            );
+                            
+                            return (
+                                <div key={idx} className="bg-white/[0.03] border border-white/5 rounded-[2rem] p-6 hover:border-pink-500/30 transition-all group/member relative overflow-hidden backdrop-blur-md">
+                                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover/member:opacity-10 transition-opacity">
+                                        <Activity size={60} className="text-white" />
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-5 relative z-10">
+                                        <div className="w-20 h-20 rounded-[1.5rem] bg-white/5 border border-white/10 p-1 flex-shrink-0 group-hover/member:border-pink-500/30 transition-colors">
+                                            {member.profilePicture ? (
+                                                <img src={member.profilePicture} className="w-full h-full rounded-2xl object-cover" alt="" />
+                                            ) : (
+                                                <div className="w-full h-full rounded-2xl bg-pink-500/5 flex items-center justify-center">
+                                                    <span className="text-2xl font-bold text-pink-500">{member.name?.charAt(0)}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center justify-between">
+                                                <h4 className="text-[16px] font-bold text-white tracking-tight group-hover/member:text-pink-400 transition-colors">{member.name}</h4>
+                                                {githubStats && (
+                                                    <div className="px-2 py-1 bg-green-500/10 rounded-lg flex items-center gap-1.5 border border-green-500/20">
+                                                        <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />
+                                                        <span className="text-[8px] font-bold text-green-500 uppercase tracking-widest">Linked</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <p className="text-[10px] font-mono text-white/40 uppercase tracking-widest mt-1">{member.role || 'Operative'}</p>
+                                            <div className="flex items-center gap-2 mt-3 bg-white/5 w-fit px-3 py-1.5 rounded-xl border border-white/5">
+                                                <Github size={12} className="text-pink-500" />
+                                                <span className="text-[10px] font-mono text-white/60">{member.githubUsername || 'ID NOT LINKED'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-8 pt-6 border-t border-white/5 grid grid-cols-2 gap-8 relative z-10">
+                                        <div className="space-y-1.5">
+                                            <span className="text-[9px] font-mono text-white/30 uppercase tracking-[0.2em] block">Contribution Profile</span>
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="text-[24px] font-mono font-bold text-white">{githubStats ? githubStats.commits : 0}</span>
+                                                <span className="text-[10px] font-mono text-white/40 uppercase">Total Commits</span>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <span className="text-[9px] font-mono text-white/30 uppercase tracking-[0.2em] block">Assigned Tickets</span>
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="text-[24px] font-mono font-bold text-pink-500">{githubStats?.activeIssues?.length || 0}</span>
+                                                <span className="text-[10px] font-mono text-white/40 uppercase">Active</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+
             const renderMembersTab = () => (
                 <div className="space-y-6">
                     <div className="pt-2">
                         <label className="text-[10px] font-mono text-white/40 tracking-wider block mb-4 flex items-center justify-between">
-                            <span className="flex items-center gap-2"><Activity size={12} className="text-pink-500" /> Members Activity & Commit Overlook</span>
+                            <span className="flex items-center gap-2"><Activity size={12} className="text-pink-500" /> GitHub Identity Breakdown</span>
                             <span className="text-[8px] bg-red-500/10 text-red-500 px-2 py-1 rounded border border-red-500/20">Inactivity Trigger: {repoInfo.inactivityLimitDays || 3} Days</span>
                         </label>
                         
@@ -326,7 +396,7 @@ const GroupPortal = () => {
                                                         <a key={idx} href={act.url} target="_blank" rel="noreferrer" className="block bg-white/5 rounded-xl border border-white/5 p-3 hover:border-pink-500/30 transition-colors group/act">
                                                             <span className="block text-[12px] text-white/80 group-hover/act:text-white truncate mb-1">{act.message}</span>
                                                             <div className="flex items-center gap-2">
-                                                                <span className="block text-[9px] font-mono text-pink-500 uppercase tracking-widest">
+                                                                 <span className="block text-[9px] font-mono text-pink-500 uppercase tracking-widest">
                                                                     {new Date(act.date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                                                                 </span>
                                                             </div>
@@ -352,7 +422,7 @@ const GroupPortal = () => {
                 <div className="space-y-6">
                     <div className="pt-2">
                         <label className="text-[10px] font-mono text-white/40 tracking-wider block mb-6 flex items-center gap-2">
-                            <Activity size={12} className="text-pink-500" /> Chronological Project Registry
+                            <Activity size={12} className="text-pink-500" /> Professional Deployment Log (PDL)
                         </label>
 
                         {stats.commitHistory && stats.commitHistory.length > 0 ? (
@@ -399,6 +469,7 @@ const GroupPortal = () => {
                     </div>
                 </div>
             );
+
             return (
                 <div className="space-y-8 animate-in fade-in duration-500">
                     {/* Top Analytics Summary */}
@@ -427,28 +498,36 @@ const GroupPortal = () => {
                     </div>
 
                     {/* Tab Navigation */}
-                    <div className="flex gap-2 p-1.5 bg-white/[0.02] border border-white/5 rounded-2xl w-fit">
+                    <div className="flex flex-wrap gap-2 p-1.5 bg-white/[0.02] border border-white/5 rounded-2xl w-fit">
+                        <button 
+                            onClick={() => setActiveModalTab('squad')}
+                            className={`px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
+                                activeModalTab === 'squad' ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/20' : 'text-white/40 hover:text-white/80 hover:bg-white/5'
+                            }`}
+                        >
+                            Squad Registry
+                        </button>
                         <button 
                             onClick={() => setActiveModalTab('members')}
                             className={`px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
-                                activeModalTab === 'members' ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/20' : 'text-white/40 hover:text-white/80 hover:bg-white/5'
+                                activeModalTab === 'members' ? 'bg-white/10 text-white shadow-lg shadow-white/5' : 'text-white/40 hover:text-white/80 hover:bg-white/5'
                             }`}
                         >
-                            Active Squad
+                            GitHub Activity
                         </button>
                         <button 
                             onClick={() => setActiveModalTab('activity')}
                             className={`px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
-                                activeModalTab === 'activity' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/40 hover:text-white/80 hover:bg-white/5'
+                                activeModalTab === 'activity' ? 'bg-white/10 text-white shadow-lg shadow-white/5' : 'text-white/40 hover:text-white/80 hover:bg-white/5'
                             }`}
                         >
-                            Activity Log
+                            Global Logs
                         </button>
                     </div>
 
                     {/* Main Content Area */}
                     <div className="border-t border-white/5 pt-6 transition-all duration-300">
-                        {activeModalTab === 'members' ? renderMembersTab() : renderActivityTab()}
+                        {activeModalTab === 'squad' ? renderSquadTab() : (activeModalTab === 'members' ? renderMembersTab() : renderActivityTab())}
                     </div>
                 </div>
             );
@@ -601,7 +680,7 @@ const GroupPortal = () => {
                                         onClick={() => setActiveGithubRepo(group)}
                                         className="flex-[2] py-3 bg-pink-500/5 hover:bg-pink-500 border border-pink-500/20 hover:border-pink-500 text-pink-500 hover:text-white rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 group/btn"
                                     >
-                                        <Users size={14} className="group-hover/btn:-mt-1 transition-all" /> Members Indulge
+                                        <Users size={14} className="group-hover/btn:-mt-1 transition-all" /> Member Center
                                     </button>
                                     <a 
                                         href={group.repoUrl} target="_blank" rel="noreferrer"
