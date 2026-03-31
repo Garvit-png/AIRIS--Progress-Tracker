@@ -34,6 +34,8 @@ const GroupPortal = () => {
     
     // Modal for GitHub Stats
     const [activeGithubRepo, setActiveGithubRepo] = useState(null);
+    const [activeMemberManagementGroup, setActiveMemberManagementGroup] = useState(null);
+    const [memberSearchQuery, setMemberSearchQuery] = useState('');
 
     // Provide safe optional chaining to avoid initial crashes
     const isAdmin = user?.isAdmin || ['president', 'general secretary', 'admin'].includes(user?.role?.toLowerCase());
@@ -638,6 +640,9 @@ const GroupPortal = () => {
                                 <button onClick={() => { setEditingGroup(group); setIsEditModalOpen(true); }} className="p-1.5 text-white/40 hover:text-white hover:bg-white/10 rounded-lg transition-all" title="Edit Group">
                                     <Edit2 size={13} />
                                 </button>
+                                <button onClick={() => { setActiveMemberManagementGroup(group); setMemberSearchQuery(''); }} className="p-1.5 text-white/40 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all" title="Manage Squad Members">
+                                    <Users size={13} />
+                                </button>
                                 <button onClick={() => { setSelectedGroup(group); setIsAssignTaskModalOpen(true); }} className="p-1.5 text-white/40 hover:text-amber-400 hover:bg-amber-400/10 rounded-lg transition-all" title="Assign Priority Task">
                                     <ClipboardList size={13} />
                                 </button>
@@ -955,6 +960,93 @@ const GroupPortal = () => {
                                         <button type="submit" className="flex-[2] py-4 bg-amber-500 text-black rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-amber-400 transition-all shadow-xl shadow-amber-500/20">Broadcast Priority</button>
                                     </div>
                                 </form>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {activeMemberManagementGroup && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setActiveMemberManagementGroup(null)} className="absolute inset-0 bg-black/80 backdrop-blur-xl" />
+                        <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="bg-[#0a0a0b] border border-white/10 w-full max-w-2xl max-h-[80vh] rounded-[2.5rem] overflow-hidden shadow-2xl relative z-10 flex flex-col">
+                            <div className="p-8 border-b border-white/5 bg-white/[0.02]">
+                                <h3 className="text-xl font-bold text-white uppercase tracking-tight">Squad Management</h3>
+                                <p className="text-[10px] font-mono text-white/40 uppercase mt-1">Registry Operator: {activeMemberManagementGroup.name}</p>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-8">
+                                {/* Current Members */}
+                                <section>
+                                    <label className="text-[10px] font-mono text-white/30 uppercase tracking-[0.2em] mb-4 block">Assigned Operatives</label>
+                                    <div className="space-y-2">
+                                        {(activeMemberManagementGroup.members || []).filter(Boolean).map(member => (
+                                            <div key={member._id} className="flex items-center justify-between p-3 bg-white/[0.03] border border-white/5 rounded-2xl group/member">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-lg bg-pink-500/10 border border-white/10 overflow-hidden">
+                                                        {member.profilePicture ? <img src={AuthService.getFileUrl(member.profilePicture)} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[10px] text-pink-500 font-bold">{member.name?.[0]}</div>}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[12px] font-bold text-white">{member.name}</p>
+                                                        <p className="text-[9px] font-mono text-white/40">{member.email}</p>
+                                                    </div>
+                                                </div>
+                                                <button onClick={() => handleRemoveMember(activeMemberManagementGroup._id, member._id).then(() => {
+                                                    const updated = { ...activeMemberManagementGroup, members: activeMemberManagementGroup.members.filter(m => m._id !== member._id) };
+                                                    setActiveMemberManagementGroup(updated);
+                                                })} className="p-2 text-white/20 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all">
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                {/* Add Members */}
+                                <section>
+                                    <label className="text-[10px] font-mono text-white/30 uppercase tracking-[0.2em] mb-4 block">Recruit New Operatives</label>
+                                    <div className="relative mb-4">
+                                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={14} />
+                                        <input 
+                                            type="text" 
+                                            placeholder="Search by name or email..." 
+                                            className="w-full bg-white/[0.05] border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-xs outline-none text-white focus:border-pink-500/50 transition-all font-sans"
+                                            value={memberSearchQuery}
+                                            onChange={(e) => setMemberSearchQuery(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                                        {allUsers
+                                            .filter(u => 
+                                                !activeMemberManagementGroup.members?.some(m => m?._id === u._id) &&
+                                                (u.name.toLowerCase().includes(memberSearchQuery.toLowerCase()) || u.email.toLowerCase().includes(memberSearchQuery.toLowerCase()))
+                                            )
+                                            .map(userItem => (
+                                                <div key={userItem._id} className="flex items-center justify-between p-3 border border-white/5 rounded-2xl hover:bg-white/[0.02] transition-all group/recruit">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 overflow-hidden">
+                                                            {userItem.profilePicture ? <img src={AuthService.getFileUrl(userItem.profilePicture)} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[10px] text-white/20">{userItem.name?.[0]}</div>}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[12px] font-bold text-white group-hover/recruit:text-pink-400 transition-colors">{userItem.name}</p>
+                                                            <p className="text-[9px] font-mono text-white/20">{userItem.email}</p>
+                                                        </div>
+                                                    </div>
+                                                    <button onClick={() => handleAddMember(activeMemberManagementGroup._id, userItem._id).then(() => {
+                                                        const updated = { ...activeMemberManagementGroup, members: [...activeMemberManagementGroup.members, userItem] };
+                                                        setActiveMemberManagementGroup(updated);
+                                                    })} className="p-2 px-4 bg-white/5 hover:bg-pink-500 text-[9px] font-bold uppercase tracking-widest text-white/40 hover:text-white rounded-xl transition-all">
+                                                        Add
+                                                    </button>
+                                                </div>
+                                            ))}
+                                    </div>
+                                </section>
+                            </div>
+
+                            <div className="p-8 border-t border-white/5 flex justify-end">
+                                <button onClick={() => setActiveMemberManagementGroup(null)} className="px-8 py-3 bg-white/10 rounded-2xl text-[10px] font-bold uppercase tracking-widest text-white hover:bg-white/20 transition-all">Done</button>
                             </div>
                         </motion.div>
                     </div>

@@ -10,7 +10,7 @@ import AdminPortalGate from './AdminPortalGate'
 import ChatPanel from './panels/ChatPanel'
 import GroupPortal from './panels/GroupPortal'
 import { AuthService } from '../services/authService'
-import { Camera, X, Upload, Save, User as UserIcon, Lock, Unlock, AlertTriangle } from 'lucide-react'
+import { Camera, X, Upload, Save, User as UserIcon, Lock, Unlock, AlertTriangle, Github, ChevronRight } from 'lucide-react'
 
 export default function Dashboard({ user: initialUser }) {
     const [user, setUser] = useState(initialUser)
@@ -20,6 +20,8 @@ export default function Dashboard({ user: initialUser }) {
     const [currentMonth, setCurrentMonth] = useState(new Date())
     const [tasks, setTasks] = useState([])
     const [tasksLoading, setTasksLoading] = useState(false)
+    const [groups, setGroups] = useState([])
+    const [groupsLoading, setGroupsLoading] = useState(false)
     
     // Profile Modal State
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
@@ -50,6 +52,7 @@ export default function Dashboard({ user: initialUser }) {
 
         // Fetch tasks for priority detection and task view
         fetchMyTasks();
+        fetchMyGroups();
     }, [initialUser, activeView]);
 
     const handleViewChange = (view) => {
@@ -100,6 +103,18 @@ export default function Dashboard({ user: initialUser }) {
             fetchMyTasks();
         } catch (error) {
             alert(error.message);
+        }
+    };
+
+    const fetchMyGroups = async () => {
+        setGroupsLoading(true);
+        try {
+            const data = await AuthService.getGroups();
+            setGroups(data);
+        } catch (error) {
+            console.error('Failed to load groups:', error);
+        } finally {
+            setGroupsLoading(false);
         }
     };
 
@@ -344,6 +359,38 @@ export default function Dashboard({ user: initialUser }) {
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {/* My Active Projects / Squads Section */}
+                {groups.length > 0 && activeView === 'Dashboard' && (
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between px-1">
+                            <h3 className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em]">Project Squads</h3>
+                            <button onClick={() => setActiveView('Groups')} className="text-[9px] font-bold text-pink-500 uppercase tracking-widest hover:text-white transition-all">View All Intelligence</button>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {groups.slice(0, 3).map(group => (
+                                <motion.div 
+                                    whileHover={{ y: -2 }}
+                                    key={group._id} 
+                                    onClick={() => setActiveView('Groups')}
+                                    className="p-5 bg-white/[0.03] border border-white/10 rounded-2xl cursor-pointer hover:border-pink-500/30 transition-all flex items-center justify-between group"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-500">
+                                            <Github size={20} />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-bold text-white group-hover:text-pink-400 transition-colors">{group.name}</h4>
+                                            <p className="text-[9px] font-mono text-white/30 uppercase mt-0.5">{group.members?.length || 0} Members assigned</p>
+                                        </div>
+                                    </div>
+                                    <ChevronRight size={16} className="text-white/10 group-hover:text-white transition-all transform group-hover:translate-x-1" />
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 gap-6"><div className="w-full"><MonthlySummary currentMonth={currentMonth} /></div></div>
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                     <div className="lg:col-span-4 xl:col-span-3 sticky top-0"><WorkCalendar selectedDate={selectedDate} onDateSelect={setSelectedDate} currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} /></div>
