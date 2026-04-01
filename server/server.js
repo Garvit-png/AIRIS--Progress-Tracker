@@ -15,6 +15,7 @@ const chatRoutes = require('./routes/chatRoutes');
 const groupRoutes = require('./routes/groupRoutes');
 const githubRoutes = require('./routes/githubRoutes');
 const { 
+    createGroup,
     getGroups, 
     getGroup,
     updateGroup, 
@@ -210,7 +211,7 @@ if (process.env.NODE_ENV === 'production' && hasFrontend) {
     app.all('*', (req, res) => {
         res.status(404).json({
             success: false,
-            message: `Route ${req.method} ${req.path} not found.`
+            message: `Route ${req.method} ${req.path} not found. [SYST_SYNC_V4_${new Date().toISOString()}]`
         });
     });
 }
