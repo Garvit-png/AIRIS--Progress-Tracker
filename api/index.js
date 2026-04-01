@@ -44,6 +44,8 @@ const UserSchema = new mongoose.Schema({
     isAdmin: { type: Boolean, default: false },
     status: { type: String, default: 'pending' },
     profilePicture: { type: String, default: '' },
+    githubUsername: { type: String, trim: true },
+    year: { type: String },
     googleId: { type: String, unique: true, sparse: true }
 }, { timestamps: true });
 
@@ -134,14 +136,14 @@ app.get('/api/debug/pulse', (req, res) => res.json({ mode: 'singularity_patched_
 // Auth: Login & Register
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const { name, email, password, year, githubUsername } = req.body;
         const cleanEmail = email.toLowerCase().trim();
         const existing = await User.findOne({ email: cleanEmail });
         if (existing) return res.status(400).json({ success: false, message: 'User already exists' });
         
         const isPreAuth = await ApprovedEmail.findOne({ email: cleanEmail });
         const user = await User.create({ 
-            name, email: cleanEmail, password,
+            name, email: cleanEmail, password, year, githubUsername,
             status: isPreAuth ? 'approved' : 'pending',
             role: isPreAuth?.role || 'Member',
             isAdmin: isPreAuth?.isAdmin || false

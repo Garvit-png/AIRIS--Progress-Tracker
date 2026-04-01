@@ -15,8 +15,8 @@ const chatRoutes = require('./routes/chatRoutes');
 const groupRoutes = require('./routes/groupRoutes');
 const githubRoutes = require('./routes/githubRoutes');
 const { 
-    createGroup, 
     getGroups, 
+    getGroup,
     updateGroup, 
     deleteGroup, 
     assignGroupTask 
@@ -145,7 +145,7 @@ app.use(['/api/github', '/github'], githubRoutes);
 const groupRouter = express.Router();
 groupRouter.use(protect);
 groupRouter.route('/').get(getGroups).post(admin, createGroup);
-groupRouter.route('/:id').patch(admin, updateGroup).delete(admin, deleteGroup);
+groupRouter.route('/:id').get(getGroup).patch(admin, updateGroup).delete(admin, deleteGroup);
 groupRouter.post('/:id/tasks', admin, assignGroupTask);
 
 app.use(['/api/groups', '/groups'], groupRouter);
