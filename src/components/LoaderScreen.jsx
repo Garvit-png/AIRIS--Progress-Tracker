@@ -5,10 +5,10 @@ import { SystemAudio } from '../services/audioService'
 
 const BOOT_LINES = [
     { text: 'Mounting workspace...', delay: 0 },
-    { text: 'Syncing repositories...', delay: 150 },
-    { text: 'Loading modules...', delay: 300 },
-    { text: 'Authenticating session...', delay: 450 },
-    { text: 'All systems operational.', delay: 600, bold: true },
+    { text: 'Syncing repositories...', delay: 100 },
+    { text: 'Loading modules...', delay: 200 },
+    { text: 'Authenticating session...', delay: 300 },
+    { text: 'All systems operational.', delay: 400, bold: true },
 ]
 
 const LoaderScreen = memo(({ onComplete, user }) => {
@@ -29,14 +29,20 @@ const LoaderScreen = memo(({ onComplete, user }) => {
     const sequenceStarted = React.useRef(false)
     
     useEffect(() => {
-        if (!isBooted || sequenceStarted.current) return;
+        // Auto-boot immediately if the user is already authenticated
+        if (!isBooted) {
+          handleBoot();
+          return;
+        }
+
+        if (sequenceStarted.current) return;
         sequenceStarted.current = true;
 
         let active = true;
         const timers = [];
 
         // Progress bar and audio sweep logic
-        const duration = 450;
+        const duration = 300; // Faster progress
         const startTime = Date.now();
         
         const tick = () => {
@@ -69,15 +75,15 @@ const LoaderScreen = memo(({ onComplete, user }) => {
             timers.push(t);
         });
 
-        // Exit sequence
+        // Accelerated exit sequence
         const exitTimer = setTimeout(() => {
             if (active) {
                 setExiting(true);
                 SystemAudio.stopAmbience();
-                const completeTimer = setTimeout(onComplete, 300);
+                const completeTimer = setTimeout(onComplete, 100);
                 timers.push(completeTimer);
             }
-        }, 1100);
+        }, 800); // Shorter overall delay
         timers.push(exitTimer);
 
         return () => {
