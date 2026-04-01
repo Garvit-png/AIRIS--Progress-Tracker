@@ -40,17 +40,23 @@ const fetchWithTimeout = async (url, options = {}, timeout = 10000) => {
 
 // Simple persistent cache with 10s TTL (Strict for "Fast" updates)
 const cache = {
-    get: (key) => {
+    get: (key, maxAge = 120000) => { // 2 minute default TTL
         try {
             const data = localStorage.getItem(`cache_${key}`);
             if (!data) return null;
             const { value, timestamp } = JSON.parse(data);
-            const isExpired = Date.now() - timestamp > 10000; // 10s
-            if (isExpired) {
-                localStorage.removeItem(`cache_${key}`);
-                return null;
-            }
+            const isExpired = Date.now() - timestamp > maxAge;
+            if (isExpired) return null; // Too old for "fresh" lookup
             return value;
+        } catch { return null; }
+    },
+    // Retrieve data even if expired (for SWR patterns)
+    getStale: (key) => {
+        try {
+            const data = localStorage.getItem(`cache_${key}`);
+            if (!data) return null;
+            const res = JSON.parse(data);
+            return res.value;
         } catch { return null; }
     },
     set: (key, value) => {
@@ -60,8 +66,10 @@ const cache = {
                 timestamp: Date.now()
             }));
         } catch (e) { console.warn('Cache write failed', e); }
-    }
+    },
+    delete: (key) => localStorage.removeItem(`cache_${key}`)
 };
+
 
 export const AuthService = {
     cache, // Expose cache for direct use if needed
@@ -290,8 +298,14 @@ export const AuthService = {
         }
     },
 
-    getUsers: async () => {
+    getUsers: async (forceRefresh = false) => {
         const token = localStorage.getItem('token');
+
+        if (!forceRefresh) {
+            const cached = cache.get('users');
+            if (cached) return cached;
+        }
+
         const response = await fetchWithTimeout(`${ADMIN_API_URL}/users`, {
             headers: { 'Authorization': `Bearer ${token}` }
         }, 12000); // 12s timeout for large user lists
@@ -529,8 +543,15 @@ export const AuthService = {
     },
 
     // Group Management (with Resilience Layer)
-    getGroups: async (retryCount = 0) => {
+    getGroups: async (forceRefresh = false, retryCount = 0) => {
         const token = localStorage.getItem('token');
+        
+        // Return cached data if available and not forcing a refresh
+        if (!forceRefresh) {
+            const cached = cache.get('groups');
+            if (cached) return cached;
+        }
+
         try {
             const response = await fetchWithTimeout(`${config.API_BASE_URL}/groups`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -544,7 +565,7 @@ export const AuthService = {
             if (!data.success && retryCount < 1) {
                 console.log('Sync stall detected. Initiating Layer-2 retry...');
                 await new Promise(r => setTimeout(r, 2000));
-                return AuthService.getGroups(1);
+                return AuthService.getGroups(forceRefresh, 1);
             }
             if (!data.success) throw new Error(data.message);
             return data.data;
@@ -552,7 +573,7 @@ export const AuthService = {
             if (retryCount < 1) {
                 console.log('Network stall detected. Initiating Layer-2 retry...');
                 await new Promise(r => setTimeout(r, 2000));
-                return AuthService.getGroups(1);
+                return AuthService.getGroups(forceRefresh, 1);
             }
             throw err;
         }

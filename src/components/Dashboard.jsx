@@ -20,7 +20,7 @@ export default function Dashboard({ user: initialUser }) {
     const [currentMonth, setCurrentMonth] = useState(new Date())
     const [tasks, setTasks] = useState([])
     const [tasksLoading, setTasksLoading] = useState(false)
-    const [groups, setGroups] = useState([])
+    const [groups, setGroups] = useState(AuthService.cache.getStale('groups') || [])
     const [groupsLoading, setGroupsLoading] = useState(false)
     
     // Profile Modal State
@@ -107,8 +107,10 @@ export default function Dashboard({ user: initialUser }) {
     };
 
     const fetchMyGroups = async () => {
-        setGroupsLoading(true);
+        // If we already have stale data, don't show a blocking loader
+        if (groups.length === 0) setGroupsLoading(true);
         try {
+            // getGroups now checks cache internally (2 min TTL)
             const data = await AuthService.getGroups();
             setGroups(data);
         } catch (error) {

@@ -12,12 +12,12 @@ const GroupPortal = () => {
     const navigate = useNavigate();
     const [user] = useState(AuthService.getSession());
     
-    // INSTANT LOAD: Initialize from cache if available
-    const [groups, setGroups] = useState(AuthService.cache.get('groups') || []);
-    const [allUsers, setAllUsers] = useState(AuthService.cache.get('users') || []);
+    // INSTANT LOAD (SWR): Initialize from stale cache for zero-flicker experience
+    const [groups, setGroups] = useState(AuthService.cache.getStale('groups') || []);
+    const [allUsers, setAllUsers] = useState(AuthService.cache.getStale('users') || []);
     
-    // Only show blocking loader if we have NO cached data AND no groups in state
-    const [loading, setLoading] = useState(!AuthService.cache.get('groups') && groups.length === 0);
+    // Blocking loader ONLY if we have absolutely NO data (not even stale)
+    const [loading, setLoading] = useState(groups.length === 0);
     const [isSyncing, setIsSyncing] = useState(false);
     const [isLongSync, setIsLongSync] = useState(false);
     const [error, setError] = useState(null);
@@ -59,12 +59,16 @@ const GroupPortal = () => {
         
         const fetchAllData = async () => {
             const syncGroups = async () => {
+                const hasData = groups.length > 0;
+                if (!hasData) setLoading(true);
+                
                 setIsSyncing(true);
                 setError(null);
                 longSyncTimer = setTimeout(() => setIsLongSync(true), 3000);
                 
                 try {
-                    const data = await AuthService.getGroups();
+                    // Force refresh in background to ensure SWR consistency
+                    const data = await AuthService.getGroups(true);
                     setGroups(data);
                     setIsLongSync(false);
                 } catch (err) {
@@ -85,7 +89,8 @@ const GroupPortal = () => {
             const syncUsers = async () => {
                 if (!isAdmin) return;
                 try {
-                    const data = await AuthService.getUsers();
+                    // Sync user roster in background
+                    const data = await AuthService.getUsers(true);
                     setAllUsers(data);
                 } catch (err) {
                     console.warn('User roster sync failed.', err);
@@ -103,7 +108,7 @@ const GroupPortal = () => {
     const handleRefresh = async () => {
         setIsSyncing(true);
         try {
-            const data = await AuthService.getGroups();
+            const data = await AuthService.getGroups(true); // Forced manual refresh
             setGroups(data);
         } catch (err) {
             setError(err.message);
