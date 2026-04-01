@@ -14,22 +14,17 @@ export default defineConfig({
       apply: 'build',
       options: {
         compact: true,
-        controlFlowFlattening: false,
-        controlFlowFlatteningThreshold: 0,
-        deadCodeInjection: false,
-        debugProtection: false,
-        disableConsoleOutput: false,
-        identifierNamesGenerator: 'hexadecimal',
-        log: false,
-        numbersToExpressions: false,
-        renameGlobals: false,
-        selfDefending: false,
+        controlFlowFlattening: true,
+        controlFlowFlatteningThreshold: 0.75,
+        numbersToExpressions: true,
         simplify: true,
-        splitStrings: false,
         stringArray: true,
-        stringArrayEncoding: [],
+        stringArrayEncoding: ['base64'],
         stringArrayThreshold: 0.75,
-        unicodeEscapeSequence: false
+        splitStrings: true,
+        splitStringsChunkLength: 10,
+        unicodeEscapeSequence: true,
+        identifierNamesGenerator: 'hexadecimal'
       }
     })
   ],

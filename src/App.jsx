@@ -2,24 +2,21 @@ import React, { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import './index.css'
-import config from './config'
-import { AuthService } from './services/authService'
-
-// Essential Components
 import LoaderScreen from './components/LoaderScreen'
+import Dashboard from './components/Dashboard'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
 import ProtectedRoute from './components/ProtectedRoute'
+import AdminPanel from './pages/AdminPanel'
+import EmailVerification from './pages/EmailVerification'
+import ResetPassword from './pages/ResetPassword'
 import SecurityShield from './components/SecurityShield'
+import PendingApproval from './components/PendingApproval'
+import SkeletonDashboard from './components/SkeletonDashboard'
+import ProjectPage from './pages/ProjectPage'
+import config from './config'
 
-// Route-level Code Splitting for performance
-const Dashboard = React.lazy(() => import('./components/Dashboard'))
-const LoginPage = React.lazy(() => import('./pages/LoginPage'))
-const RegisterPage = React.lazy(() => import('./pages/RegisterPage'))
-const AdminPanel = React.lazy(() => import('./pages/AdminPanel'))
-const EmailVerification = React.lazy(() => import('./pages/EmailVerification'))
-const ResetPassword = React.lazy(() => import('./pages/ResetPassword'))
-const ProjectPage = React.lazy(() => import('./pages/ProjectPage'))
-const PendingApproval = React.lazy(() => import('./components/PendingApproval'))
-const SkeletonDashboard = React.lazy(() => import('./components/SkeletonDashboard'))
+import { AuthService } from './services/authService'
 
 // Admin route protector
 function AdminRoute({ children }) {
@@ -140,45 +137,43 @@ export default function App() {
             style={{ background: 'var(--bg)', color: 'var(--text)' }}
           >
             <ErrorBoundary>
-              <React.Suspense fallback={<SkeletonDashboard />}>
-                <Routes>
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/register" element={<RegisterPage />} />
-                  <Route path="/verify-email/:token" element={<EmailVerification />} />
-                  <Route path="/reset-password/:token" element={<ResetPassword />} />
-                  <Route path="/pending" element={<PendingApproval />} />
-                  <Route 
-                    path="/dashboard" 
-                    element={
-                      <ProtectedRoute>
-                        <DashboardWrapper />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/project/:id" 
-                    element={
-                      <ProtectedRoute>
-                        <ProjectPage />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/admin" 
-                    element={
-                      <ProtectedRoute>
-                        <AdminRoute>
-                          <AdminPanel />
-                        </AdminRoute>
-                      </ProtectedRoute>
-                    } 
-                  />
-                  {/* Redirect root to dashboard (which will redirect to login if needed) */}
-                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                  {/* Catch all redirect to dashboard */}
-                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                </Routes>
-              </React.Suspense>
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/verify-email/:token" element={<EmailVerification />} />
+                <Route path="/reset-password/:token" element={<ResetPassword />} />
+                <Route path="/pending" element={<PendingApproval />} />
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    <ProtectedRoute>
+                      <DashboardWrapper />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/project/:id" 
+                  element={
+                    <ProtectedRoute>
+                      <ProjectPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin" 
+                  element={
+                    <ProtectedRoute>
+                      <AdminRoute>
+                        <AdminPanel />
+                      </AdminRoute>
+                    </ProtectedRoute>
+                  } 
+                />
+                {/* Redirect root to dashboard (which will redirect to login if needed) */}
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                {/* Catch all redirect to dashboard */}
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
             </ErrorBoundary>
           </div>
         </Router>
