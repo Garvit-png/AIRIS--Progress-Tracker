@@ -61,6 +61,7 @@ const GroupSchema = new mongoose.Schema({
     name: { type: String, required: true, unique: true },
     description: String,
     repoUrl: String,
+    inactivityLimitDays: { type: Number, default: 3 },
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     lead: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
@@ -196,8 +197,21 @@ app.get('/api/groups', protect, async (req, res) => {
     try {
         const isAdmin = req.user.isAdmin || ['president', 'general secretary', 'admin', 'gs'].includes(req.user.role?.toLowerCase());
         const query = isAdmin ? Group.find() : Group.find({ members: req.user.id });
-        const data = await query.populate('members', 'name email profilePicture').lean();
+        const data = await query.populate('members', 'name email profilePicture githubUsername role').lean();
         res.json({ success: true, data });
+    } catch (err) { res.status(400).json({ success: false, message: err.message }); }
+});
+
+app.get('/api/groups/:id', protect, async (req, res) => {
+    try {
+        const group = await Group.findById(req.params.id).populate('members', 'name email profilePicture githubUsername role').lean();
+        if (!group) return res.status(404).json({ success: false, message: 'Group not found' });
+        
+        const isMember = group.members.some(m => m._id.toString() === req.user.id);
+        const isAdmin = req.user.isAdmin || ['president', 'general secretary', 'admin', 'gs'].includes(req.user.role?.toLowerCase());
+        if (!isMember && !isAdmin) return res.status(403).json({ success: false, message: 'Access denied' });
+        
+        res.json({ success: true, data: group });
     } catch (err) { res.status(400).json({ success: false, message: err.message }); }
 });
 
@@ -222,6 +236,27 @@ app.delete('/api/groups/:id', protect, admin, async (req, res) => {
     } catch (err) { res.status(400).json({ success: false, message: err.message }); }
 });
 
+app.post('/api/groups/:id/tasks', protect, admin, async (req, res) => {
+    try {
+        const group = await Group.findById(req.params.id);
+        if (!group) return res.status(404).json({ success: false, message: 'Group not found' });
+        const { title, description, deadline, isPriority } = req.body;
+        const tasks = await Promise.all(group.members.map(async (memberId) => {
+            const member = await User.findById(memberId);
+            if (!member) return null;
+            return Task.create({
+                senderEmail: req.user.email,
+                senderName: req.user.name,
+                targetEmail: member.email,
+                title, description, deadline,
+                isPriority: isPriority || false,
+                targetGroup: group._id
+            });
+        }));
+        res.status(201).json({ success: true, message: `Assigned to ${tasks.filter(t => t).length} members` });
+    } catch (err) { res.status(400).json({ success: false, message: err.message }); }
+});
+
 // Tasks
 app.get('/api/tasks/my-tasks', protect, async (req, res) => {
     try {
@@ -242,6 +277,67 @@ app.put('/api/tasks/:id/status', protect, async (req, res) => {
         const task = await Task.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
         res.json({ success: true, data: task });
     } catch (err) { res.status(400).json({ success: false, message: err.message }); }
+});
+
+// GitHub Intelligence Logic
+const ghCache = new Map();
+const fetchGH = async (endpoint) => {
+    const response = await fetch(`https://api.github.com${endpoint}`, {
+        headers: {
+            'Authorization': `token ${process.env.GITHUB_PAT}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'AIRIS-Monolith'
+        }
+    });
+    if (response.status === 202) return { status: 202 };
+    if (!response.ok) throw new Error(`GH Error: ${response.status}`);
+    return { status: 200, data: await response.json() };
+};
+
+app.get('/api/github/stats/:owner/:repo', protect, async (req, res) => {
+    const { owner, repo } = req.params;
+    const slug = `${owner}/${repo}`;
+    if (!process.env.GITHUB_PAT) return res.status(500).json({ success: false, message: 'GITHUB_PAT missing' });
+
+    if (!req.query.force && ghCache.has(slug)) {
+        const cached = ghCache.get(slug);
+        if (Date.now() - cached.time < 600000) return res.json({ success: true, data: cached.data });
+    }
+
+    try {
+        const [repoRes, contribRes, commitsRes, issuesRes] = await Promise.all([
+            fetchGH(`/repos/${slug}`),
+            fetchGH(`/repos/${slug}/stats/contributors`),
+            fetchGH(`/repos/${slug}/commits?per_page=50`),
+            fetchGH(`/repos/${slug}/issues?state=open`)
+        ]);
+
+        if (contribRes.status === 202) return res.status(202).json({ success: true, message: 'Generating stats...' });
+
+        const stats = {
+            totalCommits: (contribRes.data || []).reduce((acc, c) => acc + c.total, 0),
+            contributors: (contribRes.data || []).map(c => ({
+                login: c.author.login,
+                avatar: c.author.avatar_url,
+                commits: c.total,
+                recentActivity: (commitsRes.data || [])
+                    .filter(cm => cm.author?.login === c.author.login)
+                    .slice(0, 3)
+                    .map(cm => ({ message: cm.commit.message, date: cm.commit.author.date, url: cm.html_url })),
+                activeIssues: (issuesRes.data || []).filter(i => i.assignee?.login === c.author.login)
+            })).sort((a, b) => b.commits - a.commits),
+            commitHistory: (commitsRes.data || []).map(c => ({
+                message: c.commit.message,
+                author: { login: c.author?.login || 'unknown', avatar: c.author?.avatar_url },
+                date: c.commit.author.date,
+                url: c.html_url
+            })),
+            activeIssues: (issuesRes.data || []).slice(0, 10).map(i => ({ title: i.title, url: i.html_url, number: i.number }))
+        };
+
+        ghCache.set(slug, { data: stats, time: Date.now() });
+        res.json({ success: true, data: stats });
+    } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
 // 6. SPA Handler
