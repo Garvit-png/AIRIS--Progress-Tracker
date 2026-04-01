@@ -3,6 +3,7 @@ const router = express.Router();
 const { 
     createGroup, 
     getGroups, 
+    getGroup,
     updateGroup, 
     deleteGroup, 
     assignGroupTask 
@@ -17,6 +18,7 @@ router.route('/')
     .post(admin, createGroup);
 
 router.route('/:id')
+    .get(getGroup)
     .patch(admin, updateGroup)
     .delete(admin, deleteGroup);
 

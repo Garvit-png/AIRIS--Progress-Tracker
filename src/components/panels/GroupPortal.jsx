@@ -5,9 +5,11 @@ import {
     ClipboardList, AlertCircle, ChevronRight, Search, 
     Clock, CheckCircle2, Edit2, X, Activity, GitCommit, GitPullRequest
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { AuthService } from '../../services/authService';
 
 const GroupPortal = () => {
+    const navigate = useNavigate();
     const [user] = useState(AuthService.getSession());
     
     // INSTANT LOAD: Initialize from cache if available
@@ -773,7 +775,7 @@ const GroupPortal = () => {
                             {group.repoUrl ? (
                                 <>
                                     <button 
-                                        onClick={() => setActiveGithubRepo(group)}
+                                        onClick={() => navigate(`/project/${group._id}`)}
                                         className="flex-[2] py-3 bg-pink-500/5 hover:bg-pink-500 border border-pink-500/20 hover:border-pink-500 text-pink-500 hover:text-white rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 group/btn"
                                     >
                                         <Users size={14} className="group-hover/btn:-mt-1 transition-all" /> Member Center

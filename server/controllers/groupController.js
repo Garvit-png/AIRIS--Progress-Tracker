@@ -111,6 +111,39 @@ exports.deleteGroup = async (req, res) => {
     }
 };
 
+// @desc    Get single group
+// @route   GET /api/groups/:id
+// @access  Private
+exports.getGroup = async (req, res) => {
+    try {
+        const group = await Group.findById(req.params.id)
+            .populate('members', 'name email profilePicture githubUsername role')
+            .lean();
+
+        if (!group) {
+            return res.status(404).json({ success: false, message: 'Group not found' });
+        }
+
+        // Check if user is member or admin
+        const isMember = group.members.some(m => m._id.toString() === req.user.id);
+        const isAdmin = req.user.isAdmin || ['president', 'general secretary', 'admin'].includes(req.user.role?.toLowerCase());
+
+        if (!isMember && !isAdmin) {
+            return res.status(403).json({ success: false, message: 'Access denied' });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: group
+        });
+    } catch (err) {
+        res.status(400).json({
+            success: false,
+            message: err.message
+        });
+    }
+};
+
 // @desc    Assign task to all group members
 // @route   POST /api/groups/:id/tasks
 // @access  Admin

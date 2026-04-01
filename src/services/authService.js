@@ -557,6 +557,20 @@ export const AuthService = {
             throw err;
         }
     },
+    
+    getGroup: async (id) => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetchWithTimeout(`${config.API_BASE_URL}/groups/${id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }, 10000);
+            const data = await safeJson(response);
+            if (!data.success) throw new Error(data.message);
+            return data.data;
+        } catch (err) {
+            throw err;
+        }
+    },
 
     createGroup: async (groupData, retryCount = 0) => {
         const token = localStorage.getItem('token');

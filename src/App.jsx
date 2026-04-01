@@ -13,6 +13,7 @@ import ResetPassword from './pages/ResetPassword'
 import SecurityShield from './components/SecurityShield'
 import PendingApproval from './components/PendingApproval'
 import SkeletonDashboard from './components/SkeletonDashboard'
+import ProjectPage from './pages/ProjectPage'
 import config from './config'
 
 import { AuthService } from './services/authService'
@@ -147,6 +148,14 @@ export default function App() {
                   element={
                     <ProtectedRoute>
                       <DashboardWrapper />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/project/:id" 
+                  element={
+                    <ProtectedRoute>
+                      <ProjectPage />
                     </ProtectedRoute>
                   } 
                 />
