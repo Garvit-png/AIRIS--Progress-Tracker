@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import LandingPage from './components/LandingPage'
 import WhatIsAiris from './components/WhatIsAiris'
@@ -17,16 +17,25 @@ export default function App() {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
 
   const handleNext = () => {
-    if (currentSlideIndex < slides.length - 1) {
-      setCurrentSlideIndex(prev => prev + 1)
-    }
+    setCurrentSlideIndex(prev => (prev < slides.length - 1 ? prev + 1 : prev))
   }
 
   const handlePrev = () => {
-    if (currentSlideIndex > 0) {
-      setCurrentSlideIndex(prev => prev - 1)
-    }
+    setCurrentSlideIndex(prev => (prev > 0 ? prev - 1 : prev))
   }
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        setCurrentSlideIndex(prev => (prev < slides.length - 1 ? prev + 1 : prev));
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        setCurrentSlideIndex(prev => (prev > 0 ? prev - 1 : prev));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const CurrentSlide = slides[currentSlideIndex]
 
