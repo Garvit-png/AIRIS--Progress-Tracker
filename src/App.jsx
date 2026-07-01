@@ -7,8 +7,11 @@ import VisionSection from './components/VisionSection'
 import MissionSection from './components/MissionSection'
 import LearningPhilosophySection from './components/LearningPhilosophySection'
 import CurriculumSection from './components/CurriculumSection'
+import EcosystemSection from './components/EcosystemSection'
+import LongTermVisionSection from './components/LongTermVisionSection'
+import TheFutureSection from './components/TheFutureSection'
 
-const slides = [LandingPage, WhatIsAiris, TextFlippingBoardDemo, VisionSection, MissionSection, LearningPhilosophySection, CurriculumSection]
+const slides = [LandingPage, WhatIsAiris, TextFlippingBoardDemo, VisionSection, MissionSection, LearningPhilosophySection, CurriculumSection, EcosystemSection, LongTermVisionSection, TheFutureSection]
 
 export default function App() {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
