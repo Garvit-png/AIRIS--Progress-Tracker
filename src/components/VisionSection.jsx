@@ -274,13 +274,26 @@ export default function VisionSection({ onNext, onPrev }) {
               </motion.h1>
             </div>
 
-            <motion.p 
+            <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={paragraphControls}
-              className="text-white/85 text-xl md:text-3xl font-light leading-relaxed tracking-wide"
+              className="text-white/85 text-lg md:text-2xl font-light leading-relaxed tracking-wide space-y-6 max-w-4xl mx-auto"
             >
-              We believe in observing the unseen, challenging the established, and pushing the boundaries of artificial intelligence through rigorous scientific inquiry.
-            </motion.p>
+              <p>Our vision goes beyond creating skilled engineers.</p>
+              <p>
+                Engineers build solutions for today's problems...<br/>
+                Researchers shape the possibilities of tomorrow.
+              </p>
+              <p>
+                At AIRIS, we don't want students to simply keep up with the future of Artificial Intelligence—we want them to actively shape it.
+              </p>
+              <p>
+                We envision a community of learners who don't stop at implementing existing models, but are curious enough to question assumptions, explore new ideas, and contribute to the advancement of AI itself.
+              </p>
+              <p>
+                Our goal is simple: to inspire students not just to follow AI research, but one day to publish it, influence it, and lead it.
+              </p>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
