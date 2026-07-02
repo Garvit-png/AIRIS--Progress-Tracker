@@ -7,11 +7,12 @@ import VisionSection from './components/VisionSection'
 import MissionSection from './components/MissionSection'
 import LearningPhilosophySection from './components/LearningPhilosophySection'
 import CurriculumSection from './components/CurriculumSection'
+import WhatMakesAirisDifferentSection from './components/WhatMakesAirisDifferentSection'
 import EcosystemSection from './components/EcosystemSection'
 import LongTermVisionSection from './components/LongTermVisionSection'
 import TheFutureSection from './components/TheFutureSection'
 
-const slides = [LandingPage, WhatIsAiris, TextFlippingBoardDemo, VisionSection, MissionSection, LearningPhilosophySection, CurriculumSection, EcosystemSection, LongTermVisionSection, TheFutureSection]
+const slides = [LandingPage, WhatIsAiris, TextFlippingBoardDemo, VisionSection, MissionSection, LearningPhilosophySection, CurriculumSection, WhatMakesAirisDifferentSection, EcosystemSection, LongTermVisionSection, TheFutureSection]
 
 export default function App() {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
@@ -24,6 +25,8 @@ export default function App() {
     setCurrentSlideIndex(prev => (prev > 0 ? prev - 1 : prev))
   }
 
+  const lastScrollTime = React.useRef(0);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
@@ -33,8 +36,26 @@ export default function App() {
       }
     };
 
+    const handleWheel = (e) => {
+      const now = Date.now();
+      if (now - lastScrollTime.current < 1000) return; // 1 second throttle to prevent double jumps
+      
+      if (e.deltaY > 50) {
+        setCurrentSlideIndex(prev => (prev < slides.length - 1 ? prev + 1 : prev));
+        lastScrollTime.current = now;
+      } else if (e.deltaY < -50) {
+        setCurrentSlideIndex(prev => (prev > 0 ? prev - 1 : prev));
+        lastScrollTime.current = now;
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('wheel', handleWheel);
+    };
   }, []);
 
   const CurrentSlide = slides[currentSlideIndex]
