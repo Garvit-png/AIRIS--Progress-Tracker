@@ -2,9 +2,19 @@ import React, { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import LandingPage from './components/LandingPage'
 import WhatIsAiris from './components/WhatIsAiris'
+import WhatIsAirisGarvit from './components/WhatIsAirisGarvit'
 import TextFlippingBoardDemo from './components/TextFlippingBoardDemo'
 import VisionSection from './components/VisionSection'
+import AIBrainSlide from './components/AIBrainSlide'
+import UberSlide from './components/UberSlide'
+import GoogleMapsSlide from './components/GoogleMapsSlide'
 import MissionSection from './components/MissionSection'
+import GitHubSlide from './components/GitHubSlide'
+import AntigravitySlide from './components/AntigravitySlide'
+import VercelSlide from './components/VercelSlide'
+import AIInActionSlide from './components/AIInActionSlide'
+import ThingsIWishSlide from './components/ThingsIWishSlide'
+import ThankYouSlide from './components/ThankYouSlide'
 import LearningPhilosophySection from './components/LearningPhilosophySection'
 import CurriculumSection from './components/CurriculumSection'
 import WhatMakesAirisDifferentSection from './components/WhatMakesAirisDifferentSection'
@@ -12,7 +22,7 @@ import EcosystemSection from './components/EcosystemSection'
 import LongTermVisionSection from './components/LongTermVisionSection'
 import TheFutureSection from './components/TheFutureSection'
 
-const slides = [LandingPage, WhatIsAiris, TextFlippingBoardDemo, VisionSection, MissionSection, LearningPhilosophySection, CurriculumSection, WhatMakesAirisDifferentSection, EcosystemSection, LongTermVisionSection, TheFutureSection]
+const slides = [LandingPage, WhatIsAiris, WhatIsAirisGarvit, TextFlippingBoardDemo, VisionSection, AIBrainSlide, GoogleMapsSlide, MissionSection, GitHubSlide, AntigravitySlide, VercelSlide, AIInActionSlide, ThingsIWishSlide, ThankYouSlide]
 
 export default function App() {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)

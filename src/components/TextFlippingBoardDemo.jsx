@@ -88,12 +88,23 @@ const listItemVariants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
 };
 
-const PROBLEMS = [
-  "Memorize algorithms without understanding them",
-  "Learn frameworks before mathematics and theory",
-  "Follow tutorials instead of asking questions",
-  "Implement models without reading research papers",
-  "Prepare for interviews rather than scientific discovery"
+const JOURNEY = [
+  {
+    title: "INTRODUCTION, Catching up.",
+    desc: "Revisiting the last session and introductions for today."
+  },
+  {
+    title: "What's the need of dev in AI?",
+    desc: "Understanding the relation between dev and AI."
+  },
+  {
+    title: "Understanding AI Applications",
+    desc: "AI Models, Frontend, Backend, APIs, Deployment."
+  },
+  {
+    title: "Activity",
+    desc: "Having fun with an AI based competitive game."
+  }
 ];
 
 export default function TextFlippingBoardDemo({ onNext }) {
@@ -122,7 +133,7 @@ export default function TextFlippingBoardDemo({ onNext }) {
               transition={{ duration: 0.6, ease: "easeInOut" }}
               className="w-full flex justify-center mt-20"
             >
-              <TextFlippingBoard text={"WHY AIRIS\nEXIST"} className="dark" />
+              <TextFlippingBoard text={"TODAY'S\nJOURNEY"} className="dark" />
             </motion.div>
           ) : (
             <motion.div
@@ -136,70 +147,41 @@ export default function TextFlippingBoardDemo({ onNext }) {
                 initial={{ opacity: 0, x: -30, filter: "blur(10px)" }}
                 animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="font-mono text-6xl md:text-[5rem] lg:text-[7rem] leading-none font-bold tracking-tighter text-white mb-6 md:mb-10"
+                className="font-mono text-6xl md:text-[5rem] lg:text-[7rem] leading-none font-bold tracking-tighter text-white mb-10"
               >
-                Why <span className="text-[#FF008C]">AIRIS</span> Exists
+                Today's <span className="text-[#FF008C]">Journey</span>
               </motion.h1>
-              
-              <motion.p 
-                initial={{ opacity: 0, filter: "blur(5px)" }}
-                animate={{ opacity: 1, filter: "blur(0px)" }}
-                transition={{ delay: 0.3, duration: 0.8 }}
-                className="text-white/70 mb-8 max-w-2xl text-lg md:text-xl lg:text-2xl font-light"
-              >
-                Modern AI education has several fundamental problems. Students often:
-              </motion.p>
 
-              <div className="w-full max-w-3xl mb-12">
-                <motion.ul 
-                  initial="hidden"
-                  animate="show"
-                  variants={{
-                    hidden: {},
-                    show: { transition: { staggerChildren: 0.15, delayChildren: 0.6 } }
-                  }}
-                  className="space-y-5 text-left font-light md:text-lg"
-                >
-                  {PROBLEMS.map((text, i) => (
-                    <motion.li 
-                      key={i}
-                      variants={{
-                        hidden: {},
-                        show: { transition: { staggerChildren: 0.04 } }
-                      }}
-                      className="flex items-start text-white/80"
-                    >
-                      <span className="mr-4 text-[#FF008C] mt-1">•</span>
-                      <div>
-                        {text.split(" ").map((word, wIdx) => (
-                          <motion.span
-                            key={wIdx}
-                            variants={{
-                              hidden: { opacity: 0, filter: "blur(12px)", scale: 1.3, y: 10 },
-                              show: { opacity: 1, filter: "blur(0px)", scale: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } }
-                            }}
-                            className="inline-block mr-1.5"
-                          >
-                            {word}
-                          </motion.span>
-                        ))}
-                      </div>
-                    </motion.li>
-                  ))}
-                </motion.ul>
-              </div>
-
-              <motion.p 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.5, duration: 1 }}
-                className="text-white/80 max-w-4xl text-xl md:text-2xl font-medium leading-relaxed mt-4"
+              <motion.ul
+                initial="hidden"
+                animate="show"
+                variants={{
+                  hidden: {},
+                  show: { transition: { staggerChildren: 0.2, delayChildren: 0.5 } }
+                }}
+                className="w-full max-w-3xl space-y-7"
               >
-                AIRIS was created to address these problems through a{" "}
-                <span className="bg-[#FF008C] text-white px-3 py-1 inline-block rounded font-bold tracking-wide shadow-[0_0_15px_rgba(255,0,140,0.5)] align-baseline">
-                  research-first educational model
-                </span>
-              </motion.p>
+                {JOURNEY.map((item, i) => (
+                  <motion.li
+                    key={i}
+                    variants={{
+                      hidden: { opacity: 0, x: -24, filter: "blur(8px)" },
+                      show: { opacity: 1, x: 0, filter: "blur(0px)", transition: { duration: 0.6, ease: "easeOut" } }
+                    }}
+                    className="flex items-start gap-4"
+                  >
+                    <span className="font-mono text-[#FF008C] text-lg mt-0.5 select-none">0{i + 1}</span>
+                    <div>
+                      <p className="font-mono font-bold text-white text-lg md:text-xl tracking-wide">
+                        {item.title}
+                      </p>
+                      <p className="text-white/50 text-sm md:text-base font-light mt-1">
+                        {item.desc}
+                      </p>
+                    </div>
+                  </motion.li>
+                ))}
+              </motion.ul>
             </motion.div>
           )}
         </AnimatePresence>

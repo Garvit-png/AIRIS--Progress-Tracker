@@ -17,6 +17,7 @@ export default function VisionSection({ onNext, onPrev }) {
   const paragraphControls = useAnimation();
   
   const [phase, setPhase] = useState("darkness"); // darkness -> eye -> text
+  const [devStep, setDevStep] = useState(0); // 0 = nothing, 1 = definition shown, 2 = "but why" shown
 
   useEffect(() => {
     let isMounted = true;
@@ -220,9 +221,10 @@ export default function VisionSection({ onNext, onPrev }) {
         {phase === "text" && (
           <motion.div 
             key="text"
-            className="flex flex-col items-center justify-center max-w-[800px] w-full px-8 z-20 text-center"
+            className="flex flex-col items-center justify-start max-w-[800px] w-full px-8 z-20 text-center mt-[-80px]"
+            onClick={() => { if (devStep === 1) setDevStep(2) }}
           >
-            <div className="relative mb-12 flex items-center justify-center min-h-[100px]">
+            <div className="relative mb-8 flex items-center justify-center min-h-[100px]">
               
               {/* The Small Title Eye */}
               <motion.div
@@ -262,9 +264,13 @@ export default function VisionSection({ onNext, onPrev }) {
               <motion.h1 
                 initial={{ opacity: 0, scale: 0.9, filter: "blur(10px)" }}
                 animate={titleControls}
-                className="font-mono text-5xl md:text-7xl font-bold tracking-[0.25em] text-white uppercase relative z-10"
+                className="font-mono text-3xl md:text-5xl font-bold tracking-[0.1em] text-white uppercase relative z-10 whitespace-nowrap"
               >
-                Vision
+                What's the need of{' '}
+                <span
+                  className="text-[#FF008C] cursor-pointer hover:opacity-80 transition-opacity duration-200"
+                  onClick={(e) => { e.stopPropagation(); setDevStep(1) }}
+                >Dev</span>{' '}in AI?
                 {/* Subtle electric pink underline */}
                 <motion.div 
                   initial={{ opacity: 0, scaleX: 0 }}
@@ -274,25 +280,51 @@ export default function VisionSection({ onNext, onPrev }) {
               </motion.h1>
             </div>
 
+            {/* Dev Definition — slides in on click */}
+            <AnimatePresence>
+              {devStep >= 1 && (
+                <motion.div
+                  key="dev-def"
+                  initial={{ opacity: 0, y: 30, filter: "blur(8px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, y: -20, filter: "blur(8px)" }}
+                  transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                  className="max-w-2xl text-center mt-6 px-4"
+                >
+                  <p className="text-white/80 text-lg md:text-xl font-light leading-relaxed tracking-wide">
+                    <span className="text-white font-semibold">Development</span> is the process of building a website or web application by writing code so that it works correctly, performs tasks, and provides functionality to users.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* But why in AI CLUB */}
+            <AnimatePresence>
+              {devStep >= 2 && (
+                <motion.div
+                  key="but-why"
+                  initial={{ opacity: 0, y: 30, filter: "blur(8px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, y: -20, filter: "blur(8px)" }}
+                  transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                  className="max-w-2xl text-center mt-6 px-4 cursor-pointer"
+                  onClick={onNext}
+                >
+                  <p className="font-mono text-2xl md:text-3xl font-bold text-white tracking-wide hover:opacity-70 transition-opacity duration-200">
+                    but why in{' '}
+                    <span className="text-[#FF008C]">AI CLUB</span>
+                    <span className="text-white/40">?</span>
+                  </p>
+                  <p className="font-mono text-[9px] tracking-[0.35em] text-white/20 uppercase mt-3">tap to find out</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={paragraphControls}
               className="text-white/85 text-lg md:text-2xl font-light leading-relaxed tracking-wide space-y-6 max-w-4xl mx-auto"
             >
-              <p>Our vision goes beyond creating skilled engineers.</p>
-              <p>
-                Engineers build solutions for today's problems...<br/>
-                Researchers shape the possibilities of tomorrow.
-              </p>
-              <p>
-                At AIRIS, we don't want students to simply keep up with the future of Artificial Intelligence—we want them to actively shape it.
-              </p>
-              <p>
-                We envision a community of learners who don't stop at implementing existing models, but are curious enough to question assumptions, explore new ideas, and contribute to the advancement of AI itself.
-              </p>
-              <p>
-                Our goal is simple: to inspire students not just to follow AI research, but one day to publish it, influence it, and lead it.
-              </p>
             </motion.div>
           </motion.div>
         )}
