@@ -9,6 +9,8 @@ import VisionSection from './components/VisionSection'
 import AIBrainSlide from './components/AIBrainSlide'
 import UberSlide from './components/UberSlide'
 import GoogleMapsSlide from './components/GoogleMapsSlide'
+import AmazonAISlide from './components/AmazonAISlide'
+import ExistingExamplesSlide from './components/ExistingExamplesSlide'
 import MissionSection from './components/MissionSection'
 import GitHubSlide from './components/GitHubSlide'
 import AntigravitySlide from './components/AntigravitySlide'
@@ -23,7 +25,7 @@ import EcosystemSection from './components/EcosystemSection'
 import LongTermVisionSection from './components/LongTermVisionSection'
 import TheFutureSection from './components/TheFutureSection'
 
-const slides = [LandingPage, WhatIsAiris, WhatIsAirisRachit, WhatIsAirisGarvit, TextFlippingBoardDemo, VisionSection, AIBrainSlide, GoogleMapsSlide, MissionSection, GitHubSlide, AntigravitySlide, VercelSlide, AIInActionSlide, ThingsIWishSlide, ThankYouSlide]
+const slides = [LandingPage, WhatIsAiris, WhatIsAirisRachit, WhatIsAirisGarvit, TextFlippingBoardDemo, VisionSection, AIBrainSlide, AmazonAISlide, ExistingExamplesSlide, MissionSection, GitHubSlide, AntigravitySlide, VercelSlide, AIInActionSlide, ThingsIWishSlide, ThankYouSlide]
 
 export default function App() {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
