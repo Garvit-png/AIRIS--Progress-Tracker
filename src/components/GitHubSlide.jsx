@@ -153,80 +153,38 @@ export default function GitHubSlide({ onNext, onPrev }) {
           )}
         </AnimatePresence>
 
-        {/* ── STEP 2+: Video section ── */}
+        {/* ── STEP 2+: Excalidraw link ── */}
         <AnimatePresence>
           {step >= 2 && (
             <motion.div
-              key="video-section"
+              key="excalidraw"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
               className="w-full max-w-4xl"
             >
-              {/* Video click-to-play card */}
-              <motion.div
-                onClick={openVideo}
-                whileHover={{ scale: 1.01, borderColor: 'rgba(255,13,153,0.4)' }}
+              <motion.a
+                href="https://excalidraw.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                whileHover={{ scale: 1.01, borderColor: 'rgba(255,13,153,0.5)' }}
                 whileTap={{ scale: 0.99 }}
                 className="w-full rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden cursor-pointer relative group flex items-center justify-center"
-                style={{ height: '160px' }}
+                style={{ height: '130px' }}
               >
-                {/* Dark bg with play button */}
                 <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
                 <div className="flex flex-col items-center justify-center gap-3 z-10">
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    className="w-16 h-16 rounded-full bg-[#FF0D99] flex items-center justify-center"
-                    style={{ boxShadow: '0 0 30px rgba(255,13,153,0.5)' }}
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                      <path d="M8 5v14l11-7z"/>
-                    </svg>
-                  </motion.div>
-                  <p className="font-mono text-[10px] tracking-[0.4em] text-white/40 uppercase">Click to watch — Git vs GitHub Explained</p>
+                  <span className="text-3xl">🖊️</span>
+                  <p className="font-mono text-white font-bold text-base tracking-widest group-hover:text-[#FF0D99] transition-colors duration-200">
+                    Open Whiteboard — Excalidraw
+                  </p>
+                  <p className="font-mono text-white/25 text-[10px] tracking-[0.3em]">excalidraw.com</p>
                 </div>
-              </motion.div>
+              </motion.a>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-
-      {/* ── VIDEO MODAL ── */}
-      <AnimatePresence>
-        {videoOpen && (
-          <motion.div
-            key="modal"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center px-6"
-            onClick={closeVideo}
-          >
-            <motion.div
-              initial={{ scale: 0.92, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-5xl rounded-2xl overflow-hidden border border-white/10"
-              onClick={e => e.stopPropagation()}
-            >
-              <video
-                ref={videoRef}
-                src={VIDEO_FILE}
-                controls
-                className="w-full"
-                style={{ maxHeight: '80vh' }}
-              />
-            </motion.div>
-            {/* Close hint */}
-            <button onClick={closeVideo}
-              className="absolute top-6 right-8 font-mono text-white/30 hover:text-white text-sm tracking-widest uppercase transition-colors">
-              ✕ close
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Next */}
       <AnimatePresence>

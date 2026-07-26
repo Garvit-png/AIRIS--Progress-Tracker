@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import LandingPage from './components/LandingPage'
 import WhatIsAiris from './components/WhatIsAiris'
 import WhatIsAirisGarvit from './components/WhatIsAirisGarvit'
+import WhatIsAirisRachit from './components/WhatIsAirisRachit'
 import TextFlippingBoardDemo from './components/TextFlippingBoardDemo'
 import VisionSection from './components/VisionSection'
 import AIBrainSlide from './components/AIBrainSlide'
@@ -22,7 +23,7 @@ import EcosystemSection from './components/EcosystemSection'
 import LongTermVisionSection from './components/LongTermVisionSection'
 import TheFutureSection from './components/TheFutureSection'
 
-const slides = [LandingPage, WhatIsAiris, WhatIsAirisGarvit, TextFlippingBoardDemo, VisionSection, AIBrainSlide, GoogleMapsSlide, MissionSection, GitHubSlide, AntigravitySlide, VercelSlide, AIInActionSlide, ThingsIWishSlide, ThankYouSlide]
+const slides = [LandingPage, WhatIsAiris, WhatIsAirisRachit, WhatIsAirisGarvit, TextFlippingBoardDemo, VisionSection, AIBrainSlide, GoogleMapsSlide, MissionSection, GitHubSlide, AntigravitySlide, VercelSlide, AIInActionSlide, ThingsIWishSlide, ThankYouSlide]
 
 export default function App() {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
