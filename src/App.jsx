@@ -17,15 +17,15 @@ import AntigravitySlide from './components/AntigravitySlide'
 import VercelSlide from './components/VercelSlide'
 import AIInActionSlide from './components/AIInActionSlide'
 import ThingsIWishSlide from './components/ThingsIWishSlide'
-import ThankYouSlide from './components/ThankYouSlide'
+import VibeCodingSlide from './components/VibeCodingSlide'
 import LearningPhilosophySection from './components/LearningPhilosophySection'
 import CurriculumSection from './components/CurriculumSection'
 import WhatMakesAirisDifferentSection from './components/WhatMakesAirisDifferentSection'
 import EcosystemSection from './components/EcosystemSection'
 import LongTermVisionSection from './components/LongTermVisionSection'
-import TheFutureSection from './components/TheFutureSection'
+import ThankYouSlide from './components/ThankYouSlide'
 
-const slides = [LandingPage, WhatIsAiris, WhatIsAirisRachit, WhatIsAirisGarvit, TextFlippingBoardDemo, VisionSection, AIBrainSlide, AmazonAISlide, ExistingExamplesSlide, MissionSection, GitHubSlide, AntigravitySlide, VercelSlide, AIInActionSlide, ThingsIWishSlide, ThankYouSlide]
+const slides = [LandingPage, WhatIsAirisGarvit, WhatIsAiris, TextFlippingBoardDemo, ThankYouSlide, VisionSection, AIBrainSlide, AmazonAISlide, ExistingExamplesSlide, MissionSection, GitHubSlide, AntigravitySlide, VercelSlide, AIInActionSlide, ThingsIWishSlide]
 
 export default function App() {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)

@@ -90,20 +90,20 @@ const listItemVariants = {
 
 const JOURNEY = [
   {
-    title: "INTRODUCTION, Catching up.",
-    desc: "Revisiting the last session and introductions for today."
+    title: "What is Vibe Coding?",
+    desc: "Build projects using AI — describe what you want, AI writes the code. You're the director, AI is the developer."
   },
   {
-    title: "What's the need of dev in AI?",
-    desc: "Understanding the relation between dev and AI."
+    title: "Benefits",
+    desc: "Go from idea to working product in hours. No syntax memorization. Focus on creativity and problem solving."
   },
   {
-    title: "Understanding AI Applications",
-    desc: "AI Models, Frontend, Backend, APIs, Deployment."
+    title: "Outcomes",
+    desc: "A working deployed website by end of session. Hands-on experience with AI tools like Lovable & Vercel."
   },
   {
-    title: "Activity",
-    desc: "Having fun with an AI based competitive game."
+    title: "Project",
+    desc: "We'll build a real web app together — live, from scratch — and you'll have a deployed link to share."
   }
 ];
 

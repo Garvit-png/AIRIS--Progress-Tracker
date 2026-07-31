@@ -67,7 +67,7 @@ export default function LandingPage({ onNext }) {
           transition={{ delay: 0.6, duration: 0.7 }}
           className="font-mono text-2xl md:text-3xl font-bold tracking-widest text-white uppercase"
         >
-          Know the Club and Club Seniors
+          Vibe Coding
         </motion.h2>
 
         {/* Subheading */}
@@ -77,7 +77,7 @@ export default function LandingPage({ onNext }) {
           transition={{ delay: 0.75, duration: 0.7 }}
           className="font-mono text-sm md:text-base text-white/60 italic tracking-wide"
         >
-          Learn from those who started where you are today.
+          Forget the code, Cherish the creativity.
         </motion.p>
 
         {/* Batch of 2030 pill */}
