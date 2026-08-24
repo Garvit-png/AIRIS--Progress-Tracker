@@ -5,6 +5,9 @@ import tailwindcss from '@tailwindcss/vite'
 import obfuscator from 'vite-plugin-javascript-obfuscator'
 
 export default defineConfig({
+  build: {
+    outDir: 'dist', // outputs to frontend/dist — backend references ../frontend/dist
+  },
   plugins: [
     react(), 
     tailwindcss(),

@@ -1,7 +1,7 @@
 {
-  "name": "airis-server",
+  "name": "airis-backend",
   "version": "1.0.0",
-  "description": "Backend for AI/ML Club Platform",
+  "description": "Express API server for AIRIS Progress Tracker",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

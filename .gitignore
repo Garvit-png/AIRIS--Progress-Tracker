@@ -1,21 +1,23 @@
 # ── Dependencies ─────────────────────────────────────────────
 node_modules/
-server/node_modules/
+frontend/node_modules/
+backend/node_modules/
 
 # ── Build output ──────────────────────────────────────────────
-dist/
-dist-ssr/
-build/
+frontend/dist/
+frontend/dist-ssr/
 
 # ── Environment files (NEVER commit secrets) ──────────────────
 .env
 .env.local
-.env.*.local
-server/.env
-server/.env.local
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+backend/.env
+backend/.env.local
 
 # ── Uploaded user files ───────────────────────────────────────
-server/uploads/
+backend/uploads/
 
 # ── Logs ──────────────────────────────────────────────────────
 logs/

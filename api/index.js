@@ -12,7 +12,7 @@ const { OAuth2Client } = require('google-auth-library');
 dotenv.config();
 const app = express();
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-const distPath = path.join(__dirname, '../dist');
+const distPath = path.join(__dirname, '../frontend/dist');
 
 // Domain restriction helper (mirrors authController.js)
 const ALLOWED_DOMAIN = 'nst.rishihood.edu.in';

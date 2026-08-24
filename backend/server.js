@@ -189,7 +189,7 @@ app.get(['/api/debug/pulse', '/debug/pulse'], (req, res) => {
 
 // Serve frontend in production (catch-all)
 const fsSync = require('fs');
-const distPath = path.join(__dirname, '../dist');
+const distPath = path.join(__dirname, '../frontend/dist');
 const hasFrontend = fsSync.existsSync(distPath);
 
 if (process.env.NODE_ENV === 'production' && hasFrontend) {
