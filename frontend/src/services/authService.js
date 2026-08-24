@@ -254,12 +254,8 @@ export const AuthService = {
          const token = sessionStorage.getItem('token');
          if (!token) return { success: false, message: 'Not authenticated' };
  
-         const baseUrl = config.API_BASE_URL.includes('onrender.com') 
-             ? config.API_BASE_URL.replace('/api', '') 
-             : 'https://airis-backend.onrender.com';
- 
          try {
-             const response = await fetch(`${baseUrl}/api/chat/conversations`, {
+             const response = await fetch(`${config.API_BASE_URL}/chat/conversations`, {
                  headers: { 'Authorization': `Bearer ${token}` }
              });
              return await safeJson(response);
@@ -272,12 +268,8 @@ export const AuthService = {
          const token = sessionStorage.getItem('token');
          if (!token) return { success: false, message: 'Not authenticated' };
  
-         const baseUrl = config.API_BASE_URL.includes('onrender.com') 
-             ? config.API_BASE_URL.replace('/api', '') 
-             : 'https://airis-backend.onrender.com';
- 
          try {
-             const response = await fetch(`${baseUrl}/api/chat/messages/${conversationId}`, {
+             const response = await fetch(`${config.API_BASE_URL}/chat/messages/${conversationId}`, {
                  headers: { 'Authorization': `Bearer ${token}` }
              });
              return await safeJson(response);
