@@ -14,6 +14,13 @@ const app = express();
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const distPath = path.join(__dirname, '../dist');
 
+// Domain restriction helper (mirrors authController.js)
+const ALLOWED_DOMAIN = 'nst.rishihood.edu.in';
+const isAllowedEmail = (email) => {
+    if (email === 'garvitgandhi10313@gmail.com' || email === 'garvitgandhi0313@gmail.com') return true;
+    return email.endsWith(`@${ALLOWED_DOMAIN}`);
+};
+
 // 2. Monolithic Database Connection
 const connectDB = async () => {
     if (!process.env.MONGO_URI) {
@@ -138,6 +145,11 @@ app.post('/api/auth/register', async (req, res) => {
     try {
         const { name, email, password, year, githubUsername } = req.body;
         const cleanEmail = email.toLowerCase().trim();
+
+        if (!isAllowedEmail(cleanEmail)) {
+            return res.status(403).json({ success: false, message: 'Registration restricted to @nst.rishihood.edu.in accounts only.' });
+        }
+
         const existing = await User.findOne({ email: cleanEmail });
         if (existing) return res.status(400).json({ success: false, message: 'User already exists' });
         
@@ -156,7 +168,13 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+        const cleanEmail = email.toLowerCase().trim();
+
+        if (!isAllowedEmail(cleanEmail)) {
+            return res.status(403).json({ success: false, message: 'Access restricted to @nst.rishihood.edu.in accounts only.' });
+        }
+
+        const user = await User.findOne({ email: cleanEmail }).select('+password');
         if (!user || !(await user.matchPassword(password))) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
@@ -171,6 +189,11 @@ app.post('/api/auth/google', async (req, res) => {
         const ticket = await client.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
         const { email, name, picture } = ticket.getPayload();
         const cleanEmail = email.toLowerCase().trim();
+
+        if (!isAllowedEmail(cleanEmail)) {
+            return res.status(403).json({ success: false, message: 'Access restricted to @nst.rishihood.edu.in accounts only.' });
+        }
+
         let user = await User.findOne({ email: cleanEmail });
         if (!user) {
             const isPreAuth = await ApprovedEmail.findOne({ email: cleanEmail });

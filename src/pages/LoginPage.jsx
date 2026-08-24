@@ -32,8 +32,11 @@ export default function LoginPage() {
         setError('')
         if (!email.trim()) return
 
-        // We jump straight to password entry or Google login. 
-        // Real validation now happens on the backend during the main handshake.
+        if (!email.toLowerCase().trim().endsWith('@nst.rishihood.edu.in')) {
+            setError('ACCESS RESTRICTED — USE YOUR @NST.RISHIHOOD.EDU.IN EMAIL')
+            return
+        }
+
         setStep('password')
     }
 
@@ -61,6 +64,20 @@ export default function LoginPage() {
 
     const handleGoogleSuccess = async (credentialResponse) => {
         setError('')
+
+        // Decode the JWT payload (middle segment) — this is public, not a security check.
+        // The real enforcement happens on the backend; this just gives instant UX feedback.
+        try {
+            const payload = JSON.parse(atob(credentialResponse.credential.split('.')[1]))
+            const email = payload.email || ''
+            if (!email.endsWith('@nst.rishihood.edu.in')) {
+                setError('ACCESS RESTRICTED — USE YOUR @NST.RISHIHOOD.EDU.IN ACCOUNT')
+                return
+            }
+        } catch {
+            // If decode fails, let the backend handle it
+        }
+
         setIsLoading(true)
         try {
             await AuthService.googleLogin(credentialResponse.credential)
@@ -76,10 +93,8 @@ export default function LoginPage() {
 
     const handleGoogleError = (error) => {
         console.error('Google Auth Error:', error)
-        setError(`AUTH FAILED - ENSURE "${window.location.origin}" IS ADDED TO GOOGLE CONSOLE ORIGINS`)
+        setError(`AUTH FAILED — ENSURE "${window.location.origin}" IS ADDED TO GOOGLE CONSOLE ORIGINS`)
     }
-
-// handleGoogleSuccess removed
 
     const handleForgotPassword = async (e) => {
         e.preventDefault()
@@ -126,7 +141,7 @@ export default function LoginPage() {
                                 onChange={(e) => { setEmail(e.target.value); setError(''); }}
                             />
                             <p className="mt-2 font-mono text-[8px] opacity-60 uppercase text-center">
-                                Enter your email to sign in or register
+                                NSTRU students only — use your @nst.rishihood.edu.in email
                             </p>
                         </div>
                         <button 

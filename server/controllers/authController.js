@@ -1,4 +1,10 @@
 const jwt = require('jsonwebtoken');
+
+const isAllowedEmail = (email) => {
+    // Admin override emails bypass the domain restriction
+    if (email === 'garvitgandhi10313@gmail.com' || email === 'garvitgandhi0313@gmail.com') return true;
+    return email.endsWith(`@${ALLOWED_DOMAIN}`);
+};
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { OAuth2Client } = require('google-auth-library');
@@ -13,6 +19,14 @@ exports.register = async (req, res, next) => {
     try {
         const { name, email, password, year, githubUsername } = req.body;
         const cleanEmail = email.toLowerCase().trim();
+
+        // Domain restriction — only @nst.rishihood.edu.in (admin emails exempt)
+        if (!isAllowedEmail(cleanEmail)) {
+            return res.status(403).json({
+                success: false,
+                message: 'Registration restricted to @nst.rishihood.edu.in accounts only.'
+            });
+        }
 
         // Check if user exists
         const userExists = await User.findOne({ email: cleanEmail });
@@ -116,15 +130,24 @@ exports.googleLogin = async (req, res) => {
 
         console.log(`Google Auth Payload: email="${email}", cleanEmail="${cleanEmail}", name="${name}"`);
 
+        // Domain restriction — hard reject non-NST accounts (admin emails exempt)
+        if (!isAllowedEmail(cleanEmail)) {
+            return res.status(403).json({
+                success: false,
+                message: 'Access restricted to @nst.rishihood.edu.in accounts only.'
+            });
+        }
+
         // Check if user exists and is pre-authorized in parallel for maximum speed
-        const [user, isPreAuth] = await Promise.all([
+        const [existingUser, isPreAuth] = await Promise.all([
             User.findOne({ email: cleanEmail }),
             ApprovedEmail.findOne({ email: cleanEmail })
         ]);
 
+        let user = existingUser;
+
         if (!user) {
             const isAdminEmail = cleanEmail === 'garvitgandhi10313@gmail.com' || cleanEmail === 'garvitgandhi0313@gmail.com';
-
             let newRole = 'Member';
             let newStatus = 'pending';
             let newIsAdmin = false;
@@ -140,8 +163,7 @@ exports.googleLogin = async (req, res) => {
             }
 
             console.log(`Google Auth: Auto-creating log-in user for ${cleanEmail}. Status: ${newStatus}`);
-            user = await User.create({
-                name: name || 'Google User',
+            user = await User.create({                name: name || 'Google User',
                 email: cleanEmail,
                 password: crypto.randomBytes(20).toString('hex'), // Dummy password
                 role: newRole,
@@ -213,7 +235,17 @@ exports.login = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Please provide an email and password' });
         }
 
-        const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+        const cleanLoginEmail = email.toLowerCase().trim();
+
+        // Domain restriction
+        if (!isAllowedEmail(cleanLoginEmail)) {
+            return res.status(403).json({
+                success: false,
+                message: 'Access restricted to @nst.rishihood.edu.in accounts only.'
+            });
+        }
+
+        const user = await User.findOne({ email: cleanLoginEmail }).select('+password');
         if (!user) {
             return res.status(404).json({ success: false, message: 'ACCOUNT NOT FOUND, REGISTER FIRST' });
         }
