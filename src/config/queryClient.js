@@ -4,19 +4,27 @@ import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persist
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 60 * 24, // 24 hours (formerly cacheTime)
+      staleTime: 1000 * 60 * 5,       // 5 min  — data is considered fresh
+      gcTime: 1000 * 60 * 60 * 24,    // 24 h   — keep in memory / persisted cache
       refetchOnWindowFocus: false,
       retry: 1,
-      // Persist values
-      meta: {
-        persist: true
-      }
     },
   },
 });
 
+// Guard: createSyncStoragePersister requires window.localStorage.
+// In SSR / test environments without a real window this would throw,
+// so fall back to a no-op storage object instead.
+const storage =
+  typeof window !== 'undefined' && window.localStorage
+    ? window.localStorage
+    : {
+        getItem: () => null,
+        setItem: () => {},
+        removeItem: () => {},
+      };
+
 export const persister = createSyncStoragePersister({
-  storage: window.localStorage,
+  storage,
   key: 'AIRIS_OFFLINE_CACHE',
 });
