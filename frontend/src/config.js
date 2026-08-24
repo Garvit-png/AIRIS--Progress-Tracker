@@ -21,7 +21,7 @@ export const config = {
   API_BASE_URL: buildApiUrl(),
   GOOGLE_CLIENT_ID:
     import.meta.env.VITE_GOOGLE_CLIENT_ID ||
-    '532663388476-7iiiepabt72281qja5vehie0qd5egc2q.apps.googleusercontent.com',
+    '23889302662-jtpfi5t5kigrpllf6p1m6qj49nmrs5at.apps.googleusercontent.com',
   IS_PROD: isProd,
 };
 
