@@ -5,11 +5,8 @@ import './index.css'
 import LoaderScreen from './components/LoaderScreen'
 import Dashboard from './components/Dashboard'
 import LoginPage from './pages/LoginPage'
-import RegisterPage from './pages/RegisterPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminPanel from './pages/AdminPanel'
-import EmailVerification from './pages/EmailVerification'
-import ResetPassword from './pages/ResetPassword'
 import SecurityShield from './components/SecurityShield'
 import PendingApproval from './components/PendingApproval'
 import SkeletonDashboard from './components/SkeletonDashboard'
@@ -139,9 +136,6 @@ export default function App() {
             <ErrorBoundary>
               <Routes>
                 <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/verify-email/:token" element={<EmailVerification />} />
-                <Route path="/reset-password/:token" element={<ResetPassword />} />
                 <Route path="/pending" element={<PendingApproval />} />
                 <Route 
                   path="/dashboard" 
@@ -169,9 +163,7 @@ export default function App() {
                     </ProtectedRoute>
                   } 
                 />
-                {/* Redirect root to dashboard (which will redirect to login if needed) */}
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                {/* Catch all redirect to dashboard */}
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
             </ErrorBoundary>

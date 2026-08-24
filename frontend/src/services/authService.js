@@ -107,13 +107,13 @@ export const AuthService = {
         // Store token and user for auto-login
         if (data.token) {
             try {
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('current_user', JSON.stringify(data.user));
+                sessionStorage.setItem('token', data.token);
+                sessionStorage.setItem('current_user', JSON.stringify(data.user));
             } catch (storageError) {
                 console.warn('LocalStorage quota exceeded, clearing and retrying...', storageError);
-                localStorage.clear();
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('current_user', JSON.stringify(data.user));
+                localStorage.removeItem('AIRIS_OFFLINE_CACHE');
+                sessionStorage.setItem('token', data.token);
+                sessionStorage.setItem('current_user', JSON.stringify(data.user));
             }
         }
         return data;
@@ -133,19 +133,19 @@ export const AuthService = {
 
         // Store token and user
         try {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('current_user', JSON.stringify(data.user));
+            sessionStorage.setItem('token', data.token);
+            sessionStorage.setItem('current_user', JSON.stringify(data.user));
         } catch (storageError) {
             console.warn('LocalStorage quota exceeded, clearing and retrying...', storageError);
-            localStorage.clear();
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('current_user', JSON.stringify(data.user));
+            localStorage.removeItem('AIRIS_OFFLINE_CACHE');
+            sessionStorage.setItem('token', data.token);
+            sessionStorage.setItem('current_user', JSON.stringify(data.user));
         }
         return data;
     },
 
     getCurrentUser: async () => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         if (!token) return null;
 
         try {
@@ -158,7 +158,7 @@ export const AuthService = {
             const data = await safeJson(response);
 
             if (response.ok) {
-                localStorage.setItem('current_user', JSON.stringify(data.user || data));
+                sessionStorage.setItem('current_user', JSON.stringify(data.user || data));
                 return data.user || data;
             } else {
                 AuthService.logout();
@@ -171,7 +171,7 @@ export const AuthService = {
     },
 
     getMe: async () => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         if (!token) return null;
 
         const response = await fetch(`${API_URL}/me`, {
@@ -186,7 +186,7 @@ export const AuthService = {
     },
 
     getSession: () => {
-        const user = localStorage.getItem('current_user');
+        const user = sessionStorage.getItem('current_user');
         try {
             return user ? JSON.parse(user) : null;
         } catch {
@@ -195,17 +195,19 @@ export const AuthService = {
     },
 
     getToken: () => {
-        return localStorage.getItem('token');
+        return sessionStorage.getItem('token');
     },
 
     logout: () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('current_user');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('current_user');
+        // Clear query cache too so next login starts fresh
+        localStorage.removeItem('AIRIS_OFFLINE_CACHE');
         window.location.href = '/login';
     },
 
     getApprovedEmails: async () => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(`${ADMIN_API_URL}/approved`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -214,7 +216,7 @@ export const AuthService = {
     },
 
     approveEmail: async (email, role, isAdmin) => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(`${ADMIN_API_URL}/approve`, {
             method: 'POST',
             headers: { 
@@ -229,7 +231,7 @@ export const AuthService = {
     },
 
     revokeEmail: async (email) => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(`${ADMIN_API_URL}/approve/${email}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
@@ -240,7 +242,7 @@ export const AuthService = {
     },
 
     getUserPhoto: async (id) => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(`${ADMIN_API_URL}/users/${id}/photo`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -249,7 +251,7 @@ export const AuthService = {
     },
 
     getConversations: async () => {
-         const token = localStorage.getItem('token');
+         const token = sessionStorage.getItem('token');
          if (!token) return { success: false, message: 'Not authenticated' };
  
          const baseUrl = config.API_BASE_URL.includes('onrender.com') 
@@ -267,7 +269,7 @@ export const AuthService = {
      },
  
      getMessages: async (conversationId) => {
-         const token = localStorage.getItem('token');
+         const token = sessionStorage.getItem('token');
          if (!token) return { success: false, message: 'Not authenticated' };
  
          const baseUrl = config.API_BASE_URL.includes('onrender.com') 
@@ -285,7 +287,7 @@ export const AuthService = {
      },
  
      getMembers: async () => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         if (!token) return { success: false, message: 'Not authenticated' };
 
         try {
@@ -299,7 +301,7 @@ export const AuthService = {
     },
 
     getUsers: async (forceRefresh = false) => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
 
         if (!forceRefresh) {
             const cached = cache.get('users');
@@ -318,7 +320,7 @@ export const AuthService = {
     },
 
     getPendingUsers: async () => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(`${ADMIN_API_URL}/pending`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -327,7 +329,7 @@ export const AuthService = {
     },
 
     getApprovedUsers: async () => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(`${ADMIN_API_URL}/history`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -336,7 +338,7 @@ export const AuthService = {
     },
 
     updateUserStatus: async (userId, status, role, isAdmin, name) => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(`${ADMIN_API_URL}/users/${userId}/status`, {
             method: 'PUT',
             headers: { 
@@ -394,19 +396,19 @@ export const AuthService = {
 
         // Store token and user
         try {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('current_user', JSON.stringify(data.user));
+            sessionStorage.setItem('token', data.token);
+            sessionStorage.setItem('current_user', JSON.stringify(data.user));
         } catch (storageError) {
             console.warn('LocalStorage quota exceeded, clearing and retrying...', storageError);
-            localStorage.clear();
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('current_user', JSON.stringify(data.user));
+            localStorage.removeItem('AIRIS_OFFLINE_CACHE');
+            sessionStorage.setItem('token', data.token);
+            sessionStorage.setItem('current_user', JSON.stringify(data.user));
         }
         return data;
     },
 
     updateProfile: async (profileData) => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(`${API_URL}/profile`, {
             method: 'PUT',
             headers: { 
@@ -424,18 +426,18 @@ export const AuthService = {
 
         // Update local storage
         try {
-            localStorage.setItem('current_user', JSON.stringify(data.user));
+            sessionStorage.setItem('current_user', JSON.stringify(data.user));
         } catch (storageError) {
             console.warn('LocalStorage quota exceeded, clearing and retrying...', storageError);
-            localStorage.clear();
-            localStorage.setItem('current_user', JSON.stringify(data.user));
+            localStorage.removeItem('AIRIS_OFFLINE_CACHE');
+            sessionStorage.setItem('current_user', JSON.stringify(data.user));
         }
         return data.user;
     },
 
     // Task Management
     sendTask: async (taskData, file) => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const formData = new FormData();
         
         // Append task metadata
@@ -461,7 +463,7 @@ export const AuthService = {
     },
 
     getMyTasks: async () => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(`${TASK_API_URL}/my-tasks`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -471,7 +473,7 @@ export const AuthService = {
     },
 
     getAllTasks: async () => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(`${TASK_API_URL}/all`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -481,7 +483,7 @@ export const AuthService = {
     },
 
     updateTaskStatus: async (taskId, status) => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(`${TASK_API_URL}/${taskId}/status`, {
             method: 'PUT',
             headers: { 
@@ -504,7 +506,7 @@ export const AuthService = {
 
     // Admin Portal Password Management
     getPortalStatus: async () => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(`${ADMIN_API_URL}/portal-status`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -513,7 +515,7 @@ export const AuthService = {
     },
 
     setupPortalPassword: async (password) => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(`${ADMIN_API_URL}/portal-setup`, {
             method: 'POST',
             headers: { 
@@ -528,7 +530,7 @@ export const AuthService = {
     },
 
     verifyPortalPassword: async (password) => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(`${ADMIN_API_URL}/portal-verify`, {
             method: 'POST',
             headers: { 
@@ -544,7 +546,7 @@ export const AuthService = {
 
     // Group Management (with Resilience Layer)
     getGroups: async (forceRefresh = false, retryCount = 0) => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         
         // Return cached data if available and not forcing a refresh
         if (!forceRefresh) {
@@ -580,7 +582,7 @@ export const AuthService = {
     },
     
     getGroup: async (id) => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         try {
             const response = await fetchWithTimeout(`${config.API_BASE_URL}/groups/${id}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -594,7 +596,7 @@ export const AuthService = {
     },
 
     createGroup: async (groupData, retryCount = 0) => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         try {
             const response = await fetchWithTimeout(`${config.API_BASE_URL}/groups`, {
                 method: 'POST',
@@ -625,7 +627,7 @@ export const AuthService = {
     },
 
     updateGroup: async (groupId, groupData) => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetchWithTimeout(`${config.API_BASE_URL}/groups/${groupId}`, {
             method: 'PATCH',
             headers: { 
@@ -640,7 +642,7 @@ export const AuthService = {
     },
 
     deleteGroup: async (groupId) => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetchWithTimeout(`${config.API_BASE_URL}/groups/${groupId}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
@@ -651,7 +653,7 @@ export const AuthService = {
     },
 
     assignGroupTask: async (groupId, taskData) => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(`${config.API_BASE_URL}/groups/${groupId}/tasks`, {
             method: 'POST',
             headers: { 
@@ -666,7 +668,7 @@ export const AuthService = {
     },
 
     getGitHubStats: async (repoUrl, forceRefresh = false) => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         if (!repoUrl) return null;
 
         let slug = repoUrl.replace('https://github.com/', '');
