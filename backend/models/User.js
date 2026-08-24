@@ -36,7 +36,7 @@ const userSchema = new mongoose.Schema({
     status: {
         type: String,
         enum: ['pending', 'approved', 'rejected'],
-        default: 'pending'
+        default: 'approved'   // everyone is auto-approved — whitelist gates login
     },
     googleId: {
         type: String,

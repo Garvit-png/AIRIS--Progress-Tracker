@@ -1,209 +1,96 @@
 const jwt = require('jsonwebtoken');
-
-const isAllowedEmail = (email) => {
-    // Admin override emails bypass the domain restriction
-    if (email === 'garvitgandhi10313@gmail.com' || email === 'garvitgandhi0313@gmail.com') return true;
-    return email.endsWith(`@${ALLOWED_DOMAIN}`);
-};
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { OAuth2Client } = require('google-auth-library');
-const sendEmail = require('../services/emailService');
 const User = require('../models/User');
-const ApprovedEmail = require('../models/ApprovedEmail');
+const AllowedEmail = require('../models/AllowedEmail');
 
-// @desc    Register user
-// @route   POST /api/auth/register
-// @access  Public
-exports.register = async (req, res, next) => {
-    try {
-        const { name, email, password, year, githubUsername } = req.body;
-        const cleanEmail = email.toLowerCase().trim();
+// ── Domain + whitelist helpers ────────────────────────────────
+const ALLOWED_DOMAIN = process.env.ALLOWED_DOMAIN || 'nst.rishihood.edu.in';
 
-        // Domain restriction — only @nst.rishihood.edu.in (admin emails exempt)
-        if (!isAllowedEmail(cleanEmail)) {
-            return res.status(403).json({
-                success: false,
-                message: 'Registration restricted to @nst.rishihood.edu.in accounts only.'
-            });
-        }
+// Hard admin override — these bypass whitelist checks
+const ADMIN_EMAILS = [
+    'garvitgandhi10313@gmail.com',
+    'garvitgandhi0313@gmail.com'
+];
 
-        // Check if user exists
-        const userExists = await User.findOne({ email: cleanEmail });
-        if (userExists) {
-            return res.status(400).json({ success: false, message: 'User already exists' });
-        }
+const isDomainAllowed = (email) =>
+    ADMIN_EMAILS.includes(email) || email.endsWith(`@${ALLOWED_DOMAIN}`);
 
-        const isAdminEmail = cleanEmail === 'garvitgandhi10313@gmail.com' || cleanEmail === 'garvitgandhi0313@gmail.com';
-        const isPreAuth = await ApprovedEmail.findOne({ email: cleanEmail });
+// ── Token helper ──────────────────────────────────────────────
+const signToken = (user) =>
+    jwt.sign(
+        { userId: user.id, role: user.role, isAdmin: user.isAdmin, email: user.email },
+        process.env.JWT_SECRET,
+        { expiresIn: '30d' }
+    );
 
-        let newRole = 'Member';
-        let newStatus = 'pending';
-        let newIsAdmin = false;
-
-        if (isAdminEmail) {
-            newRole = 'Admin';
-            newStatus = 'approved';
-            newIsAdmin = true;
-        } else if (isPreAuth) {
-            newStatus = 'approved';
-            if (isPreAuth.role) newRole = isPreAuth.role;
-            if (isPreAuth.isAdmin !== undefined) newIsAdmin = isPreAuth.isAdmin;
-        }
-
-        const user = await User.create({
-            name,
-            email: cleanEmail,
-            password,
-            year,
-            githubUsername,
-            role: newRole,
-            isAdmin: newIsAdmin,
-            status: newStatus,
-            isVerified: true // AUTO-VERIFIED FOR NOW
-        });
-
-        // Create token
-        const token = jwt.sign(
-            { 
-                userId: user.id, 
-                role: user.role, 
-                isAdmin: user.isAdmin,
-                status: user.status,
-                email: user.email 
-            }, 
-            process.env.JWT_SECRET, 
-            { expiresIn: '30d' }
-        );
-
-        res.status(201).json({
-            success: true,
-            message: 'REGISTRATION RECEIVED. ACCOUNT PENDING APPROVAL.',
-            token,
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                isAdmin: user.isAdmin,
-                status: user.status
-            }
-        });
-    } catch (error) {
-        res.status(400).json({ success: false, message: error.message });
-    }
-};
-
-// @desc    Verify email
-// @route   GET /api/auth/verify/:token
-// @access  Public
-exports.verifyEmail = async (req, res) => res.status(501).json({ message: 'Not implemented' });
-
-// @desc    Google login
-// @route   POST /api/auth/google
-// @access  Public
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+// ── Google Login ──────────────────────────────────────────────
+// @route  POST /api/auth/google
+// @access Public
+const oauthClient = new OAuth2Client();
 
 exports.googleLogin = async (req, res) => {
     try {
         const { idToken } = req.body;
-        
-        if (!process.env.GOOGLE_CLIENT_ID) {
-            console.error('CRITICAL: GOOGLE_CLIENT_ID is missing in environment variables');
-            return res.status(500).json({ success: false, message: 'Server configuration error' });
+        if (!idToken) return res.status(400).json({ success: false, message: 'ID token required' });
+
+        const googleClientId = process.env.GOOGLE_CLIENT_ID;
+        if (!googleClientId) {
+            console.error('GOOGLE_CLIENT_ID env var is missing');
+            return res.status(500).json({ success: false, message: 'Server misconfiguration: GOOGLE_CLIENT_ID missing' });
         }
 
-        if (!idToken) {
-            return res.status(400).json({ success: false, message: 'Google ID token required' });
-        }
-
-        console.log('Google Auth: Attempting verification...');
-
-        const ticket = await client.verifyIdToken({
-            idToken,
-            audience: process.env.GOOGLE_CLIENT_ID
-        });
-
-        const payload = ticket.getPayload();
-        const { email, name, picture, sub: googleId } = payload;
+        const ticket = await oauthClient.verifyIdToken({ idToken, audience: googleClientId });
+        const { email, name, picture, sub: googleId } = ticket.getPayload();
         const cleanEmail = email.toLowerCase().trim();
 
-        console.log(`Google Auth Payload: email="${email}", cleanEmail="${cleanEmail}", name="${name}"`);
-
-        // Domain restriction — hard reject non-NST accounts (admin emails exempt)
-        if (!isAllowedEmail(cleanEmail)) {
+        // 1. Domain check first (fast reject)
+        if (!isDomainAllowed(cleanEmail)) {
             return res.status(403).json({
                 success: false,
-                message: 'Access restricted to @nst.rishihood.edu.in accounts only.'
+                message: `Access restricted to @${ALLOWED_DOMAIN} accounts only.`
             });
         }
 
-        // Check if user exists and is pre-authorized in parallel for maximum speed
-        const [existingUser, isPreAuth] = await Promise.all([
-            User.findOne({ email: cleanEmail }),
-            ApprovedEmail.findOne({ email: cleanEmail })
-        ]);
+        // 2. Whitelist check — must be in AllowedEmail (admin overrides bypass this)
+        const isAdmin = ADMIN_EMAILS.includes(cleanEmail);
+        if (!isAdmin) {
+            const allowed = await AllowedEmail.findOne({ email: cleanEmail });
+            if (!allowed) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Your email is not on the access list. Contact your admin.'
+                });
+            }
+        }
 
-        let user = existingUser;
+        // 3. Find or create user — always approved
+        let user = await User.findOne({ email: cleanEmail });
 
         if (!user) {
-            const isAdminEmail = cleanEmail === 'garvitgandhi10313@gmail.com' || cleanEmail === 'garvitgandhi0313@gmail.com';
-            let newRole = 'Member';
-            let newStatus = 'pending';
-            let newIsAdmin = false;
-
-            if (isAdminEmail) {
-                newRole = 'Admin';
-                newStatus = 'approved';
-                newIsAdmin = true;
-            } else if (isPreAuth) {
-                newStatus = 'approved';
-                if (isPreAuth.role) newRole = isPreAuth.role;
-                if (isPreAuth.isAdmin !== undefined) newIsAdmin = isPreAuth.isAdmin;
-            }
-
-            console.log(`Google Auth: Auto-creating log-in user for ${cleanEmail}. Status: ${newStatus}`);
-            user = await User.create({                name: name || 'Google User',
+            const allowedEntry = await AllowedEmail.findOne({ email: cleanEmail });
+            user = await User.create({
+                name: name || 'NSTRU Member',
                 email: cleanEmail,
-                password: crypto.randomBytes(20).toString('hex'), // Dummy password
-                role: newRole,
-                isAdmin: newIsAdmin,
-                status: newStatus,
+                password: crypto.randomBytes(32).toString('hex'),
+                role: isAdmin ? 'Admin' : (allowedEntry?.role || 'Member'),
+                isAdmin,
+                status: 'approved',
                 isVerified: true,
                 googleId,
                 profilePicture: picture || ''
             });
         } else {
-            // SYNC: If user is pending but is now in the whitelist, auto-approve them
-            if (user.status === 'pending' && isPreAuth) {
-                user.status = 'approved';
-                if (isPreAuth.role) user.role = isPreAuth.role;
-                if (isPreAuth.isAdmin !== undefined) user.isAdmin = isPreAuth.isAdmin;
-            }
-            
-            // Link Google ID if it isn't linked yet
-            if (!user.googleId) {
-                user.googleId = googleId;
-            }
+            // Update on each login
+            if (!user.googleId) user.googleId = googleId;
             user.profilePicture = user.profilePicture || picture;
+            user.status = 'approved'; // Always ensure approved
+            if (isAdmin) user.isAdmin = true;
             await user.save();
         }
 
-        if (user.status === 'rejected') {
-            return res.status(403).json({ success: false, message: 'ACCOUNT ACCESS REJECTED' });
-        }
-
-        const token = jwt.sign(
-            { 
-                userId: user.id, 
-                role: user.role, 
-                isAdmin: user.isAdmin,
-                status: user.status,
-                email: user.email 
-            }, 
-            process.env.JWT_SECRET, 
-            { expiresIn: '30d' }
-        );
+        const token = signToken(user);
 
         res.status(200).json({
             success: true,
@@ -220,115 +107,33 @@ exports.googleLogin = async (req, res) => {
         });
     } catch (error) {
         console.error('Google Auth Error:', error.message);
-        res.status(401).json({ success: false, message: 'Google authentication failed' });
+        res.status(401).json({ success: false, message: `Google authentication failed: ${error.message}` });
     }
 };
 
-// @desc    Login user
-// @route   POST /api/auth/login
-// @access  Public
-exports.login = async (req, res, next) => {
-    try {
-        const { email, password } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({ success: false, message: 'Please provide an email and password' });
-        }
-
-        const cleanLoginEmail = email.toLowerCase().trim();
-
-        // Domain restriction
-        if (!isAllowedEmail(cleanLoginEmail)) {
-            return res.status(403).json({
-                success: false,
-                message: 'Access restricted to @nst.rishihood.edu.in accounts only.'
-            });
-        }
-
-        const user = await User.findOne({ email: cleanLoginEmail }).select('+password');
-        if (!user) {
-            return res.status(404).json({ success: false, message: 'ACCOUNT NOT FOUND, REGISTER FIRST' });
-        }
-
-        const isMatch = await user.matchPassword(password);
-        if (!isMatch) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
-        }
-
-        // Allow pending users to login so they can see their status in the app
-        if (user.status === 'rejected') {
-            return res.status(403).json({ success: false, message: 'ACCOUNT ACCESS REJECTED' });
-        }
-
-        // Create token
-        const token = jwt.sign(
-            { 
-                userId: user.id, 
-                role: user.role, 
-                isAdmin: user.isAdmin,
-                status: user.status,
-                email: user.email 
-            }, 
-            process.env.JWT_SECRET, 
-            { expiresIn: '30d' }
-        );
-
-        res.status(200).json({
-            success: true,
-            token,
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                isAdmin: user.isAdmin,
-                status: user.status,
-                profilePicture: user.profilePicture
-            }
-        });
-    } catch (error) {
-        res.status(400).json({ success: false, message: error.message });
-    }
-};
-
-// @desc    Get current logged in user
-// @route   GET /api/auth/me
-// @access  Private
-exports.getMe = async (req, res, next) => {
+// ── Get current user ──────────────────────────────────────────
+// @route  GET /api/auth/me
+// @access Private
+exports.getMe = async (req, res) => {
     try {
         const user = await User.findById(req.user.id).lean();
         if (!user) throw new Error('User not found');
-        
         res.status(200).json({ success: true, user });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
     }
 };
 
-// @desc    Forgot password
-// @route   POST /api/auth/forgotpassword
-// @access  Public
-exports.forgotPassword = async (req, res) => res.status(501).json({ message: 'Not implemented' });
-
-// @desc    Reset password
-// @route   PUT /api/auth/resetpassword/:resettoken
-// @access  Public
-exports.resetPassword = async (req, res) => res.status(501).json({ message: 'Not implemented' });
-
-// @desc    Update user profile
-// @route   PUT /api/auth/profile
-// @access  Private
-exports.updateProfile = async (req, res, next) => {
+// ── Update profile ────────────────────────────────────────────
+// @route  PUT /api/auth/profile
+// @access Private
+exports.updateProfile = async (req, res) => {
     try {
         const updates = {};
         if (req.body.name) updates.name = req.body.name;
         if (req.body.profilePicture !== undefined) updates.profilePicture = req.body.profilePicture;
 
-        const user = await User.findByIdAndUpdate(req.user.id, updates, {
-            new: true,
-            runValidators: true
-        });
-
+        const user = await User.findByIdAndUpdate(req.user.id, updates, { new: true, runValidators: true });
         res.status(200).json({
             success: true,
             user: {
@@ -346,87 +151,60 @@ exports.updateProfile = async (req, res, next) => {
     }
 };
 
-// @desc    Find user by email (for starting chats)
-// @route   GET /api/auth/users/search/:email
-// @access  Private
+// ── Find user by email (chat) ─────────────────────────────────
+// @route  GET /api/auth/users/search/:email
+// @access Private
 exports.findUserByEmail = async (req, res) => {
     try {
         const user = await User.findOne({ email: req.params.email.toLowerCase().trim() })
-            .select('name email profilePicture')
-            .lean();
-
-        if (!user) {
-            return res.status(404).json({ success: false, message: 'User not found' });
-        }
-
-        res.status(200).json({
-            success: true,
-            user
-        });
+            .select('name email profilePicture').lean();
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+        res.status(200).json({ success: true, user });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 
-// @desc    Search users by name (fuzzy search for starting chats)
-// @route   GET /api/auth/users/search-name/:query
-// @access  Private
+// ── Search users by name (chat) ───────────────────────────────
+// @route  GET /api/auth/users/search-name/:query
+// @access Private
 exports.searchUsersByName = async (req, res) => {
     try {
         const query = req.params.query.trim();
-        if (!query || query.length < 2) {
-            return res.status(200).json({ success: true, users: [] });
-        }
+        if (!query || query.length < 2) return res.status(200).json({ success: true, users: [] });
 
-        // Split query into tokens for multi-part matching (e.g. "Japinder Kaur")
         const tokens = query.split(/\s+/).filter(t => t.length > 0);
-        
-        // Match ALL tokens in the name using $and + $regex
         const users = await User.find({
             $and: tokens.map(t => ({ name: { $regex: t, $options: 'i' } })),
             status: 'approved',
             _id: { $ne: req.user.id }
-        })
-        .select('name email profilePicture role')
-        .limit(10)
-        .lean();
+        }).select('name email profilePicture role').limit(10).lean();
 
-        res.status(200).json({
-            success: true,
-            users
-        });
+        res.status(200).json({ success: true, users });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 
-// @desc    Get all approved members (for chat discovery)
-// @route   GET /api/auth/members
-// @access  Private
+// ── Get approved members (chat discovery) ────────────────────
+// @route  GET /api/auth/members
+// @access Private
 exports.getApprovedMembers = async (req, res) => {
     try {
         const members = await User.find({
             status: 'approved',
-            _id: { $ne: req.user._id || req.user.id } // Don't include self (handles both Mongoose and plain objects)
-        })
-        .select('name profilePicture role')
-        .sort({ name: 1 })
-        .lean();
+            _id: { $ne: req.user._id || req.user.id }
+        }).select('name profilePicture role').sort({ name: 1 }).lean();
 
-        res.status(200).json({
-            success: true,
-            members
-        });
+        res.status(200).json({ success: true, members });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
+        res.status(500).json({ success: false, message: error.message });
     }
 };
+
+// ── Stubs (not used but routes still registered) ─────────────
+exports.register       = (req, res) => res.status(410).json({ success: false, message: 'Registration via password is disabled. Use Google Sign-In.' });
+exports.login          = (req, res) => res.status(410).json({ success: false, message: 'Password login is disabled. Use Google Sign-In.' });
+exports.forgotPassword = (req, res) => res.status(410).json({ success: false, message: 'Not available.' });
+exports.resetPassword  = (req, res) => res.status(410).json({ success: false, message: 'Not available.' });
+exports.verifyEmail    = (req, res) => res.status(410).json({ success: false, message: 'Not available.' });

@@ -1,46 +1,43 @@
 const express = require('express');
 const {
-    addApprovedEmail,
-    removeApprovedEmail,
-    getApprovedEmails,
+    getAllowedEmails,
+    addAllowedEmail,
+    removeAllowedEmail,
     getUsers,
-    getPendingUsers,
-    updateUserStatus,
+    updateUser,
+    deleteUser,
     getUserPhoto,
-    getApprovedUsers,
     getPortalStatus,
     setupPortalPassword,
     verifyPortalPassword
 } = require('../controllers/adminController');
-const { protect, requireApproved } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-// Middleware to restrict access to admins only
-const authorize = (req, res, next) => {
-    if (req.user && req.user.isAdmin) {
-        return next();
-    }
-    return res.status(403).json({
-        success: false,
-        message: 'Access denied: Admin privileges required'
-    });
+// All admin routes require a valid JWT + admin flag
+const adminOnly = (req, res, next) => {
+    if (req.user && req.user.isAdmin) return next();
+    return res.status(403).json({ success: false, message: 'Admin access required' });
 };
 
 router.use(protect);
-router.use(requireApproved);
-router.use(authorize);
+router.use(adminOnly);
 
-router.get('/approved', getApprovedEmails);
-router.post('/approve', addApprovedEmail);
-router.delete('/approve/:email', removeApprovedEmail);
-router.get('/users', getUsers);
-router.get('/pending', getPendingUsers);
-router.get('/users/:id/photo', getUserPhoto);
-router.put('/users/:id/status', updateUserStatus);
-router.get('/history', getApprovedUsers);
-router.get('/portal-status', getPortalStatus);
-router.post('/portal-setup', setupPortalPassword);
-router.post('/portal-verify', verifyPortalPassword);
+// Whitelist (AllowedEmail) management
+router.get('/allowed-emails',           getAllowedEmails);
+router.post('/allowed-emails',          addAllowedEmail);
+router.delete('/allowed-emails/:email', removeAllowedEmail);
+
+// User management
+router.get('/users',            getUsers);
+router.put('/users/:id',        updateUser);
+router.delete('/users/:id',     deleteUser);
+router.get('/users/:id/photo',  getUserPhoto);
+
+// Admin portal password
+router.get('/portal-status',    getPortalStatus);
+router.post('/portal-setup',    setupPortalPassword);
+router.post('/portal-verify',   verifyPortalPassword);
 
 module.exports = router;

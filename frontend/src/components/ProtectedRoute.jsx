@@ -11,9 +11,5 @@ export default function ProtectedRoute({ children }) {
         return <Navigate to="/login" state={{ from: location }} replace />
     }
 
-    if (user.status === 'pending' && location.pathname !== '/pending') {
-        return <Navigate to="/pending" replace />
-    }
-
     return children
 }

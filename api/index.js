@@ -15,7 +15,7 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const distPath = path.join(__dirname, '../frontend/dist');
 
 // Domain restriction helper (mirrors authController.js)
-const ALLOWED_DOMAIN = 'nst.rishihood.edu.in';
+const ALLOWED_DOMAIN = process.env.ALLOWED_DOMAIN || 'nst.rishihood.edu.in';
 const isAllowedEmail = (email) => {
     if (email === 'garvitgandhi10313@gmail.com' || email === 'garvitgandhi0313@gmail.com') return true;
     return email.endsWith(`@${ALLOWED_DOMAIN}`);
@@ -49,7 +49,7 @@ const UserSchema = new mongoose.Schema({
     password: { type: String, required: true, select: false },
     role: { type: String, default: 'Member' },
     isAdmin: { type: Boolean, default: false },
-    status: { type: String, default: 'pending' },
+    status: { type: String, default: 'approved' },
     profilePicture: { type: String, default: '' },
     githubUsername: { type: String, trim: true },
     year: { type: String },
@@ -87,17 +87,19 @@ const TaskSchema = new mongoose.Schema({
     targetGroup: { type: mongoose.Schema.Types.ObjectId, ref: 'Group' }
 }, { timestamps: true });
 
-const ApprovedEmailSchema = new mongoose.Schema({
+const AllowedEmailSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
+    name: { type: String, default: '' },
     role: { type: String, default: 'Member' },
-    isAdmin: { type: Boolean, default: false }
+    isAdmin: { type: Boolean, default: false },
+    addedAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 
 // SAFE COMPILATION (SINGLETON)
 const User = mongoose.models.User || mongoose.model('User', UserSchema);
 const Group = mongoose.models.Group || mongoose.model('Group', GroupSchema);
 const Task = mongoose.models.Task || mongoose.model('Task', TaskSchema);
-const ApprovedEmail = mongoose.models.ApprovedEmail || mongoose.model('ApprovedEmail', ApprovedEmailSchema);
+const AllowedEmail = mongoose.models.AllowedEmail || mongoose.model('AllowedEmail', AllowedEmailSchema);
 
 // 4. Middlewares
 const protect = async (req, res, next) => {
@@ -142,43 +144,11 @@ app.get('/api/debug/pulse', (req, res) => res.json({ mode: 'singularity_patched_
 
 // Auth: Login & Register
 app.post('/api/auth/register', async (req, res) => {
-    try {
-        const { name, email, password, year, githubUsername } = req.body;
-        const cleanEmail = email.toLowerCase().trim();
-
-        if (!isAllowedEmail(cleanEmail)) {
-            return res.status(403).json({ success: false, message: 'Registration restricted to @nst.rishihood.edu.in accounts only.' });
-        }
-
-        const existing = await User.findOne({ email: cleanEmail });
-        if (existing) return res.status(400).json({ success: false, message: 'User already exists' });
-        
-        const isPreAuth = await ApprovedEmail.findOne({ email: cleanEmail });
-        const user = await User.create({ 
-            name, email: cleanEmail, password, year, githubUsername,
-            status: isPreAuth ? 'approved' : 'pending',
-            role: isPreAuth?.role || 'Member',
-            isAdmin: isPreAuth?.isAdmin || false
-        });
-        const token = jwt.sign({ userId: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '30d' });
-        res.status(201).json({ success: true, token, user });
-    } catch (err) { res.status(400).json({ success: false, message: err.message }); }
+    res.status(410).json({ success: false, message: 'Registration via password is disabled. Use Google Sign-In.' });
 });
 
 app.post('/api/auth/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        const cleanEmail = email.toLowerCase().trim();
-
-        if (!isAllowedEmail(cleanEmail)) {
-            return res.status(403).json({ success: false, message: 'Access restricted to @nst.rishihood.edu.in accounts only.' });
-        }
-
-        const user = await User.findOne({ email: cleanEmail }).select('+password');
-        if (!user || !(await user.matchPassword(password))) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
-        }
-        const token = jwt.sign({ userId: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    res.status(410).json({ success: false, message: 'Password login is disabled. Use Google Sign-In.' });
         res.json({ success: true, token, user });
     } catch (err) { res.status(400).json({ success: false, message: err.message }); }
 });
@@ -190,31 +160,57 @@ app.post('/api/auth/google', async (req, res) => {
 
         const googleClientId = process.env.GOOGLE_CLIENT_ID;
         if (!googleClientId) {
-            console.error('GOOGLE_CLIENT_ID env var is not set');
             return res.status(500).json({ success: false, message: 'Server misconfiguration: GOOGLE_CLIENT_ID missing' });
         }
 
-        // Initialize lazily so it always picks up the env var at request time
         const oauthClient = new OAuth2Client(googleClientId);
         const ticket = await oauthClient.verifyIdToken({ idToken, audience: googleClientId });
-        const { email, name, picture } = ticket.getPayload();
+        const { email, name, picture, sub: googleId } = ticket.getPayload();
         const cleanEmail = email.toLowerCase().trim();
 
+        // Domain check
         if (!isAllowedEmail(cleanEmail)) {
-            return res.status(403).json({ success: false, message: 'Access restricted to @nst.rishihood.edu.in accounts only.' });
+            return res.status(403).json({ success: false, message: `Access restricted to @${ALLOWED_DOMAIN} accounts only.` });
         }
 
+        // Whitelist check (admin emails bypass)
+        const ADMIN_EMAILS = ['garvitgandhi10313@gmail.com', 'garvitgandhi0313@gmail.com'];
+        const isAdminUser = ADMIN_EMAILS.includes(cleanEmail);
+        if (!isAdminUser) {
+            const allowed = await AllowedEmail.findOne({ email: cleanEmail });
+            if (!allowed) {
+                return res.status(403).json({ success: false, message: 'Your email is not on the access list. Contact your admin.' });
+            }
+        }
+
+        // Find or create user
         let user = await User.findOne({ email: cleanEmail });
         if (!user) {
-            const isPreAuth = await ApprovedEmail.findOne({ email: cleanEmail });
-            user = await User.create({ 
-                name, email: cleanEmail, password: crypto.randomBytes(20).toString('hex'),
-                status: isPreAuth ? 'approved' : 'pending',
+            const allowedEntry = await AllowedEmail.findOne({ email: cleanEmail });
+            user = await User.create({
+                name: name || 'NSTRU Member',
+                email: cleanEmail,
+                password: crypto.randomBytes(32).toString('hex'),
+                role: isAdminUser ? 'Admin' : (allowedEntry?.role || 'Member'),
+                isAdmin: isAdminUser || (allowedEntry?.isAdmin || false),
+                status: 'approved',
+                googleId,
                 profilePicture: picture || ''
             });
+        } else {
+            if (!user.googleId) user.googleId = googleId;
+            user.profilePicture = user.profilePicture || picture;
+            user.status = 'approved';
+            if (isAdminUser) user.isAdmin = true;
+            await user.save();
         }
-        const token = jwt.sign({ userId: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '30d' });
-        res.json({ success: true, token, user });
+
+        const token = jwt.sign(
+            { userId: user.id, role: user.role, isAdmin: user.isAdmin, email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '30d' }
+        );
+        res.json({ success: true, token, user: { id: user.id, name: user.name, email: user.email, role: user.role, isAdmin: user.isAdmin, status: user.status, profilePicture: user.profilePicture || picture } });
     } catch (err) {
         console.error('Google Auth Error:', err.message);
         res.status(401).json({ success: false, message: `Google Auth Failed: ${err.message}` });

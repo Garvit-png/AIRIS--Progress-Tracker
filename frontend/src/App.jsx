@@ -8,7 +8,6 @@ import LoginPage from './pages/LoginPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminPanel from './pages/AdminPanel'
 import SecurityShield from './components/SecurityShield'
-import PendingApproval from './components/PendingApproval'
 import SkeletonDashboard from './components/SkeletonDashboard'
 import ProjectPage from './pages/ProjectPage'
 import config from './config'
@@ -136,7 +135,6 @@ export default function App() {
             <ErrorBoundary>
               <Routes>
                 <Route path="/login" element={<LoginPage />} />
-                <Route path="/pending" element={<PendingApproval />} />
                 <Route 
                   path="/dashboard" 
                   element={
