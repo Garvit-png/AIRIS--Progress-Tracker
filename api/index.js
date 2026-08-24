@@ -186,7 +186,17 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/auth/google', async (req, res) => {
     try {
         const { idToken } = req.body;
-        const ticket = await client.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
+        if (!idToken) return res.status(400).json({ success: false, message: 'ID token required' });
+
+        const googleClientId = process.env.GOOGLE_CLIENT_ID;
+        if (!googleClientId) {
+            console.error('GOOGLE_CLIENT_ID env var is not set');
+            return res.status(500).json({ success: false, message: 'Server misconfiguration: GOOGLE_CLIENT_ID missing' });
+        }
+
+        // Initialize lazily so it always picks up the env var at request time
+        const oauthClient = new OAuth2Client(googleClientId);
+        const ticket = await oauthClient.verifyIdToken({ idToken, audience: googleClientId });
         const { email, name, picture } = ticket.getPayload();
         const cleanEmail = email.toLowerCase().trim();
 
@@ -205,7 +215,10 @@ app.post('/api/auth/google', async (req, res) => {
         }
         const token = jwt.sign({ userId: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '30d' });
         res.json({ success: true, token, user });
-    } catch (err) { res.status(401).json({ success: false, message: 'Google Auth Failed' }); }
+    } catch (err) {
+        console.error('Google Auth Error:', err.message);
+        res.status(401).json({ success: false, message: `Google Auth Failed: ${err.message}` });
+    }
 });
 
 app.get('/api/auth/me', protect, async (req, res) => {
