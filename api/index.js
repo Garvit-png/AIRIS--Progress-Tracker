@@ -148,9 +148,10 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 app.post('/api/auth/login', async (req, res) => {
-    res.status(410).json({ success: false, message: 'Password login is disabled. Use Google Sign-In.' });
-        res.json({ success: true, token, user });
-    } catch (err) { res.status(400).json({ success: false, message: err.message }); }
+    return res.status(410).json({
+        success: false,
+        message: 'Password login is disabled. Use Google Sign-In.'
+    });
 });
 
 app.post('/api/auth/google', async (req, res) => {
